@@ -16,7 +16,6 @@ export function RootList({
   children,
   refreshing,
   onRefresh,
-  updatedAt: _updatedAt,
   contentContainerStyle,
   inset = 'automatic',
   staticContent = false,

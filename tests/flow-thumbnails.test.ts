@@ -6,11 +6,12 @@ import ts from 'typescript';
 import { gymTechniquesFlow } from '../shared/gym-techniques';
 import { fitnessMedia } from '../shared/fitness-guides';
 
-type Element = { type: string; props: Record<string, any> };
+type Style = { width: number | string; height: number; left: number; top: number; backgroundColor?: string };
+type Element = { type: string; props: { style: Style; children: unknown; id?: string } };
 const localRequire = createRequire(import.meta.url);
 function load(file: string) {
   const jsx = (type: string, props: object) => ({ type, props });
-  const module = { exports: {} as Record<string, (props: object) => Element> };
+  const loaded = { exports: {} as Record<string, (props: object) => Element> };
   const code = ts.transpileModule(readFileSync(`mobile/src/${file}.tsx`, 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },
   }).outputText;
@@ -34,10 +35,10 @@ function load(file: string) {
         return localRequire(`../shared/${name.split('/').at(-1)}`);
       throw new Error(name);
     },
-    module,
-    module.exports,
+    loaded,
+    loaded.exports,
   );
-  return module.exports[file];
+  return loaded.exports[file];
 }
 
 test('flow thumbnails use available tile width without an extra dark backdrop', () => {
@@ -48,17 +49,17 @@ test('flow thumbnails use available tile width without an extra dark backdrop', 
     assert.equal(tree.props.style.width, '100%');
     assert.equal(tree.props.style.backgroundColor, undefined);
     const frame = tree.props.children as Element;
-    assert.ok(frame.props.style.width > 0);
+    assert.ok(Number(frame.props.style.width) > 0);
     assert.ok(frame.props.style.left >= -1e-9);
     assert.ok(frame.props.style.top >= -1e-9);
-    assert.ok(frame.props.style.left + frame.props.style.width <= 144 + 1e-9);
+    assert.ok(frame.props.style.left + Number(frame.props.style.width) <= 144 + 1e-9);
     assert.ok(frame.props.style.top + frame.props.style.height <= 112 + 1e-9);
   }
 });
 
 test('flow preview does not put a black pill behind the image', () => {
   const tree = load('FlowPreview')({ flow: gymTechniquesFlow, added: false, onPress() {} });
-  const cover = tree.props.children[0] as Element;
+  const cover = (tree.props.children as Element[])[0];
   assert.equal(cover.props.style.backgroundColor, undefined);
   assert.equal(cover.props.style.height, 112);
 });
