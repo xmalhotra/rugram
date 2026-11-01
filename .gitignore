@@ -12,6 +12,10 @@
 
 # testing
 /coverage
+/mobile/.expo/
+/mobile/dist/
+/mobile/node_modules/
+/test-results/
 
 # next.js
 /.next/

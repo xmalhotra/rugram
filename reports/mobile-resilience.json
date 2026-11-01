@@ -1,0 +1,8 @@
+{
+  "expiredSessionStatus": 401,
+  "databaseFailureStatus": 503,
+  "recoveredStatus": 200,
+  "profilePreserved": true,
+  "sensitiveErrorDetailsExposed": false,
+  "requestIdPresent": true
+}

@@ -11,3 +11,8 @@ export function apiJson(data: unknown, status = 200) {
 export function unauthorized() {
   return apiError("Please log in to continue.", 401);
 }
+
+/** The cookie-session website API is retired; only the mobile API under /api/mobile is supported. */
+export function legacyRetired() {
+  return apiError("This website API has been retired. Use the Qram mobile app.", 410);
+}

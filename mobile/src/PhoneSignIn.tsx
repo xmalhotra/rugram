@@ -1,0 +1,237 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { Animated, KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from 'react-native';
+import { Text } from './design/Text';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  indianMobileInput,
+  indianMobilePhone,
+  mockPhoneAccounts,
+  type OtpChallenge,
+} from '../../shared/auth';
+import { Button, Card, Heading } from './design/components';
+import { useTheme } from './design/theme';
+import { useSession } from './session';
+import { NeonBackdrop } from './design/NeonBackdrop';
+import { BrandMark } from './design/BrandMark';
+import { OtpCodeInput } from './OtpCodeInput';
+import { useAnimations } from './motion';
+
+export function PhoneSignIn() {
+  const { colors: C } = useTheme();
+  const animations = useAnimations();
+  const enter = useRef(new Animated.Value(0)).current;
+  const pulse = useRef(new Animated.Value(1)).current;
+  const { busy, error, setError, requestOtp, verifyOtp } = useSession();
+  const [phone, setPhone] = useState('');
+  const [code, setCode] = useState('');
+  const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
+  const [now, setNow] = useState(Date.now());
+  const [sentTo, setSentTo] = useState('');
+  useEffect(() => {
+    if (!animations) {
+      enter.setValue(1);
+      return;
+    }
+    enter.setValue(0);
+    Animated.timing(enter, { toValue: 1, duration: 560, useNativeDriver: true }).start();
+  }, [animations, enter]);
+  useEffect(() => {
+    if (!animations || !busy) {
+      pulse.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 0.45, duration: 600, useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1, duration: 600, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [animations, busy, pulse]);
+  useEffect(() => {
+    if (!challenge) return;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [challenge]);
+  const seconds = challenge ? Math.max(0, Math.ceil((challenge.resendAt - now) / 1000)) : 0;
+  const expired = Boolean(challenge && now >= challenge.expiresAt);
+  const text = { color: C.muted, fontSize: 15, lineHeight: 22 } as const;
+  const input = {
+    minHeight: 54,
+    borderRadius: 12,
+    borderColor: C.line,
+    borderWidth: 1,
+    backgroundColor: C.card,
+    color: C.text,
+    padding: 14,
+    fontSize: 20,
+  } as const;
+  async function request(target = indianMobilePhone(phone)) {
+    if (!target) return;
+    const result = await requestOtp(target);
+    if (result) {
+      setSentTo(target);
+      setChallenge(result);
+      setCode('');
+      setNow(Date.now());
+    }
+  }
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
+      <NeonBackdrop />
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ padding: 24, paddingTop: 40, gap: 18 }}
+        >
+          <Animated.View
+            style={{
+              gap: 18,
+              opacity: enter,
+              transform: [
+                {
+                  translateY: enter.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }),
+                },
+              ],
+            }}
+          >
+          <Animated.View style={{ opacity: pulse }}>
+            <BrandMark size={88} />
+          </Animated.View>
+          <Heading
+            eyebrow="Qram"
+            title={challenge ? 'Your code. Your next step.' : 'A better day starts here.'}
+            copy={
+              challenge
+                ? `Enter the ${challenge.otpLength ?? 6}-digit code for ${sentTo}.`
+                : 'Sign in or get started with your phone number. No password to remember.'
+            }
+          />
+          {!challenge ? (
+            <>
+              <Text style={text}>Mobile number</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View
+                  accessibilityLabel="India country code, plus 91"
+                  style={[input, { justifyContent: 'center' }]}
+                >
+                  <Text style={{ color: C.text, fontSize: 20 }}>+91</Text>
+                </View>
+                <TextInput
+                  accessibilityLabel="10-digit Indian mobile number"
+                  value={phone}
+                  onChangeText={value => {
+                    setPhone(indianMobileInput(value));
+                    setError('');
+                  }}
+                  placeholder="98765 43210"
+                  placeholderTextColor={C.muted}
+                  keyboardType="number-pad"
+                  textContentType="telephoneNumber"
+                  autoComplete="tel-national"
+                  editable={!busy}
+                  style={[input, { flex: 1, minWidth: 0 }]}
+                />
+              </View>
+              <Text style={text}>Enter your 10-digit Indian mobile number.</Text>
+              <Button
+                title={busy ? 'Requesting code…' : 'Get code'}
+                disabled={busy || !indianMobilePhone(phone)}
+                onPress={() => void request()}
+              />
+              {__DEV__ && process.env.EXPO_PUBLIC_DEMO_MODE === 'true' && (
+                <Card>
+                  <Text style={{ color: C.text, fontSize: 17, fontWeight: '600' }}>
+                    Local test accounts
+                  </Text>
+                  <Text style={text}>
+                    Development shortcuts only. These fictional accounts do not receive SMS.
+                  </Text>
+                  {mockPhoneAccounts.map(account => (
+                    <Button
+                      key={account.phone}
+                      title={`Test as ${account.label}`}
+                      secondary
+                      onPress={() => {
+                        setError('');
+                        void request(account.phone);
+                      }}
+                      disabled={busy}
+                    />
+                  ))}
+                </Card>
+              )}
+            </>
+          ) : (
+            <>
+              {challenge.mockCode && (
+                <Card>
+                  <Text style={{ color: C.text, fontSize: 17, fontWeight: '600' }}>
+                    Mock SMS · nothing was sent
+                  </Text>
+                  <Text style={text}>Use this test code:</Text>
+                  <Text
+                    selectable
+                    style={{ color: C.lime, fontSize: 32, fontWeight: '600', letterSpacing: 6 }}
+                  >
+                    {challenge.mockCode}
+                  </Text>
+                  <Text style={text}>
+                    For local testing only. This does not verify ownership of a real phone number.
+                  </Text>
+                </Card>
+              )}
+              <Text style={text}>Verification code</Text>
+              <OtpCodeInput
+                length={challenge.otpLength ?? 6}
+                key={challenge.challengeId}
+                value={code}
+                onChange={setCode}
+                disabled={busy || expired}
+              />
+              <Text accessibilityLiveRegion="polite" style={text}>
+                {expired
+                  ? 'This code has expired. Request a new one.'
+                  : 'Code expires after 5 minutes. Each code can be used once.'}
+              </Text>
+              <Button
+                title={busy ? 'Checking…' : 'Verify & continue'}
+                disabled={busy || code.length !== (challenge.otpLength ?? 6) || expired}
+                onPress={() => void verifyOtp(challenge.challengeId, code)}
+              />
+              <Button
+                title={seconds ? `Resend code in ${seconds}s` : 'Resend code'}
+                secondary
+                disabled={busy || seconds > 0}
+                onPress={() => void request(sentTo)}
+              />
+              <Button
+                title="Change phone number"
+                secondary
+                disabled={busy}
+                onPress={() => {
+                  setChallenge(null);
+                  setCode('');
+                  setError('');
+                }}
+              />
+            </>
+          )}
+          {error ? (
+            <Text
+              accessibilityRole="alert"
+              style={{ color: C.danger, fontSize: 15, lineHeight: 22 }}
+            >
+              {error}
+            </Text>
+          ) : null}
+          </Animated.View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}

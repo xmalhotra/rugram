@@ -1,0 +1,5 @@
+import type {CityEvent} from './mobile';
+export function hostedDemoEvent(now=Date.now()):CityEvent{return {
+  id:'demo-hosted-tech-100',title:'DEMO · Hosted tech meetup',city:'Hyderabad',country:'IN',topic:'Tech',venue:'Demo venue · not a real location or booking',startsAt:new Date(now+7*86400000).toISOString(),endsAt:new Date(now+7*86400000+7200000).toISOString(),registrationClosesAt:null,
+  registrationMode:'approval',guestCapacity:100,organizers:[{name:'Demo Creator'}],capacity:0,price:0,entryFee:0,feeNote:'Free local demonstration. No real ticket, gathering or payment.',description:'A clearly labelled local demo for requesting a place, creator or admin approval, private guest lists and cancellation. This is not a real scheduled event.',audience:'People testing the hosted-event workflow.',outcomes:['Try registration, approval and cancellation without making a real booking.'],sourceUrls:[],checkedAt:new Date(now).toISOString(),registrationStatus:'Registration link available',createdBy:'creator',status:'published',simulation:true,
+};}

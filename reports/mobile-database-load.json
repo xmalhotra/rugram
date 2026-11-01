@@ -1,0 +1,99 @@
+{
+  "kind": "Local production-build HTTP test with actual PostgreSQL, single API instance; not cloud capacity certification",
+  "storedUsers": 10000,
+  "requests": 25656,
+  "stages": [
+    {
+      "concurrency": 10,
+      "requests": 100,
+      "elapsedMs": 97,
+      "requestsPerSecond": 1029,
+      "p50Ms": 9,
+      "p95Ms": 14,
+      "p99Ms": 15,
+      "statuses": {
+        "200": 100
+      },
+      "errorRate": 0,
+      "passesTarget": true
+    },
+    {
+      "concurrency": 25,
+      "requests": 250,
+      "elapsedMs": 218,
+      "requestsPerSecond": 1149,
+      "p50Ms": 20,
+      "p95Ms": 32,
+      "p99Ms": 34,
+      "statuses": {
+        "200": 250
+      },
+      "errorRate": 0,
+      "passesTarget": true
+    },
+    {
+      "concurrency": 50,
+      "requests": 500,
+      "elapsedMs": 383,
+      "requestsPerSecond": 1306,
+      "p50Ms": 35,
+      "p95Ms": 53,
+      "p99Ms": 58,
+      "statuses": {
+        "200": 500
+      },
+      "errorRate": 0,
+      "passesTarget": true
+    },
+    {
+      "concurrency": 100,
+      "requests": 1000,
+      "elapsedMs": 740,
+      "requestsPerSecond": 1351,
+      "p50Ms": 68,
+      "p95Ms": 103,
+      "p99Ms": 109,
+      "statuses": {
+        "200": 1000
+      },
+      "errorRate": 0,
+      "passesTarget": true
+    }
+  ],
+  "populationExercise": {
+    "distinctAccounts": 10000,
+    "concurrency": 100,
+    "httpRequests": 20000,
+    "elapsedMs": 14812,
+    "journeyP95Ms": 164,
+    "unexpectedErrors": 0
+  },
+  "shortSoak": {
+    "durationMs": 30176,
+    "concurrency": 25,
+    "thinkTimeMs": 200,
+    "requests": 3500,
+    "p95Ms": 24,
+    "statuses": {
+      "200": 3500
+    }
+  },
+  "assertions": [
+    "Authentication, forged sessions, role escalation, malformed/oversized payloads, invalid IDs/timezones",
+    "20 concurrent completion retries persist once and generate one conversion",
+    "Concurrent saves and explicit removal are idempotent",
+    "Concurrent submissions deduplicate; publication requires an admin",
+    "Real Postgres: 100 competing users cannot oversell 10 seats; duplicate RSVP and archived cancellation work",
+    "Paginated catalog: 601 products across 7 pages",
+    "All 10,000 accounts exercised over HTTP: join a flow, reload persisted isolated profile",
+    "30-second paced local stability run has no unexpected responses; a long staging soak remains required",
+    "Shared production read throttling returns 429 under excess requests",
+    "Admin analytics aggregate database records",
+    "Logout revokes the server session"
+  ],
+  "targets": {
+    "p95Ms": 1000,
+    "errorRate": 0
+  },
+  "releaseGate": "Local load gate passed; staging/device/soak gates outstanding"
+}

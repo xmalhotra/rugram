@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS mobile_event_registrations(event_id TEXT NOT NULL REFERENCES mobile_catalog(id) ON DELETE CASCADE,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,status TEXT NOT NULL CHECK(status IN ('pending','approved','declined','cancelled')),requested_at TIMESTAMPTZ NOT NULL DEFAULT now(),updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),PRIMARY KEY(event_id,user_id));
+CREATE INDEX IF NOT EXISTS mobile_event_registration_status_idx ON mobile_event_registrations(event_id,status);

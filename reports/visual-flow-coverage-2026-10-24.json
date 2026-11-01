@@ -1,0 +1,2914 @@
+{
+  "checkedOn": "2026-10-24",
+  "totalFlows": 127,
+  "convertedFlows": 41,
+  "textOnlyFlows": 0,
+  "issues": [],
+  "flows": [
+    {
+      "id": "coding-work-setups",
+      "title": "Work setups",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "coding-setup-compact",
+          "title": "Compact laptop desk",
+          "atlas": "coding-setups",
+          "row": 0,
+          "frames": 5
+        },
+        {
+          "id": "coding-setup-single",
+          "title": "One-monitor home office",
+          "atlas": "coding-setups",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "coding-setup-dual",
+          "title": "Two screens, clear roles",
+          "atlas": "coding-setups",
+          "row": 2,
+          "frames": 5
+        },
+        {
+          "id": "coding-setup-sit-stand",
+          "title": "Change your working position",
+          "atlas": "coding-setups",
+          "row": 3,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "coding-focus-audio",
+      "title": "Coding playlists",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "coding-audio-silence",
+          "title": "Silence is a valid playlist",
+          "atlas": "coding-audio",
+          "row": 0,
+          "frames": 5
+        },
+        {
+          "id": "coding-audio-ambient",
+          "title": "An ambient coding mix",
+          "atlas": "coding-audio",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "coding-audio-groove",
+          "title": "Low-key downtempo",
+          "atlas": "coding-audio",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "coding-programmer-habits",
+      "title": "Programmer habits",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "coding-habit-maker",
+          "title": "Paul Graham · protect a block",
+          "atlas": "coding-habits",
+          "row": 0,
+          "frames": 5
+        },
+        {
+          "id": "coding-habit-small",
+          "title": "Linus Torvalds · start small",
+          "atlas": "coding-habits",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "coding-habit-experiment",
+          "title": "Andrej Karpathy · check the idea",
+          "atlas": "coding-habits",
+          "row": 2,
+          "frames": 5
+        },
+        {
+          "id": "coding-habit-walk",
+          "title": "Vitalik Buterin · a portable reset",
+          "atlas": "coding-habits",
+          "row": 3,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "coding-setup-compact",
+      "title": "Compact laptop desk",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "coding-setup-compact",
+          "title": "Compact laptop desk",
+          "atlas": "coding-setups",
+          "row": 0,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "coding-setup-single",
+      "title": "One-monitor home office",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "coding-setup-single",
+          "title": "One-monitor home office",
+          "atlas": "coding-setups",
+          "row": 1,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "coding-setup-dual",
+      "title": "Two screens, clear roles",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "coding-setup-dual",
+          "title": "Two screens, clear roles",
+          "atlas": "coding-setups",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "coding-setup-sit-stand",
+      "title": "Change your working position",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "coding-setup-sit-stand",
+          "title": "Change your working position",
+          "atlas": "coding-setups",
+          "row": 3,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "coding-audio-silence",
+      "title": "Silence is a valid playlist",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "coding-audio-silence",
+          "title": "Silence is a valid playlist",
+          "atlas": "coding-audio",
+          "row": 0,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "coding-audio-ambient",
+      "title": "An ambient coding mix",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "coding-audio-ambient",
+          "title": "An ambient coding mix",
+          "atlas": "coding-audio",
+          "row": 1,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "coding-audio-groove",
+      "title": "Low-key downtempo",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "coding-audio-groove",
+          "title": "Low-key downtempo",
+          "atlas": "coding-audio",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "coding-habit-maker",
+      "title": "Paul Graham · protect a block",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "coding-habit-maker",
+          "title": "Paul Graham · protect a block",
+          "atlas": "coding-habits",
+          "row": 0,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "coding-habit-small",
+      "title": "Linus Torvalds · start small",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "coding-habit-small",
+          "title": "Linus Torvalds · start small",
+          "atlas": "coding-habits",
+          "row": 1,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "coding-habit-experiment",
+      "title": "Andrej Karpathy · check the idea",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "coding-habit-experiment",
+          "title": "Andrej Karpathy · check the idea",
+          "atlas": "coding-habits",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "coding-habit-walk",
+      "title": "Vitalik Buterin · a portable reset",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "coding-habit-walk",
+          "title": "Vitalik Buterin · a portable reset",
+          "atlas": "coding-habits",
+          "row": 3,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "wellbeing-sleep-start",
+      "title": "An easier wind-down",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "wellbeing-sleep-start:visual:1",
+          "title": "Prepare tomorrow",
+          "atlas": "flow-sleep",
+          "row": 0,
+          "frames": 5
+        },
+        {
+          "id": "wellbeing-sleep-start:visual:2",
+          "title": "Put the phone aside",
+          "atlas": "flow-sleep",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "wellbeing-sleep-start:visual:3",
+          "title": "A calmer activity",
+          "atlas": "flow-sleep",
+          "row": 2,
+          "frames": 5
+        },
+        {
+          "id": "wellbeing-sleep-start:visual:4",
+          "title": "Notice what helped",
+          "atlas": "flow-sleep",
+          "row": 3,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "fitness-workout-start",
+      "title": "Make your next workout easier to start",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "fitness-workout-start:visual:1",
+          "title": "Prepare your kit",
+          "atlas": "flow-daily",
+          "row": 0,
+          "frames": 5
+        },
+        {
+          "id": "fitness-workout-start:visual:2",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "fitness-workout-start:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "fitness-running-start",
+      "title": "Make your next run repeatable",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "fitness-running-start:visual:1",
+          "title": "Prepare your kit",
+          "atlas": "flow-daily",
+          "row": 0,
+          "frames": 5
+        },
+        {
+          "id": "fitness-running-start:visual:2",
+          "title": "A comfortable walking break",
+          "atlas": "flow-daily",
+          "row": 3,
+          "frames": 5
+        },
+        {
+          "id": "fitness-running-start:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "fitness-crossfit-start",
+      "title": "Start with the right scale",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "fitness-crossfit-start:visual:1",
+          "title": "Review with your coach",
+          "atlas": "flow-fitness",
+          "row": 6,
+          "frames": 5
+        },
+        {
+          "id": "fitness-crossfit-start:visual:2",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "fitness-crossfit-start:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "wellbeing-nutrition-start",
+      "title": "Improve one familiar meal",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "wellbeing-nutrition-start:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "wellbeing-nutrition-start:visual:2",
+          "title": "Build a familiar meal",
+          "atlas": "flow-meals",
+          "row": 3,
+          "frames": 5
+        },
+        {
+          "id": "wellbeing-nutrition-start:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "workout-cindy",
+      "title": "Cindy",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "cindy-pull-up",
+          "title": "Pull-up",
+          "atlas": "cindy",
+          "row": 0,
+          "frames": 6
+        },
+        {
+          "id": "cindy-push-up",
+          "title": "Push-up",
+          "atlas": "cindy",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "cindy-squat",
+          "title": "Air squat",
+          "atlas": "cindy",
+          "row": 2,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "workout-12-3-30",
+      "title": "12-3-30 · incline walking",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "workout-12-3-30:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "workout-12-3-30:visual:2",
+          "title": "A manageable treadmill walk",
+          "atlas": "flow-fitness",
+          "row": 5,
+          "frames": 5
+        },
+        {
+          "id": "workout-12-3-30:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "workout-norwegian-4x4",
+      "title": "Norwegian 4×4 · aerobic intervals",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "workout-norwegian-4x4:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "workout-norwegian-4x4:visual:2",
+          "title": "Work and recovery",
+          "atlas": "running",
+          "row": 3,
+          "frames": 6
+        },
+        {
+          "id": "workout-norwegian-4x4:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "workout-annie",
+      "title": "Annie · rope & core",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "workout-annie:visual:1",
+          "title": "A controlled rope jump",
+          "atlas": "flow-fitness",
+          "row": 3,
+          "frames": 5
+        },
+        {
+          "id": "workout-annie:visual:2",
+          "title": "A comfortable sit-up variation",
+          "atlas": "flow-fitness",
+          "row": 4,
+          "frames": 5
+        },
+        {
+          "id": "workout-annie:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "cindy-pull-up",
+      "title": "Pull-up",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "cindy-pull-up",
+          "title": "Pull-up",
+          "atlas": "cindy",
+          "row": 0,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "cindy-push-up",
+      "title": "Push-up",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "cindy-push-up",
+          "title": "Push-up",
+          "atlas": "cindy",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "cindy-squat",
+      "title": "Air squat",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "cindy-squat",
+          "title": "Air squat",
+          "atlas": "cindy",
+          "row": 2,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "running-styles",
+      "title": "Running styles",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "running-style-run-walk",
+          "title": "Run / walk",
+          "atlas": "running",
+          "row": 0,
+          "frames": 6
+        },
+        {
+          "id": "running-style-easy",
+          "title": "Easy running",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "running-style-tempo",
+          "title": "Tempo running",
+          "atlas": "running",
+          "row": 2,
+          "frames": 6
+        },
+        {
+          "id": "running-style-intervals",
+          "title": "Running intervals",
+          "atlas": "running",
+          "row": 3,
+          "frames": 6
+        },
+        {
+          "id": "running-style-hills",
+          "title": "Hill running",
+          "atlas": "running",
+          "row": 4,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "running-style-run-walk",
+      "title": "Run / walk",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "running-style-run-walk",
+          "title": "Run / walk",
+          "atlas": "running",
+          "row": 0,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "running-style-easy",
+      "title": "Easy running",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "running-style-easy",
+          "title": "Easy running",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "running-style-tempo",
+      "title": "Tempo running",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "running-style-tempo",
+          "title": "Tempo running",
+          "atlas": "running",
+          "row": 2,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "running-style-intervals",
+      "title": "Running intervals",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "running-style-intervals",
+          "title": "Running intervals",
+          "atlas": "running",
+          "row": 3,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "running-style-hills",
+      "title": "Hill running",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "running-style-hills",
+          "title": "Hill running",
+          "atlas": "running",
+          "row": 4,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-full",
+      "title": "Full HYROX",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-full-run-1",
+          "title": "Run 1 · 1000 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-full-ski",
+          "title": "1. SkiErg",
+          "atlas": "hyrox",
+          "row": 0,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-full-run-2",
+          "title": "Run 2 · 1000 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-full-sled-push",
+          "title": "2. Sled push",
+          "atlas": "hyrox",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-full-run-3",
+          "title": "Run 3 · 1000 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-full-sled-pull",
+          "title": "3. Sled pull",
+          "atlas": "hyrox",
+          "row": 2,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-full-run-4",
+          "title": "Run 4 · 1000 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-full-burpee",
+          "title": "4. Burpee broad jump",
+          "atlas": "hyrox",
+          "row": 3,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-full-run-5",
+          "title": "Run 5 · 1000 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-full-row",
+          "title": "5. Rowing",
+          "atlas": "hyrox",
+          "row": 4,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-full-run-6",
+          "title": "Run 6 · 1000 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-full-carry",
+          "title": "6. Farmers carry",
+          "atlas": "hyrox",
+          "row": 5,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-full-run-7",
+          "title": "Run 7 · 1000 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-full-lunge",
+          "title": "7. Sandbag lunge",
+          "atlas": "hyrox",
+          "row": 6,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-full-run-8",
+          "title": "Run 8 · 1000 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-full-wall-ball",
+          "title": "8. Wall balls",
+          "atlas": "hyrox",
+          "row": 7,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-half",
+      "title": "Half HYROX",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-half-run-1",
+          "title": "Run 1 · 500 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-half-ski",
+          "title": "1. SkiErg",
+          "atlas": "hyrox",
+          "row": 0,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-half-run-2",
+          "title": "Run 2 · 500 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-half-sled-push",
+          "title": "2. Sled push",
+          "atlas": "hyrox",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-half-run-3",
+          "title": "Run 3 · 500 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-half-sled-pull",
+          "title": "3. Sled pull",
+          "atlas": "hyrox",
+          "row": 2,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-half-run-4",
+          "title": "Run 4 · 500 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-half-burpee",
+          "title": "4. Burpee broad jump",
+          "atlas": "hyrox",
+          "row": 3,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-half-run-5",
+          "title": "Run 5 · 500 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-half-row",
+          "title": "5. Rowing",
+          "atlas": "hyrox",
+          "row": 4,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-half-run-6",
+          "title": "Run 6 · 500 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-half-carry",
+          "title": "6. Farmers carry",
+          "atlas": "hyrox",
+          "row": 5,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-half-run-7",
+          "title": "Run 7 · 500 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-half-lunge",
+          "title": "7. Sandbag lunge",
+          "atlas": "hyrox",
+          "row": 6,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-half-run-8",
+          "title": "Run 8 · 500 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        },
+        {
+          "id": "hyrox-half-wall-ball",
+          "title": "8. Wall balls",
+          "atlas": "hyrox",
+          "row": 7,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-full-run-1",
+      "title": "Run 1 · 1000 m",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-full-run-1",
+          "title": "Run 1 · 1000 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-full-ski",
+      "title": "1. SkiErg",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-full-ski",
+          "title": "1. SkiErg",
+          "atlas": "hyrox",
+          "row": 0,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-full-run-2",
+      "title": "Run 2 · 1000 m",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-full-run-2",
+          "title": "Run 2 · 1000 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-full-sled-push",
+      "title": "2. Sled push",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-full-sled-push",
+          "title": "2. Sled push",
+          "atlas": "hyrox",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-full-run-3",
+      "title": "Run 3 · 1000 m",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-full-run-3",
+          "title": "Run 3 · 1000 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-full-sled-pull",
+      "title": "3. Sled pull",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-full-sled-pull",
+          "title": "3. Sled pull",
+          "atlas": "hyrox",
+          "row": 2,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-full-run-4",
+      "title": "Run 4 · 1000 m",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-full-run-4",
+          "title": "Run 4 · 1000 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-full-burpee",
+      "title": "4. Burpee broad jump",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-full-burpee",
+          "title": "4. Burpee broad jump",
+          "atlas": "hyrox",
+          "row": 3,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-full-run-5",
+      "title": "Run 5 · 1000 m",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-full-run-5",
+          "title": "Run 5 · 1000 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-full-row",
+      "title": "5. Rowing",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-full-row",
+          "title": "5. Rowing",
+          "atlas": "hyrox",
+          "row": 4,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-full-run-6",
+      "title": "Run 6 · 1000 m",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-full-run-6",
+          "title": "Run 6 · 1000 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-full-carry",
+      "title": "6. Farmers carry",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-full-carry",
+          "title": "6. Farmers carry",
+          "atlas": "hyrox",
+          "row": 5,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-full-run-7",
+      "title": "Run 7 · 1000 m",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-full-run-7",
+          "title": "Run 7 · 1000 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-full-lunge",
+      "title": "7. Sandbag lunge",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-full-lunge",
+          "title": "7. Sandbag lunge",
+          "atlas": "hyrox",
+          "row": 6,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-full-run-8",
+      "title": "Run 8 · 1000 m",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-full-run-8",
+          "title": "Run 8 · 1000 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-full-wall-ball",
+      "title": "8. Wall balls",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-full-wall-ball",
+          "title": "8. Wall balls",
+          "atlas": "hyrox",
+          "row": 7,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-half-run-1",
+      "title": "Run 1 · 500 m",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-half-run-1",
+          "title": "Run 1 · 500 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-half-ski",
+      "title": "1. SkiErg",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-half-ski",
+          "title": "1. SkiErg",
+          "atlas": "hyrox",
+          "row": 0,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-half-run-2",
+      "title": "Run 2 · 500 m",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-half-run-2",
+          "title": "Run 2 · 500 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-half-sled-push",
+      "title": "2. Sled push",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-half-sled-push",
+          "title": "2. Sled push",
+          "atlas": "hyrox",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-half-run-3",
+      "title": "Run 3 · 500 m",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-half-run-3",
+          "title": "Run 3 · 500 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-half-sled-pull",
+      "title": "3. Sled pull",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-half-sled-pull",
+          "title": "3. Sled pull",
+          "atlas": "hyrox",
+          "row": 2,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-half-run-4",
+      "title": "Run 4 · 500 m",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-half-run-4",
+          "title": "Run 4 · 500 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-half-burpee",
+      "title": "4. Burpee broad jump",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-half-burpee",
+          "title": "4. Burpee broad jump",
+          "atlas": "hyrox",
+          "row": 3,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-half-run-5",
+      "title": "Run 5 · 500 m",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-half-run-5",
+          "title": "Run 5 · 500 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-half-row",
+      "title": "5. Rowing",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-half-row",
+          "title": "5. Rowing",
+          "atlas": "hyrox",
+          "row": 4,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-half-run-6",
+      "title": "Run 6 · 500 m",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-half-run-6",
+          "title": "Run 6 · 500 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-half-carry",
+      "title": "6. Farmers carry",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-half-carry",
+          "title": "6. Farmers carry",
+          "atlas": "hyrox",
+          "row": 5,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-half-run-7",
+      "title": "Run 7 · 500 m",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-half-run-7",
+          "title": "Run 7 · 500 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-half-lunge",
+      "title": "7. Sandbag lunge",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-half-lunge",
+          "title": "7. Sandbag lunge",
+          "atlas": "hyrox",
+          "row": 6,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-half-run-8",
+      "title": "Run 8 · 500 m",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-half-run-8",
+          "title": "Run 8 · 500 m",
+          "atlas": "running",
+          "row": 1,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "hyrox-half-wall-ball",
+      "title": "8. Wall balls",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "hyrox-half-wall-ball",
+          "title": "8. Wall balls",
+          "atlas": "hyrox",
+          "row": 7,
+          "frames": 6
+        }
+      ]
+    },
+    {
+      "id": "workout-animal-bear",
+      "title": "Bear crawl",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "workout-animal-bear",
+          "title": "Bear crawl",
+          "atlas": "flow-animal",
+          "row": 0,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "workout-animal-crab",
+      "title": "Crab walk",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "workout-animal-crab",
+          "title": "Crab walk",
+          "atlas": "flow-animal",
+          "row": 1,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "workout-animal-ape",
+      "title": "Lateral ape",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "workout-animal-ape",
+          "title": "Lateral ape",
+          "atlas": "flow-animal",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "workout-animal-frog",
+      "title": "Frog travel",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "workout-animal-frog",
+          "title": "Frog travel",
+          "atlas": "flow-animal",
+          "row": 3,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "workout-animal-inchworm",
+      "title": "Inchworm walkout",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "workout-animal-inchworm",
+          "title": "Inchworm walkout",
+          "atlas": "flow-animal",
+          "row": 4,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "workout-animal-bird-dog",
+      "title": "Bird dog",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "workout-animal-bird-dog",
+          "title": "Bird dog",
+          "atlas": "flow-fitness",
+          "row": 1,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "workout-animal-movements",
+      "title": "Animal movements",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "workout-animal-bear",
+          "title": "Bear crawl",
+          "atlas": "flow-animal",
+          "row": 0,
+          "frames": 5
+        },
+        {
+          "id": "workout-animal-crab",
+          "title": "Crab walk",
+          "atlas": "flow-animal",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "workout-animal-ape",
+          "title": "Lateral ape",
+          "atlas": "flow-animal",
+          "row": 2,
+          "frames": 5
+        },
+        {
+          "id": "workout-animal-frog",
+          "title": "Frog travel",
+          "atlas": "flow-animal",
+          "row": 3,
+          "frames": 5
+        },
+        {
+          "id": "workout-animal-inchworm",
+          "title": "Inchworm walkout",
+          "atlas": "flow-animal",
+          "row": 4,
+          "frames": 5
+        },
+        {
+          "id": "workout-animal-bird-dog",
+          "title": "Bird dog",
+          "atlas": "flow-fitness",
+          "row": 1,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "lifestyle-morning-drinks",
+      "title": "Morning drinks",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "morning-drink-water",
+          "title": "Lukewarm water",
+          "atlas": "morning",
+          "row": 0,
+          "frames": 5
+        },
+        {
+          "id": "morning-drink-lemon-honey",
+          "title": "Lemon & optional honey",
+          "atlas": "morning",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "morning-drink-coffee",
+          "title": "Coffee",
+          "atlas": "morning",
+          "row": 2,
+          "frames": 5
+        },
+        {
+          "id": "morning-drink-decaf",
+          "title": "Decaf coffee",
+          "atlas": "morning",
+          "row": 3,
+          "frames": 5
+        },
+        {
+          "id": "morning-drink-tea",
+          "title": "Plain tea",
+          "atlas": "morning",
+          "row": 4,
+          "frames": 5
+        },
+        {
+          "id": "morning-drink-ginger",
+          "title": "Ginger infusion",
+          "atlas": "morning",
+          "row": 5,
+          "frames": 5
+        },
+        {
+          "id": "morning-drink-milk",
+          "title": "Milk",
+          "atlas": "morning",
+          "row": 6,
+          "frames": 5
+        },
+        {
+          "id": "morning-drink-soy",
+          "title": "Fortified soy drink",
+          "atlas": "morning",
+          "row": 7,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "morning-drink-water",
+      "title": "Lukewarm water",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "morning-drink-water",
+          "title": "Lukewarm water",
+          "atlas": "morning",
+          "row": 0,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "morning-drink-lemon-honey",
+      "title": "Lemon & optional honey",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "morning-drink-lemon-honey",
+          "title": "Lemon & optional honey",
+          "atlas": "morning",
+          "row": 1,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "morning-drink-coffee",
+      "title": "Coffee",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "morning-drink-coffee",
+          "title": "Coffee",
+          "atlas": "morning",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "morning-drink-decaf",
+      "title": "Decaf coffee",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "morning-drink-decaf",
+          "title": "Decaf coffee",
+          "atlas": "morning",
+          "row": 3,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "morning-drink-tea",
+      "title": "Plain tea",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "morning-drink-tea",
+          "title": "Plain tea",
+          "atlas": "morning",
+          "row": 4,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "morning-drink-ginger",
+      "title": "Ginger infusion",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "morning-drink-ginger",
+          "title": "Ginger infusion",
+          "atlas": "morning",
+          "row": 5,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "morning-drink-milk",
+      "title": "Milk",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "morning-drink-milk",
+          "title": "Milk",
+          "atlas": "morning",
+          "row": 6,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "morning-drink-soy",
+      "title": "Fortified soy drink",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "morning-drink-soy",
+          "title": "Fortified soy drink",
+          "atlas": "morning",
+          "row": 7,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "supplements-starting",
+      "title": "Getting started",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "training-supplement-food",
+          "title": "Start with food",
+          "atlas": "supplements",
+          "row": 0,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-protein",
+          "title": "Protein",
+          "atlas": "supplements",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-hydration",
+          "title": "Hydration & electrolytes",
+          "atlas": "supplements",
+          "row": 5,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-clinical",
+          "title": "Vitamins & minerals",
+          "atlas": "supplements",
+          "row": 6,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-quality",
+          "title": "Check before buying",
+          "atlas": "supplements",
+          "row": 7,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "supplements-strength",
+      "title": "Strength & muscle",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "training-supplement-food",
+          "title": "Start with food",
+          "atlas": "supplements",
+          "row": 0,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-protein",
+          "title": "Protein",
+          "atlas": "supplements",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-creatine",
+          "title": "Creatine monohydrate",
+          "atlas": "supplements",
+          "row": 2,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-caffeine",
+          "title": "Caffeine",
+          "atlas": "supplements",
+          "row": 3,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-clinical",
+          "title": "Vitamins & minerals",
+          "atlas": "supplements",
+          "row": 6,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-quality",
+          "title": "Check before buying",
+          "atlas": "supplements",
+          "row": 7,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "supplements-running",
+      "title": "Running & endurance",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "training-supplement-food",
+          "title": "Start with food",
+          "atlas": "supplements",
+          "row": 0,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-carbohydrate",
+          "title": "Endurance fuel",
+          "atlas": "supplements",
+          "row": 4,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-hydration",
+          "title": "Hydration & electrolytes",
+          "atlas": "supplements",
+          "row": 5,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-protein",
+          "title": "Protein",
+          "atlas": "supplements",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-caffeine",
+          "title": "Caffeine",
+          "atlas": "supplements",
+          "row": 3,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-clinical",
+          "title": "Vitamins & minerals",
+          "atlas": "supplements",
+          "row": 6,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-quality",
+          "title": "Check before buying",
+          "atlas": "supplements",
+          "row": 7,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "supplements-hyrox",
+      "title": "HYROX & hybrid",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "training-supplement-food",
+          "title": "Start with food",
+          "atlas": "supplements",
+          "row": 0,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-carbohydrate",
+          "title": "Endurance fuel",
+          "atlas": "supplements",
+          "row": 4,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-hydration",
+          "title": "Hydration & electrolytes",
+          "atlas": "supplements",
+          "row": 5,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-protein",
+          "title": "Protein",
+          "atlas": "supplements",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-creatine",
+          "title": "Creatine monohydrate",
+          "atlas": "supplements",
+          "row": 2,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-caffeine",
+          "title": "Caffeine",
+          "atlas": "supplements",
+          "row": 3,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-clinical",
+          "title": "Vitamins & minerals",
+          "atlas": "supplements",
+          "row": 6,
+          "frames": 5
+        },
+        {
+          "id": "training-supplement-quality",
+          "title": "Check before buying",
+          "atlas": "supplements",
+          "row": 7,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "training-supplement-food",
+      "title": "Start with food",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "training-supplement-food",
+          "title": "Start with food",
+          "atlas": "supplements",
+          "row": 0,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "training-supplement-protein",
+      "title": "Protein",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "training-supplement-protein",
+          "title": "Protein",
+          "atlas": "supplements",
+          "row": 1,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "training-supplement-creatine",
+      "title": "Creatine monohydrate",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "training-supplement-creatine",
+          "title": "Creatine monohydrate",
+          "atlas": "supplements",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "training-supplement-caffeine",
+      "title": "Caffeine",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "training-supplement-caffeine",
+          "title": "Caffeine",
+          "atlas": "supplements",
+          "row": 3,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "training-supplement-carbohydrate",
+      "title": "Endurance fuel",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "training-supplement-carbohydrate",
+          "title": "Endurance fuel",
+          "atlas": "supplements",
+          "row": 4,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "training-supplement-hydration",
+      "title": "Hydration & electrolytes",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "training-supplement-hydration",
+          "title": "Hydration & electrolytes",
+          "atlas": "supplements",
+          "row": 5,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "training-supplement-clinical",
+      "title": "Vitamins & minerals",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "training-supplement-clinical",
+          "title": "Vitamins & minerals",
+          "atlas": "supplements",
+          "row": 6,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "training-supplement-quality",
+      "title": "Check before buying",
+      "convertedFromLegacy": false,
+      "cards": [
+        {
+          "id": "training-supplement-quality",
+          "title": "Check before buying",
+          "atlas": "supplements",
+          "row": 7,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "nutrition-protein-plant",
+      "title": "Everyday protein · Plant-based foods",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "nutrition-protein-plant:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-protein-plant:visual:2",
+          "title": "Chickpea & tofu bowl",
+          "atlas": "flow-meals",
+          "row": 0,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-protein-plant:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "nutrition-protein-dairy",
+      "title": "Everyday protein · Vegetarian with dairy",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "nutrition-protein-dairy:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-protein-dairy:visual:2",
+          "title": "Curd & chickpea bowl",
+          "atlas": "flow-meals",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-protein-dairy:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "nutrition-protein-mixed",
+      "title": "Everyday protein · Includes eggs, meat or fish",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "nutrition-protein-mixed:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-protein-mixed:visual:2",
+          "title": "Egg & chickpea bowl",
+          "atlas": "flow-meals",
+          "row": 2,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-protein-mixed:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "nutrition-hydration-everyday",
+      "title": "Hydration & electrolytes · Everyday hydration",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "nutrition-hydration-everyday:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-hydration-everyday:visual:2",
+          "title": "Make water accessible",
+          "atlas": "flow-meals",
+          "row": 5,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-hydration-everyday:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "nutrition-hydration-running",
+      "title": "Hydration & electrolytes · Running",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "nutrition-hydration-running:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-hydration-running:visual:2",
+          "title": "Make water accessible",
+          "atlas": "flow-meals",
+          "row": 5,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-hydration-running:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "nutrition-hydration-gym",
+      "title": "Hydration & electrolytes · Gym",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "nutrition-hydration-gym:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-hydration-gym:visual:2",
+          "title": "Make water accessible",
+          "atlas": "flow-meals",
+          "row": 5,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-hydration-gym:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "nutrition-hydration-hyrox",
+      "title": "Hydration & electrolytes · HYROX",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "nutrition-hydration-hyrox:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-hydration-hyrox:visual:2",
+          "title": "Make water accessible",
+          "atlas": "flow-meals",
+          "row": 5,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-hydration-hyrox:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "nutrition-pre-running",
+      "title": "Pre-workout · Running",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "nutrition-pre-running:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-pre-running:visual:2",
+          "title": "A familiar food option",
+          "atlas": "flow-meals",
+          "row": 4,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-pre-running:visual:3",
+          "title": "Make water accessible",
+          "atlas": "flow-meals",
+          "row": 5,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-pre-running:visual:4",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "nutrition-pre-gym",
+      "title": "Pre-workout · Gym",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "nutrition-pre-gym:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-pre-gym:visual:2",
+          "title": "A familiar food option",
+          "atlas": "flow-meals",
+          "row": 4,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-pre-gym:visual:3",
+          "title": "Make water accessible",
+          "atlas": "flow-meals",
+          "row": 5,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-pre-gym:visual:4",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "nutrition-pre-hyrox",
+      "title": "Pre-workout · HYROX",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "nutrition-pre-hyrox:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-pre-hyrox:visual:2",
+          "title": "A familiar food option",
+          "atlas": "flow-meals",
+          "row": 4,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-pre-hyrox:visual:3",
+          "title": "Make water accessible",
+          "atlas": "flow-meals",
+          "row": 5,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-pre-hyrox:visual:4",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "nutrition-intra-running",
+      "title": "Intra-workout · Running",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "nutrition-intra-running:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-intra-running:visual:2",
+          "title": "Make water accessible",
+          "atlas": "flow-meals",
+          "row": 5,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-intra-running:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "nutrition-intra-gym",
+      "title": "Intra-workout · Gym",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "nutrition-intra-gym:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-intra-gym:visual:2",
+          "title": "Make water accessible",
+          "atlas": "flow-meals",
+          "row": 5,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-intra-gym:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "nutrition-intra-hyrox",
+      "title": "Intra-workout · HYROX",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "nutrition-intra-hyrox:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-intra-hyrox:visual:2",
+          "title": "Make water accessible",
+          "atlas": "flow-meals",
+          "row": 5,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-intra-hyrox:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "nutrition-post-running",
+      "title": "Post-workout · Running",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "nutrition-post-running:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-post-running:visual:2",
+          "title": "Build a familiar meal",
+          "atlas": "flow-meals",
+          "row": 3,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-post-running:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "nutrition-post-gym",
+      "title": "Post-workout · Gym",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "nutrition-post-gym:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-post-gym:visual:2",
+          "title": "Build a familiar meal",
+          "atlas": "flow-meals",
+          "row": 3,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-post-gym:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "nutrition-post-hyrox",
+      "title": "Post-workout · HYROX",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "nutrition-post-hyrox:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-post-hyrox:visual:2",
+          "title": "Build a familiar meal",
+          "atlas": "flow-meals",
+          "row": 3,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-post-hyrox:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "recipe-chickpea-bowl",
+      "title": "Chickpea & tofu bowl",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "recipe-chickpea-bowl:visual:1",
+          "title": "Chickpea & tofu bowl",
+          "atlas": "flow-meals",
+          "row": 0,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "recipe-curd-chickpea-bowl",
+      "title": "Curd & chickpea bowl",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "recipe-curd-chickpea-bowl:visual:1",
+          "title": "Curd & chickpea bowl",
+          "atlas": "flow-meals",
+          "row": 1,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "recipe-egg-chickpea-bowl",
+      "title": "Egg & chickpea bowl",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "recipe-egg-chickpea-bowl:visual:1",
+          "title": "Egg & chickpea bowl",
+          "atlas": "flow-meals",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "workout-core-foundations",
+      "title": "Abs & core foundations",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "workout-core-foundations:visual:1",
+          "title": "Dead bug",
+          "atlas": "flow-fitness",
+          "row": 0,
+          "frames": 5
+        },
+        {
+          "id": "workout-core-foundations:visual:2",
+          "title": "Bird dog",
+          "atlas": "flow-fitness",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "workout-core-foundations:visual:3",
+          "title": "Forearm plank from knees",
+          "atlas": "flow-fitness",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "nutrition-magnesium-labels",
+      "title": "Magnesium: understand the form",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "nutrition-magnesium-labels:visual:1",
+          "title": "Read the actual label",
+          "atlas": "supplements",
+          "row": 7,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-magnesium-labels:visual:2",
+          "title": "Review suitability",
+          "atlas": "supplements",
+          "row": 6,
+          "frames": 5
+        },
+        {
+          "id": "nutrition-magnesium-labels:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "fitness-gym-equipment",
+      "title": "Choose equipment for your session",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "fitness-gym-equipment:visual:1",
+          "title": "Check a lifting belt",
+          "atlas": "flow-supports",
+          "row": 0,
+          "frames": 5
+        },
+        {
+          "id": "fitness-gym-equipment:visual:2",
+          "title": "Check wrist wraps",
+          "atlas": "flow-supports",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "fitness-gym-equipment:visual:3",
+          "title": "Check lifting straps",
+          "atlas": "flow-supports",
+          "row": 2,
+          "frames": 5
+        },
+        {
+          "id": "fitness-gym-equipment:visual:4",
+          "title": "Check knee sleeves",
+          "atlas": "flow-supports",
+          "row": 3,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "fitness-hyrox-base",
+      "title": "Build your hybrid base",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "fitness-hyrox-base:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "fitness-hyrox-base:visual:2",
+          "title": "Make water accessible",
+          "atlas": "flow-meals",
+          "row": 5,
+          "frames": 5
+        },
+        {
+          "id": "fitness-hyrox-base:visual:3",
+          "title": "A comfortable walking break",
+          "atlas": "flow-daily",
+          "row": 3,
+          "frames": 5
+        },
+        {
+          "id": "fitness-hyrox-base:visual:4",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "fitness-lean-habits",
+      "title": "Lean habits, without extremes",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "fitness-lean-habits:visual:1",
+          "title": "Build a familiar meal",
+          "atlas": "flow-meals",
+          "row": 3,
+          "frames": 5
+        },
+        {
+          "id": "fitness-lean-habits:visual:2",
+          "title": "A comfortable walking break",
+          "atlas": "flow-daily",
+          "row": 3,
+          "frames": 5
+        },
+        {
+          "id": "fitness-lean-habits:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "fitness-strength-log",
+      "title": "Make your lifting count",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "fitness-strength-log:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "fitness-strength-log:visual:2",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        },
+        {
+          "id": "fitness-strength-log:visual:3",
+          "title": "Prepare your kit",
+          "atlas": "flow-daily",
+          "row": 0,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "fitness-start-small",
+      "title": "A week you can repeat",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "fitness-start-small:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "fitness-start-small:visual:2",
+          "title": "A comfortable walking break",
+          "atlas": "flow-daily",
+          "row": 3,
+          "frames": 5
+        },
+        {
+          "id": "fitness-start-small:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "tech-web-first-page",
+      "title": "Build your first useful web page",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "tech-web-first-page:visual:1",
+          "title": "protect a block",
+          "atlas": "coding-habits",
+          "row": 0,
+          "frames": 5
+        },
+        {
+          "id": "tech-web-first-page:visual:2",
+          "title": "start small",
+          "atlas": "coding-habits",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "tech-web-first-page:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "tech-ai-small-experiment",
+      "title": "From AI curiosity to an experiment",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "tech-ai-small-experiment:visual:1",
+          "title": "protect a block",
+          "atlas": "coding-habits",
+          "row": 0,
+          "frames": 5
+        },
+        {
+          "id": "tech-ai-small-experiment:visual:2",
+          "title": "check the idea",
+          "atlas": "coding-habits",
+          "row": 2,
+          "frames": 5
+        },
+        {
+          "id": "tech-ai-small-experiment:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "tech-cloud-safe-lab",
+      "title": "Your first safe cloud lab",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "tech-cloud-safe-lab:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "tech-cloud-safe-lab:visual:2",
+          "title": "check the idea",
+          "atlas": "coding-habits",
+          "row": 2,
+          "frames": 5
+        },
+        {
+          "id": "tech-cloud-safe-lab:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "tech-security-first-lab",
+      "title": "Learn security in a safe lab",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "tech-security-first-lab:visual:1",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "tech-security-first-lab:visual:2",
+          "title": "start small",
+          "atlas": "coding-habits",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "tech-security-first-lab:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "morning",
+      "title": "A calmer morning",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "morning:visual:1",
+          "title": "Make water accessible",
+          "atlas": "flow-meals",
+          "row": 5,
+          "frames": 5
+        },
+        {
+          "id": "morning:visual:2",
+          "title": "A comfortable walking break",
+          "atlas": "flow-daily",
+          "row": 3,
+          "frames": 5
+        },
+        {
+          "id": "morning:visual:3",
+          "title": "Choose your next step",
+          "atlas": "flow-daily",
+          "row": 1,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "running",
+      "title": "Start moving",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "running:visual:1",
+          "title": "Prepare your kit",
+          "atlas": "flow-daily",
+          "row": 0,
+          "frames": 5
+        },
+        {
+          "id": "running:visual:2",
+          "title": "A comfortable walking break",
+          "atlas": "flow-daily",
+          "row": 3,
+          "frames": 5
+        },
+        {
+          "id": "running:visual:3",
+          "title": "Keep a useful note",
+          "atlas": "flow-daily",
+          "row": 2,
+          "frames": 5
+        }
+      ]
+    },
+    {
+      "id": "sleep",
+      "title": "Make room for rest",
+      "convertedFromLegacy": true,
+      "cards": [
+        {
+          "id": "sleep:visual:1",
+          "title": "Prepare tomorrow",
+          "atlas": "flow-sleep",
+          "row": 0,
+          "frames": 5
+        },
+        {
+          "id": "sleep:visual:2",
+          "title": "Put the phone aside",
+          "atlas": "flow-sleep",
+          "row": 1,
+          "frames": 5
+        },
+        {
+          "id": "sleep:visual:3",
+          "title": "A calmer activity",
+          "atlas": "flow-sleep",
+          "row": 2,
+          "frames": 5
+        },
+        {
+          "id": "sleep:visual:4",
+          "title": "Notice what helped",
+          "atlas": "flow-sleep",
+          "row": 3,
+          "frames": 5
+        }
+      ]
+    }
+  ]
+}

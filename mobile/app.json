@@ -1,0 +1,62 @@
+{
+  "expo": {
+    "name": "Qram",
+    "slug": "qram",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "qram",
+    "icon": "./assets/brand/icon-ios.png",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.qram.app"
+    },
+    "android": {
+      "package": "com.qram.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/brand/adaptive-foreground.png",
+        "backgroundColor": "#050706",
+        "monochromeImage": "./assets/brand/monochrome.png"
+      }
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/brand/notification.png",
+          "color": "#75F9B5",
+          "defaultChannel": "default"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose a product or event image to share for review.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/brand/splash-light.png",
+          "imageWidth": 180,
+          "backgroundColor": "#F2F2F7",
+          "dark": {
+            "image": "./assets/brand/splash-dark.png",
+            "backgroundColor": "#050706"
+          }
+        }
+      ],
+      "expo-sharing",
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "Allow optional phone tilt to navigate workout guides. Motion readings stay on your device."
+        }
+      ]
+    ]
+  }
+}

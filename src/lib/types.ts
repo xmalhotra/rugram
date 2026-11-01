@@ -1,5 +1,6 @@
-export type Role = "member" | "creator";
+export type Role = "member" | "creator" | "admin";
 export type EvidenceLevel = "reported" | "reviewed";
+export type RoutinePlacement = "timeline" | "preference";
 
 export type PublicUser = {
   id: string;
@@ -18,6 +19,8 @@ export type RoutineComponent = {
   description: string;
   durationLabel: string;
   suggestedTime: string;
+  placement: RoutinePlacement;
+  profileGroup: string | null;
   evidenceLevel: EvidenceLevel;
   sourceLabel: string;
   sourceUrl: string;
@@ -27,8 +30,8 @@ export type RoutineComponent = {
 export type TimelineEntry = {
   id: string;
   componentId: string;
-  scheduledFor: string;
-  startTime: string;
+  scheduledFor: string | null;
+  startTime: string | null;
   sourceCreatorId: string | null;
   timeZone: string;
 };
@@ -38,6 +41,18 @@ export type CreatorPublication = {
   componentId: string;
   weekday: string;
   startTime: string;
+};
+
+export type RugramRecommendation = {
+  componentId: string;
+  reason: string;
+};
+
+export type RugramRecommendationResult = {
+  goal: string;
+  guidance: string;
+  recommendations: RugramRecommendation[];
+  engine: "openai" | "catalog";
 };
 
 export type BootstrapPayload = {
