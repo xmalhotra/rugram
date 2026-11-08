@@ -19,13 +19,14 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      # Some unit tests read the mobile app's installed packages.
+      - run: npm ci --prefix mobile
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
       - run: npm run test:simulation
       # Production compilation runs in database-simulation, never with demo mode.
       - run: npm audit --omit=dev --audit-level=high
-      - run: npm ci --prefix mobile
       - run: npm run mobile:typecheck
       - run: npm run lint:mobile
       - run: npm run test:mobile-accessibility

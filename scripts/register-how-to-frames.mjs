@@ -2,7 +2,7 @@
 // Usage: node scripts/register-how-to-frames.mjs [--dir mobile/assets/howto] [--map mobile/src/how-to-frames.ts]
 // Metro needs literal requires, so the map is generated. Don't edit that file by hand.
 import { existsSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
-import { execFileSync } from 'node:child_process';
+import sharp from 'sharp';
 import { dirname, join, relative } from 'node:path';
 
 const args = process.argv.slice(2);
@@ -16,9 +16,8 @@ const mapFile = option('--map', 'mobile/src/how-to-frames.ts');
 
 for (const file of existsSync(dir) ? readdirSync(dir).filter(name => name.endsWith('.png')) : []) {
   const path = join(dir, file);
-  execFileSync('sips', ['-Z', '512', '-s', 'format', 'jpeg', path, '--out', path.replace(/\.png$/, '.jpg')], {
-    stdio: 'ignore',
-  });
+  // sharp ships with Next.js and runs on macOS and the Linux CI alike.
+  await sharp(path).resize(512, 512, { fit: 'inside' }).jpeg({ quality: 85 }).toFile(path.replace(/\.png$/, '.jpg'));
   rmSync(path);
 }
 
