@@ -1,4 +1,6 @@
-import { gymFlows } from './gym-flows';
+import { gymExerciseId, gymFlows } from './gym-flows';
+import type { HabitFlow } from './mobile';
+import { findFlowCard, type FlowCardReference } from './personal-flows';
 import { trainingCatalog } from './training-seed';
 
 export type ExerciseUsage = { kind: 'flow' | 'session'; id: string; title: string };
@@ -57,4 +59,21 @@ export function exerciseUsage(exerciseId: string): ExerciseUsage[] {
 /** Every exercise that appears in a flow or a seeded session, in id order. */
 export function usedExerciseIds() {
   return [...index().keys()].sort();
+}
+
+/**
+ * The exercises a saved or published card stands for: a gym flow card, a workout card,
+ * or a generated card from a workout flow (one per exercise, in block order).
+ */
+export function cardExerciseIds(library: HabitFlow[], card: FlowCardReference): string[] {
+  const gym = gymExerciseId(card.cardId);
+  if (gym) return [gym];
+  const blocks = (flow?: HabitFlow) => [...new Set(flow?.workout?.blocks.map(block => block.exerciseId) ?? [])];
+  const resolved = findFlowCard(library, card.sourceFlowId, card.cardId);
+  if (resolved?.exerciseId) return [resolved.exerciseId];
+  if (resolved?.workout) return blocks(resolved);
+  const generated = /:visual:(\d+)$/.exec(card.cardId);
+  if (!generated) return [];
+  const id = blocks(library.find(flow => flow.id === card.sourceFlowId))[Number(generated[1]) - 1];
+  return id ? [id] : [];
 }

@@ -4,7 +4,8 @@ import test from 'node:test';
 import { seededHowTos } from '../shared/exercise-how-to';
 import { gymFlowById, gymFlows } from '../shared/gym-flows';
 import { completeCollections, exerciseStandard, resourceIds } from '../shared/exercise-standard';
-import { buildExerciseUsage, exerciseUsage } from '../shared/exercise-usage';
+import { buildExerciseUsage, cardExerciseIds, exerciseUsage } from '../shared/exercise-usage';
+import { flows } from '../shared/mobile';
 import { trainingCatalog } from '../shared/training-seed';
 
 const frameIds = resourceIds(readFileSync('mobile/src/how-to-frames.ts', 'utf8'));
@@ -92,4 +93,16 @@ test('video is true only when the how-to carries a video url', () => {
     'Video',
     'Focus area',
   ]);
+});
+
+test('community cards resolve to the exercises they show', () => {
+  const card = (sourceFlowId: string, cardId: string) => cardExerciseIds(flows, { sourceFlowId, cardId, title: '' });
+  const gym = gymFlows[0];
+  assert.deepEqual(card(gym.id, `${gym.id}:${gym.items[0].exerciseId}`), [gym.items[0].exerciseId]);
+  assert.deepEqual(card('workout-cindy', 'cindy-pull-up'), ['pull-up']);
+  assert.deepEqual(card('workout-cindy', 'cindy-squat'), ['air-squat']);
+  assert.deepEqual(card('workout-animal-movements', 'workout-animal-bear'), ['bear-crawl']);
+  assert.deepEqual(card('workout-core-foundations', 'workout-core-foundations:visual:1'), ['dead-bug']);
+  assert.deepEqual(card('workout-animal-movements', 'workout-animal-crab'), []);
+  assert.deepEqual(card('no-such-flow', 'nothing'), []);
 });

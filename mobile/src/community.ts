@@ -112,3 +112,13 @@ export function useCommunityMember(id: string | null) {
     id ? `/api/mobile/community?member=${encodeURIComponent(id)}` : null,
   );
 }
+
+export type CommunityExerciseFlow = { id: string; title: string; author: string; upvotes: number };
+
+/** Community flows that include this exercise. */
+export function useCommunityFlowsWithExercise(exerciseId: string) {
+  const remote = useRemote<{ flows: CommunityExerciseFlow[] }>(
+    `/api/mobile/community?exercise=${encodeURIComponent(exerciseId)}`,
+  );
+  return { ...remote, flows: remote.value?.flows ?? [] };
+}

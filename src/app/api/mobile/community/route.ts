@@ -11,6 +11,7 @@ import {
   communityActionSchema,
   communityFeed,
   communityFlow,
+  communityFlowsWithExercise,
   communityMember,
   communityStatus,
 } from '@/lib/mobile/community';
@@ -35,6 +36,7 @@ export const GET = observed(async (request: Request) => {
       z.object({ tab: z.enum(['for-you', 'following']) }).strict(),
       z.object({ id: z.string().regex(/^community-[a-zA-Z0-9-]{8,80}$/) }).strict(),
       z.object({ status: z.literal('mine') }).strict(),
+      z.object({ exercise: z.string().regex(/^[a-z0-9-]{1,80}$/) }).strict(),
       z.object({ member: z.string().regex(/^[a-zA-Z0-9_-]{1,128}$/) }).strict(),
       z.object({ people: z.string().trim().min(1).max(40) }).strict(),
       z.object({ curate: z.string().trim().min(2).max(curationLimits.prompt) }).strict(),
@@ -44,6 +46,8 @@ export const GET = observed(async (request: Request) => {
   try {
     if ('id' in input.data) return apiJson(await communityFlow(user, input.data.id));
     if ('status' in input.data) return apiJson(await communityStatus(user));
+    if ('exercise' in input.data)
+      return apiJson(await communityFlowsWithExercise(user, input.data.exercise));
     if ('member' in input.data) return apiJson(await communityMember(user, input.data.member));
     if ('people' in input.data) {
       try {

@@ -194,9 +194,17 @@ const movements = [
   source: { title: string; url: string };
 }[];
 
+/** Movements that are also in the exercise library. The rest have no library match. */
+const libraryExercise: Record<string, string> = {
+  bear: 'bear-crawl',
+  inchworm: 'inchworm',
+  'bird-dog': 'bird-dog',
+};
+
 export const animalMovementFlows: (HabitFlow & { sessionGuide: WorkoutGuide })[] = movements.map(
   movement => ({
     id: `workout-animal-${movement.id}`,
+    ...(libraryExercise[movement.id] ? { exerciseId: libraryExercise[movement.id] } : {}),
     title: movement.name,
     area: 'Fitness',
     pathId: 'workout',

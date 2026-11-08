@@ -132,6 +132,7 @@ export const cindyMovementFlows = [
   flow.sessionGuide!.cards.push(
     ...cindy.sessionGuide.cards.map(card => ({ ...card, id: `cindy-${card.id}` })),
   );
+  flow.exerciseId = suffix === 'squat' ? 'air-squat' : suffix;
   return flow;
 });
 // Keep the longstanding saved Cindy ID. Children are pages, not browse categories.

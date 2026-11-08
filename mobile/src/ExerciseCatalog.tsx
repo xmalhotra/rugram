@@ -9,7 +9,7 @@ import {
   station,
   type GymExercise,
 } from '../../shared/exercises';
-import { gymFlows } from '../../shared/gym-flows';
+import { exerciseUsage } from '../../shared/exercise-usage';
 import { yourLastLine } from '../../shared/set-detail';
 import type { HabitFlow } from '../../shared/mobile';
 import { Text } from './design/Text';
@@ -18,7 +18,9 @@ import { usePaneState } from './pane-state';
 import { useRootListInset } from './RootList';
 import { CatalogBar } from './FlowCatalogTile';
 import { ExerciseVisual } from './ExerciseVisual';
-import { ExerciseHowToSheet, ExerciseUsedIn, useExerciseHowTo } from './ExerciseHowTo';
+import { ExerciseHowToSheet } from './ExerciseHowTo';
+import { ExercisePicture } from './ExerciseRunMedia';
+import { useCommunityFlowsWithExercise } from './community';
 import { exerciseSessions, type ExerciseSession } from './flow-runs';
 import type { SetScheme } from '../../shared/set-schemes';
 import { muscleMapFor, muscleAreas, type MuscleArea } from '../../shared/muscle-map';
@@ -68,7 +70,6 @@ export function ExercisePage({
   const contextInset = useRootListInset();
   const inset = topInset ?? contextInset;
   const [info, setInfo] = useState(false);
-  const guide = useExerciseHowTo(item.id);
   const [last, setLast] = useState<ExerciseSession | null>(null);
   useEffect(() => {
     let live = true;
@@ -81,9 +82,6 @@ export function ExercisePage({
       live = false;
     };
   }, [item.id]);
-  const flows = gymFlows
-    .filter(flow => flow.items.some(entry => entry.exerciseId === item.id))
-    .flatMap(flow => library.filter(source => source.id === flow.id));
   const facts = [
     ['Equipment', station(item.station)?.title ?? item.station],
     ['Works', item.muscles.map(label).join(', ')],
@@ -99,9 +97,7 @@ export function ExercisePage({
         style={{ flex: 1 }}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 128, gap: 16 }}
       >
-        <View style={{ width: 120, alignSelf: 'center' }}>
-          <ExerciseSquare item={item} />
-        </View>
+        <ExercisePicture exerciseId={item.id} name={item.name} onPress={() => setInfo(true)} />
         <Text accessibilityRole="header" style={{ color: C.text, fontSize: 24, fontWeight: '700' }}>
           {item.name}
         </Text>
@@ -121,23 +117,6 @@ export function ExercisePage({
               <Text style={{ flex: 1, color: C.text, fontSize: 15 }}>{value}</Text>
             </View>
           ))}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={guide.label}
-            onPress={() => setInfo(true)}
-            style={({ pressed }) => ({
-              minHeight: 48,
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 12,
-              paddingVertical: 10,
-              borderBottomWidth: 0.5,
-              borderColor: C.line,
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={{ flex: 1, color: C.text, fontSize: 15 }}>{guide.label}</Text>
-          </Pressable>
           {info ? <ExerciseHowToSheet item={item} scheme={scheme} onClose={() => setInfo(false)} /> : null}
           {last && (
             <View
@@ -192,30 +171,88 @@ export function ExercisePage({
             </Text>
           ) : null}
         </View>
-        <ExerciseUsedIn exerciseId={item.id} />
-        {flows.length > 0 && (
-          <View style={{ gap: 4 }}>
-            <Text style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>In these flows</Text>
-            {flows.map(flow => (
-              <Pressable
-                key={flow.id}
-                accessibilityRole="button"
-                accessibilityLabel={`Open ${flow.title}`}
-                onPress={() => onView(flow)}
-                style={({ pressed }) => ({
-                  minHeight: 48,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  opacity: pressed ? 0.6 : 1,
-                })}
-              >
-                <Text style={{ flex: 1, color: C.lime, fontSize: 16 }}>{flow.title}</Text>
-                <Text style={{ color: C.muted, fontSize: 20 }}>›</Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
+        <FoundIn exerciseId={item.id} library={library} onView={onView} />
       </ScrollView>
+    </View>
+  );
+}
+
+/** Every flow and session that includes this exercise: Qram's own, then the community's. */
+function FoundIn({
+  exerciseId,
+  library,
+  onView,
+}: {
+  exerciseId: string;
+  library: HabitFlow[];
+  onView: (flow: HabitFlow) => void;
+}) {
+  const { colors: C } = useTheme();
+  const [, openCommunityFlow] = usePaneState<string | null>('communityFlow', null);
+  const community = useCommunityFlowsWithExercise(exerciseId).flows;
+  const qram = exerciseUsage(exerciseId).map(entry => ({
+    key: `${entry.kind}:${entry.id}`,
+    title: entry.title,
+    detail: entry.kind === 'flow' ? 'Flow' : 'Session',
+    open: entry.kind === 'flow' ? library.find(flow => flow.id === entry.id) : undefined,
+  }));
+  if (!qram.length && !community.length) return null;
+  const row = (key: string, title: string, detail: string, onPress?: () => void) =>
+    onPress ? (
+      <Pressable
+        key={key}
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${title}, ${detail}`}
+        onPress={onPress}
+        style={({ pressed }) => ({
+          minHeight: 48,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+          opacity: pressed ? 0.6 : 1,
+        })}
+      >
+        <Text style={{ flex: 1, color: C.lime, fontSize: 16 }}>{title}</Text>
+        <Text style={{ color: C.muted, fontSize: 13 }}>{detail}</Text>
+        <Text style={{ color: C.muted, fontSize: 20 }}>›</Text>
+      </Pressable>
+    ) : (
+      <View
+        key={key}
+        accessible
+        accessibilityRole="text"
+        accessibilityLabel={`${title}, ${detail}`}
+        style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+      >
+        <Text style={{ flex: 1, color: C.text, fontSize: 16 }}>{title}</Text>
+        <Text style={{ color: C.muted, fontSize: 13 }}>{detail}</Text>
+      </View>
+    );
+  const group = (title: string, rows: React.ReactNode[]) =>
+    rows.length ? (
+      <View style={{ gap: 0 }}>
+        <Text style={{ color: C.muted, fontSize: 13, fontWeight: '600', marginTop: 4 }}>{title}</Text>
+        {rows}
+      </View>
+    ) : null;
+  return (
+    <View style={{ gap: 8 }}>
+      <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>
+        Found in
+      </Text>
+      {group(
+        'Qram',
+        qram.map(entry => {
+          const flow = entry.open;
+          return row(entry.key, entry.title, entry.detail, flow ? () => onView(flow) : undefined);
+        }),
+      )}
+      {group(
+        'Community',
+        community.map(flow =>
+          row(`community:${flow.id}`, flow.title, `by ${flow.author}`, () => openCommunityFlow(flow.id)),
+        ),
+      )}
     </View>
   );
 }

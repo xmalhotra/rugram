@@ -29,6 +29,7 @@ import { resolveVisualFlow } from '../../../shared/visual-flows';
 import { sqlClient } from './state';
 import { communityActionSchema } from '../community-schema';
 import { completedSessionPost } from '../../../shared/training';
+import { cardExerciseIds } from '../../../shared/exercise-usage';
 
 export { communityActionSchema };
 
@@ -537,6 +538,21 @@ export async function communityFeed(user: PublicUser, tab: CommunityTab): Promis
     // Following includes your own logs, so you see what you just posted.
     activities: tab === 'following' ? await activitiesOf(user, [...follows, user.id]) : [],
     ...(await communityStatus(user)),
+  };
+}
+
+/** Published community flows with a card for this exercise, most upvoted first. */
+export async function communityFlowsWithExercise(user: PublicUser, exerciseId: string) {
+  const library = await cardLibrary();
+  const matching = (await stored()).filter(flow =>
+    flow.cards.some(card => cardExerciseIds(library, card).includes(exerciseId)),
+  );
+  const flows = await present(user, matching);
+  return {
+    flows: [...flows.values()]
+      .sort((a, b) => b.upvotes - a.upvotes || a.title.localeCompare(b.title))
+      .slice(0, 20)
+      .map(flow => ({ id: flow.id, title: flow.title, author: flow.author.name, upvotes: flow.upvotes })),
   };
 }
 
