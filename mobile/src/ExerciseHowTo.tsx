@@ -8,6 +8,7 @@ import { Text } from './design/Text';
 import { Sheet } from './design/components';
 import { useTheme } from './design/theme';
 import { ExerciseInfo } from './ExerciseInfo';
+import { ExerciseNumbers } from './ExerciseNumbers';
 import { ExerciseVisual } from './ExerciseVisual';
 import { howToFrames } from './how-to-frames';
 import { exerciseHowTo } from './training-api';
@@ -188,6 +189,7 @@ export function ExerciseHowToSheet({
           {guide.general ? <Text style={{ color: C.muted, fontSize: 15, lineHeight: 21 }}>{guide.general}</Text> : null}
         </View>
       ) : null}
+      <ExerciseNumbers item={item} />
       <ExerciseInfo item={item} scheme={scheme} />
       <ExerciseUsedIn exerciseId={item.id} />
     </Sheet>

@@ -1,4 +1,5 @@
 import { api } from './api';
+import type { FlowLeaderboard } from '../../shared/flow-leaderboard';
 
 export function flowInterestIds() {
   return api<{ catalogFlowIds: string[] }>('/api/mobile/flow-interest');
@@ -28,4 +29,9 @@ export function flowInterestAdmin() {
 
 export function notifyCatalogFlow(catalogFlowId: string) {
   return api<{ notified: number }>('/api/mobile/flow-interest', { action: 'notify', catalogFlowId });
+}
+
+/** The most requested flows still being curated. */
+export function flowLeaderboard() {
+  return api<FlowLeaderboard>('/api/mobile/flow-interest?scope=leaderboard');
 }

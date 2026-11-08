@@ -8,6 +8,7 @@ import {
   FlowInterestError,
   adminInterest,
   flowInterestSchema,
+  interestLeaderboard,
   notifyRequesters,
   unwantFlow,
   wantFlow,
@@ -29,6 +30,7 @@ export const GET = observed(async (request: Request) => {
   const scope = new URL(request.url).searchParams.get('scope');
   try {
     if (scope === 'admin') return apiJson(await adminInterest(user));
+    if (scope === 'leaderboard') return apiJson(await interestLeaderboard(user));
     if (scope) return apiError('Unknown scope.');
     return apiJson({ catalogFlowIds: await wantedIds(user) });
   } catch (error) {

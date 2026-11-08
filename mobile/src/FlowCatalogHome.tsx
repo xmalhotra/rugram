@@ -16,6 +16,7 @@ import { useRootListInset } from './RootList';
 import { CatalogCover, CatalogSectionCover } from './CatalogCover';
 import { CatalogBar, FlowCatalogTile } from './FlowCatalogTile';
 import { ExerciseCatalog, ExercisePage } from './ExerciseCatalog';
+import { RequestedFlows } from './RequestedFlows';
 import { FlowIllustration } from './FlowIllustration';
 import { liveFlowId } from './catalog-live';
 import { routineCheckpoints, type RoutineCheckpoint } from '../../shared/routines';
@@ -131,6 +132,7 @@ export function FlowCatalogHome({
         title={opened.title}
         level={opened.level}
         tileId={opened.tileId}
+        catalogFlowId={opened.id}
         source={source}
         library={library}
         owned={Boolean(live && ownedIds.includes(live))}
@@ -166,6 +168,8 @@ export function FlowCatalogHome({
     <CatalogSections
       onOpen={sectionId => setTileId(tilesInSection(sectionId)[0]?.id ?? null)}
       onExercises={() => setExercises(true)}
+      onFlow={id => setFlowId(id)}
+      requestsKey={wanted.join(',')}
       onRoutine={checkpoint => {
         setTileId(null);
         setFlowId(null);
@@ -194,6 +198,7 @@ export function CatalogFlowPage({
   title,
   level,
   tileId,
+  catalogFlowId,
   source,
   library,
   owned,
@@ -209,6 +214,8 @@ export function CatalogFlowPage({
   title: string;
   level: string;
   tileId: string;
+  /** The catalog entry, for its own picture. */
+  catalogFlowId?: string;
   source?: HabitFlow;
   library: HabitFlow[];
   owned: boolean;
@@ -295,7 +302,7 @@ export function CatalogFlowPage({
         {/* The picture stays small: these icons are made for this size, and the buttons stay in view. */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
           <View style={{ width: 88, height: 88, borderRadius: 14, overflow: 'hidden', backgroundColor: C.card }}>
-            <CatalogCover tileId={tileId} iconSize={40} square />
+            <CatalogCover tileId={tileId} flowId={catalogFlowId} iconSize={40} square />
           </View>
           <View style={{ flex: 1, gap: 2 }}>
             <Text accessibilityRole="header" style={{ color: C.text, fontSize: 22, fontWeight: '700' }}>
@@ -440,6 +447,8 @@ export function CatalogFlowPage({
 function CatalogSections({
   onOpen,
   onExercises,
+  onFlow,
+  requestsKey,
   onRoutine,
   onPlan,
   onBuild,
@@ -447,6 +456,9 @@ function CatalogSections({
 }: {
   onOpen: (id: string) => void;
   onExercises: () => void;
+  onFlow: (catalogFlowId: string) => void;
+  /** Changes when the member requests a flow, so the leaderboard refreshes. */
+  requestsKey: string;
   onRoutine: (checkpoint: RoutineCheckpoint) => void;
   onPlan: (id: string) => void;
   onBuild: () => void;
@@ -573,6 +585,7 @@ function CatalogSections({
         <Text style={{ flex: 1, color: C.text, fontSize: 17, fontWeight: '600' }}>All Exercises</Text>
         <Text style={{ color: C.muted, fontSize: 20 }}>›</Text>
       </Pressable>
+      <RequestedFlows refreshKey={requestsKey} onOpen={onFlow} />
     </ScrollView>
   );
 }

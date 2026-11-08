@@ -4,6 +4,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { catalogTile } from '../../shared/flow-catalog';
 import { useTheme } from './design/theme';
 import { exerciseIcons } from './exercise-icons';
+import { catalogFlowIcons } from '../../shared/catalog-flow-icons';
 
 /** Each tile's single picture: an exercise icon that shows what the tile is about. */
 const iconForTile: Record<string, string> = {
@@ -86,18 +87,22 @@ function SectionIcon({ sectionId, color, size }: { sectionId?: string; color: st
 /** A tile's picture: a checked photo when there is one, otherwise its section's icon. */
 export function CatalogCover({
   tileId,
+  flowId,
   aspectRatio = 1,
   iconSize = 34,
   square,
 }: {
   tileId: string;
+  /** A flow's own picture, so flows in one tile don't all look the same. Falls back to the tile's. */
+  flowId?: string;
   aspectRatio?: number;
   iconSize?: number;
   /** No rounded corners, for a picture that runs edge to edge. */
   square?: boolean;
 }) {
   const { colors: C } = useTheme();
-  const photo = exerciseIcons[catalogTile(tileId)?.iconKey ?? iconForTile[tileId] ?? ''];
+  const own = flowId ? exerciseIcons[catalogFlowIcons[flowId] ?? ''] : undefined;
+  const photo = own ?? exerciseIcons[catalogTile(tileId)?.iconKey ?? iconForTile[tileId] ?? ''];
   return (
     <View
       style={{

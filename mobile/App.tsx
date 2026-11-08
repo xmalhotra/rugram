@@ -1409,6 +1409,7 @@ function QramPane({
               title={catalogFlows.find(item => item.flowId === gymFlowId)?.title ?? data.flows.find(flow => flow.id === gymFlowId)?.title ?? 'Flow'}
               level={catalogFlows.find(item => item.flowId === gymFlowId)?.level ?? data.flows.find(flow => flow.id === gymFlowId)?.level ?? 'Beginner'}
               tileId={catalogFlows.find(item => item.flowId === gymFlowId)?.tileId ?? 'cal-upper'}
+              catalogFlowId={catalogFlows.find(item => item.flowId === gymFlowId)?.id}
               source={data.flows.find(flow => flow.id === gymFlowId)}
               library={data.flows}
               owned={data.profile.flowIds.includes(gymFlowId)}

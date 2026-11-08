@@ -80,7 +80,8 @@ function rowsFrom(amounts: (number | null)[], measure: 'reps' | 'hold'): SchemeS
 
 /**
  * Prefill for every set.
- * No history leaves the weight empty and fills the rep or second targets.
+ * No history fills the rep or second targets. The weight starts at `start` (our estimate from the
+ * member's strength) when there is one, and follows the scheme from there; otherwise it stays empty.
  * With history, each set keeps the weight from the same set last time.
  * If every set last time reached its own target, each weight rises by one equipment step.
  */
@@ -89,12 +90,21 @@ export function planWithScheme(
   item: SchemeItem,
   scheme: SetScheme,
   lastSets: LoggedSet[] | null | undefined,
+  start: number | null = null,
 ): SchemePlan {
   const target = targetOf(item);
   const measure = measureOf(target);
   const amounts = spreadAmounts(scheme, target, item.sets);
   const history = setsForProgression(lastSets);
-  if (!history.length || !carriesWeight(move)) return { raised: false, sets: rowsFrom(amounts, measure) };
+  if (!carriesWeight(move)) return { raised: false, sets: rowsFrom(amounts, measure) };
+  if (!history.length) {
+    const sets = rowsFrom(amounts, measure);
+    if (start != null && start > 0)
+      sets.forEach((row, index) => {
+        row.weightKg = index === 0 ? start : roundKg(Math.max(0, (sets[index - 1].weightKg ?? start) + schemeStep(move, scheme)));
+      });
+    return { raised: false, sets };
+  }
   const topped = history.every((set, index) => reached(set, amounts[index] ?? amounts[amounts.length - 1] ?? null, measure));
   const raised = topped && history.every(set => set.weightKg != null);
   const bump = raised ? harderStep(move) : 0;
@@ -122,12 +132,13 @@ export function planBlock(
   item: SchemeItem,
   scheme: SetScheme,
   lastSets: LoggedSet[] | null | undefined,
+  start: number | null = null,
 ): SchemePlan {
   if (!move) {
     const measure = measureOf(targetOf(item));
     return { raised: false, sets: rowsFrom(spreadAmounts(scheme, targetOf(item), item.sets), measure) };
   }
-  return planWithScheme(move, item, scheme, lastSets);
+  return planWithScheme(move, item, scheme, lastSets, start);
 }
 
 /**

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { demoModeEnabled } from './runtime-config';
 import { catalogFlow } from '../../shared/flow-catalog';
+import { flowLeaderboard } from '../../shared/flow-leaderboard';
 import { demoInboxPut } from './demo-inbox';
 import type { PublicUser } from './types';
 
@@ -152,4 +153,25 @@ export async function notifyRequesters(user: PublicUser, catalogFlowId: string) 
     FROM noted WHERE interest.user_id=noted.user_id AND interest.catalog_flow_id=${catalogFlowId} AND interest.notified_at IS NULL
     RETURNING interest.user_id`;
   return rows.length;
+}
+
+/** The public most-requested list. Totals only; the viewer sees which ones they asked for. */
+export async function interestLeaderboard(user: PublicUser, now = Date.now()) {
+  if (demoMode())
+    return flowLeaderboard(
+      memory().map(row => ({ userId: row.userId, catalogFlowId: row.catalogFlowId, createdAt: row.createdAt })),
+      user.id,
+      now,
+    );
+  const { database } = await import('./database');
+  const rows = await database()`SELECT user_id, catalog_flow_id, created_at FROM flow_interest`;
+  return flowLeaderboard(
+    rows.map(row => ({
+      userId: String(row.user_id),
+      catalogFlowId: String(row.catalog_flow_id),
+      createdAt: new Date(String(row.created_at)).toISOString(),
+    })),
+    user.id,
+    now,
+  );
 }

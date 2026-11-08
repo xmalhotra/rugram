@@ -23,6 +23,8 @@ import { useCommunityMember } from './community';
 import { ActivityDetailSheet, referencedCards } from './CommunityFeed';
 import { FlowIllustration } from './FlowIllustration';
 import { ProfileWorkouts } from './ProfileWorkouts';
+import { StrengthProfile } from './StrengthProfile';
+import { TrainingCalendar } from './TrainingCalendar';
 
 export function YouProfile({
   data,
@@ -259,6 +261,8 @@ export function YouProfile({
           </View>
           <Text style={{ color: C.muted, fontSize: 22 }}>›</Text>
         </Pressable>
+        <TrainingCalendar finishedAt={finished?.at ?? null} />
+        <StrengthProfile />
         <ProfileWorkouts onResume={onResumeRun} />
         <View style={{ gap: 10 }}>
           <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>

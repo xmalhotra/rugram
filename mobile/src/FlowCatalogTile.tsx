@@ -138,7 +138,7 @@ export function CatalogFlowGrid({
             onPress={() => onOpen(flow.id)}
             style={({ pressed }) => ({ width: cell, gap: 6, opacity: pressed ? 0.75 : 1 })}
           >
-            <CatalogCover tileId={flow.tileId} aspectRatio={0.9} />
+            <CatalogCover tileId={flow.tileId} flowId={flow.id} aspectRatio={0.9} />
             <Text style={{ color: C.text, fontSize: 15, fontWeight: '600', lineHeight: 20 }}>
               {flow.title}
             </Text>

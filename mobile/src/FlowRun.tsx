@@ -32,6 +32,7 @@ import { runFooterState } from '../../shared/run-footer';
 import { gymExerciseId, gymFlowById, gymFlowItem, gymTargetLabel, resolveTarget, setTargetText, type GymFlowItem } from '../../shared/gym-flows';
 import { effortNote, formatKg, type LoggedSet } from '../../shared/progression';
 import { nextSetAfterTick, planWithScheme, schemeById, schemeLine, type SetScheme } from '../../shared/set-schemes';
+import { estimateLine, estimateStart, loadStrength } from './strength';
 import { buildSetDetail, setsForProgression, type SetDetail } from '../../shared/set-detail';
 import { useTrainingSchemes } from './training-api';
 import { communityLimits } from '../../shared/community-flows';
@@ -167,7 +168,10 @@ function markSkipped(row: SetDraft, at: number): SetDraft {
 function draftRows(move: GymExercise, item: GymFlowItem, last?: LoggedSet[] | null, openedAt?: number | null): SetDraft[] {
   const target = resolveTarget(item);
   const schemeId = schemeById(item.scheme).id;
-  const rows = planWithScheme(move, item, schemeById(item.scheme), setsForProgression(last)).sets.map(set => ({
+  const history = setsForProgression(last);
+  // Never done before: start from our estimate of the member's strength, when we have one.
+  const start = history.length ? null : (estimateStart(move, item)?.weightKg ?? null);
+  const rows = planWithScheme(move, item, schemeById(item.scheme), history, start).sets.map(set => ({
     weight: set.weightKg == null ? '' : formatKg(set.weightKg),
     reps: target.kind === 'reps' && set.reps != null ? String(set.reps) : '',
     ticked: false,
@@ -653,6 +657,11 @@ export function FlowRun({
     };
   }, [kind, id, reloadKey]);
 
+  // Strength numbers fill first-time weights, so fetch them before the first set is drafted.
+  useEffect(() => {
+    void loadStrength();
+  }, []);
+
   useEffect(() => {
     if (!gym) return;
     let cancel = false;
@@ -1019,7 +1028,10 @@ export function FlowRun({
   const manualMove = manualExerciseId ? exercise(manualExerciseId) : undefined;
   const manualItem = manualExerciseId ? gymFlowItem(id, manualExerciseId) : undefined;
   const manualLast = manualExerciseId ? sessions[manualExerciseId] : undefined;
-  const manualPlan = manualMove && manualItem ? planWithScheme(manualMove, manualItem, schemeById(manualItem.scheme), manualLast?.sets ?? null) : null;
+  const manualEstimate = manualMove && manualItem && !manualLast ? estimateStart(manualMove, manualItem) : null;
+  const manualPlan = manualMove && manualItem
+    ? planWithScheme(manualMove, manualItem, schemeById(manualItem.scheme), manualLast?.sets ?? null, manualEstimate?.weightKg ?? null)
+    : null;
   const manualPattern = manualItem?.scheme && manualPlan ? schemeLine(schemeById(manualItem.scheme), manualPlan) : null;
   const manualNote = !current?.manual || !manualMove || !manualItem
     ? null
@@ -1028,7 +1040,9 @@ export function FlowRun({
       : manualMove.load === 'bodyweight'
         ? effortNote(manualMove, manualItem, manualLast?.sets ?? null)
         : !manualLast
-          ? "First time on this one. Add your weight and we'll remember it."
+          ? manualEstimate
+            ? estimateLine(manualEstimate)
+            : "First time on this one. Add your weight and we'll remember it."
           : manualPlan?.raised && manualPlan.sets[0]?.weightKg != null && manualLast.sets[0]?.weightKg != null
             ? `Last time ${formatKg(manualLast.sets[0].weightKg)} kg × ${manualItem.repsMax}. Try ${formatKg(manualPlan.sets[0].weightKg)} kg.`
             : null;

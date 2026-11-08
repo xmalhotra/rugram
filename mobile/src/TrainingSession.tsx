@@ -3,6 +3,7 @@ import { AppState, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { exercise } from '../../shared/exercises';
+import { estimateStart, loadStrength } from './strength';
 import { runFooterState } from '../../shared/run-footer';
 import {
   blockFields,
@@ -141,12 +142,15 @@ function draftsFrom(detail: TrainingSessionDetail): DraftBlock[] {
   return detail.session.blocks.map(block => {
     const fields = blockFields(detail.type, block);
     const records = setsForProgression(detail.records.find(row => row.exerciseId === block.exerciseId)?.sets ?? null);
+    // Never done before: start from our estimate of the member's strength, when we have one.
+    const move = block.exerciseId ? exercise(block.exerciseId) : undefined;
+    const start = !records.length && move ? (estimateStart(move, blockTargetItem(block))?.weightKg ?? null) : null;
     return {
       id: block.id,
       skipped: false,
       sets: Array.from({ length: block.sets }, (_, index) => {
         const last = detail.last?.sets.find(row => row.blockId === block.id && row.setIndex === index + 1)?.values ?? null;
-        const values = setPrefill(detail.type, block, index, records, last, detail.schemes);
+        const values = setPrefill(detail.type, block, index, records, last, detail.schemes, start);
         const text: Record<string, string> = {};
         const checks: Record<string, boolean> = {};
         for (const field of fields) {
@@ -185,6 +189,11 @@ export function TrainingSession({
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
   const buzzed = useRef(new Set<string>());
+  // Strength numbers fill first-time weights, so fetch them before sets are drafted.
+  useEffect(() => {
+    void loadStrength();
+  }, []);
+
   useEffect(() => {
     let live = true;
     trainingSession(sessionId)

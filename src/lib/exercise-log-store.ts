@@ -3,6 +3,7 @@ import { exercise, type LoadType } from '../../shared/exercises';
 import { assertRecordedTime, type SetDetail, type SetStatus, type TimeSource } from '../../shared/set-detail';
 import { demoModeEnabled } from './runtime-config';
 import type { PublicUser } from './types';
+import { progressPoints } from '../../shared/exercise-progress';
 
 export class ExerciseLogError extends Error {
   constructor(
@@ -346,4 +347,40 @@ export async function clearExerciseLogs(user: PublicUser, exerciseId: string, de
   }
   const { database } = await import('./database');
   await database()`DELETE FROM exercise_logs WHERE user_id=${user.id} AND exercise_id=${exerciseId}`;
+}
+
+/** Done sets with a weight from the last year, newest first, for the strength estimate. Private to the member. */
+export async function readStrengthSets(user: PublicUser, deps?: ExerciseLogDeps, now = Date.now()) {
+  const since = now - 365 * 24 * 60 * 60 * 1000;
+  const resolved = await resolveDeps(deps);
+  if (resolved.demo) {
+    return memory()
+      .filter(log => log.userId === user.id && log.detail.status === 'done' && log.weightKg != null && log.reps != null)
+      .filter(log => Date.parse(log.loggedAt) >= since)
+      .map(log => ({ exerciseId: log.exerciseId, weightKg: log.weightKg, reps: log.reps, loggedAt: log.loggedAt }));
+  }
+  const { database } = await import('./database');
+  const rows = await database()`SELECT exercise_id, weight_kg, reps, logged_at FROM exercise_logs
+    WHERE user_id=${user.id} AND status='done' AND weight_kg IS NOT NULL AND reps IS NOT NULL
+      AND logged_at >= ${new Date(since).toISOString()} ORDER BY logged_at DESC LIMIT 5000`;
+  return rows.map(row => ({
+    exerciseId: String(row.exercise_id),
+    weightKg: Number(row.weight_kg),
+    reps: Number(row.reps),
+    loggedAt: new Date(String(row.logged_at)).toISOString(),
+  }));
+}
+
+/** One point per session for an exercise over the last year, oldest first. Private to the member. */
+export async function readExerciseProgress(user: PublicUser, exerciseId: string, deps?: ExerciseLogDeps, now = Date.now()) {
+  if (!exercise(exerciseId)) throw new ExerciseLogError('Unknown exercise.');
+  const since = now - 365 * 24 * 60 * 60 * 1000;
+  const resolved = await resolveDeps(deps);
+  const logs = resolved.demo
+    ? memory().filter(log => log.userId === user.id && log.exerciseId === exerciseId)
+    : await readSql(user.id, [exerciseId]);
+  const sets = logs
+    .filter(log => log.detail.status !== 'skipped' && Date.parse(log.loggedAt) >= since)
+    .map(log => ({ runId: log.runId, loggedAt: log.loggedAt, weightKg: log.weightKg, reps: log.reps, durationSeconds: log.durationSeconds }));
+  return { exerciseId, points: progressPoints(sets) };
 }

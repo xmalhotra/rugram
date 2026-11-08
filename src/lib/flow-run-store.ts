@@ -283,7 +283,8 @@ async function resolveRunnable(
 
 /** How many runs were finished, and when recently, for the profile's stats. A restarted run never counts. */
 function finishedSummary(times: string[], now: number) {
-  const since = now - 120 * 24 * 60 * 60 * 1000;
+  // A year and a week: enough for the training calendar on the profile.
+  const since = now - 371 * 24 * 60 * 60 * 1000;
   return {
     finished: times.length,
     finishedAt: times.filter(iso => Date.parse(iso) >= since),

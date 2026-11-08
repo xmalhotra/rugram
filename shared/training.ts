@@ -573,6 +573,8 @@ export function setPrefill(
   lastRecords: LoggedSet[] | null | undefined,
   lastLogged: Record<string, LogValue> | null | undefined,
   schemes?: SetScheme[],
+  /** Our estimated first weight, used only when there is no history. */
+  start: number | null = null,
 ): Record<string, LogValue> {
   const fields = blockFields(type, block);
   const values: Record<string, LogValue> = {};
@@ -582,7 +584,7 @@ export function setPrefill(
   const move = block.exerciseId ? exercise(block.exerciseId) : undefined;
   const scheme = schemeById(block.scheme, schemes);
   if (move && (weight || reps || seconds)) {
-    const planned = planWithScheme(move, blockTargetItem(block), scheme, lastRecords);
+    const planned = planWithScheme(move, blockTargetItem(block), scheme, lastRecords, start);
     const row = planned.sets[setIndex];
     if (weight && row?.weightKg != null) values[weight.key] = row.weightKg;
     if (reps && row?.reps != null && !block.targets?.[reps.key]?.isMax) values[reps.key] = row.reps;

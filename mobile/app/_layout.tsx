@@ -5,7 +5,6 @@ import React from 'react';
 import { Stack } from 'expo-router';
 import { View } from 'react-native';
 import { ScreenBackground } from '../src/design/ScreenBackground';
-import { LogoLoader } from '../src/motion';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { SessionProvider, useSession } from '../src/session';
@@ -16,6 +15,7 @@ import { Inter_500Medium } from '@expo-google-fonts/inter/500Medium';
 import { Inter_600SemiBold } from '@expo-google-fonts/inter/600SemiBold';
 import { Inter_700Bold } from '@expo-google-fonts/inter/700Bold';
 import { FontReadyContext } from '../src/design/Text';
+import { LaunchReveal, useLaunchReady } from '../src/LaunchReveal';
 export default function RootLayout() {
   const { colors: C } = useTheme();
   const [ready, error] = useFonts({
@@ -24,22 +24,21 @@ export default function RootLayout() {
     InterSemiBold: Inter_600SemiBold,
     InterBold: Inter_700Bold,
   });
-  if (!ready && !error)
-    return (
-      <View
-        style={{ flex: 1, backgroundColor: C.bg, alignItems: 'center', justifyContent: 'center' }}
-      >
-        <LogoLoader size={72} label="Loading Qram" />
-      </View>
-    );
+  // The launch mark covers the screen until the first real screen is ready.
   return (
-    <FontReadyContext.Provider value={ready}>
-      <SafeAreaProvider>
-        <SessionProvider>
-          <Navigator />
-        </SessionProvider>
-      </SafeAreaProvider>
-    </FontReadyContext.Provider>
+    <LaunchReveal>
+      {!ready && !error ? (
+        <View style={{ flex: 1, backgroundColor: C.bg }} />
+      ) : (
+        <FontReadyContext.Provider value={ready}>
+          <SafeAreaProvider>
+            <SessionProvider>
+              <Navigator />
+            </SessionProvider>
+          </SafeAreaProvider>
+        </FontReadyContext.Provider>
+      )}
+    </LaunchReveal>
   );
 }
 function Navigator() {
@@ -59,20 +58,13 @@ function Navigator() {
 function NavigationContent() {
   const { loading, data, bootstrapFailed, error, refresh, logout } = useSession();
   const { colors: C, scheme } = useTheme();
+  useLaunchReady(!loading);
+  // The launch mark is on top while the session loads.
   if (loading)
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: C.bg,
-          justifyContent: 'center',
-          alignItems: 'center',
-          gap: 20,
-        }}
-      >
+      <View style={{ flex: 1, backgroundColor: C.bg }}>
         <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         <ScreenBackground />
-        <LogoLoader size={72} label="Loading Qram" />
       </View>
     );
   if (!data && bootstrapFailed)

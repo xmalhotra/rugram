@@ -9,6 +9,7 @@ import {
   clearExerciseLogs,
   exerciseLogSchema,
   logExerciseSets,
+  readExerciseProgress,
   readExerciseSessions,
 } from '@/lib/exercise-log-store';
 
@@ -30,8 +31,11 @@ export const GET = observed(async (request: Request) => {
   if (!user) return unauthorized();
   if (!(await allowSharedRequest(`exercise-logs-read:${user.id}`, 60, 60000)))
     return apiError('Please slow down.', 429);
-  const ids = (new URL(request.url).searchParams.get('ids') ?? '').split(',');
+  const params = new URL(request.url).searchParams;
+  const progress = params.get('progress');
+  const ids = (params.get('ids') ?? '').split(',');
   try {
+    if (progress) return apiJson(await readExerciseProgress(user, progress.trim()));
     return apiJson(await readExerciseSessions(user, ids));
   } catch (error) {
     return failure(error);
