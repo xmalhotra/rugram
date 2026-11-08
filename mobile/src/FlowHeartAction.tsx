@@ -1,8 +1,9 @@
 import React from 'react';
 import { Pressable } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { Text } from './design/Text';
 import { useTheme } from './design/theme';
 
+/** Save a flow to your flows: an outlined "Save" that fills in as "✓ Saved". */
 export function FlowHeartAction({
   added,
   busy,
@@ -18,28 +19,26 @@ export function FlowHeartAction({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={label ?? (added ? 'Remove flow from Home' : 'Add flow to Home')}
+      accessibilityLabel={label ?? (added ? 'Remove from your flows' : 'Save to your flows')}
       accessibilityState={{ selected: added, disabled: busy, busy }}
       disabled={busy}
       onPress={onToggle}
-      hitSlop={4}
+      hitSlop={8}
       style={({ pressed }) => ({
-        minWidth: 48,
-        minHeight: 48,
+        minHeight: 34,
+        paddingHorizontal: 14,
+        borderRadius: 17,
+        borderWidth: 1,
+        borderColor: C.lime,
+        backgroundColor: added ? C.lime : 'transparent',
         alignItems: 'center',
         justifyContent: 'center',
         opacity: busy ? 0.45 : pressed ? 0.65 : 1,
       })}
     >
-      <Svg width={27} height={27} viewBox="0 0 24 24" accessible={false}>
-        <Path
-          d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z"
-          fill={added ? '#E10600' : 'none'}
-          stroke={added ? '#E10600' : C.muted}
-          strokeWidth={1.7}
-          strokeLinejoin="round"
-        />
-      </Svg>
+      <Text style={{ color: added ? C.onAccent : C.lime, fontSize: 14, fontWeight: '700' }}>
+        {added ? '✓ Saved' : 'Save'}
+      </Text>
     </Pressable>
   );
 }

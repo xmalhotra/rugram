@@ -68,11 +68,3 @@ export const statusTone = {
   Cancelled: 'muted',
   Info: 'info',
 } as const;
-// Ambient artwork is decorative, never a control or a text foreground.
-export const ambient = {
-  outer: 'rgba(58,208,133,0.035)',
-  inner: 'rgba(73,230,153,0.035)',
-  bottom: 'rgba(61,140,121,0.025)',
-  shadow: '#54F5AA',
-  rails: Array.from({ length: 8 }, (_, index) => `rgba(120,245,178,${0.025 + index * 0.004})`),
-};

@@ -2,9 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   communityChanges,
+  curateByKeywords,
   describeChange,
+  promptTerms,
   forYouScore,
   hasUnpublishedChanges,
+  mergeTimeline,
   mergeFollowing,
   rankForYou,
   type CommunityFeedItem,
@@ -113,5 +116,47 @@ test('Following keeps one entry per flow, newest reason first', () => {
       ['a', 'Fan'],
       ['b', null],
     ],
+  );
+});
+
+test('keyword curation ranks close matches, drops incidental ones and keeps feed order on ties', () => {
+  assert.deepEqual(promptTerms('Show me a CALM morning, calm!'), ['calm', 'morning']);
+  const morning = flow('morning', { title: 'Calm morning', description: 'Water before work' });
+  const workout = flow('workout', { title: 'Strength workout' });
+  const run = flow('run', { title: 'Easy run week', cards: [card('Run / walk', 'running-styles')] });
+  const items = [workout, run, morning].map(value => item(value, value.publishedAt));
+  assert.deepEqual(
+    curateByKeywords('a calm morning before work', items).map(pick => pick.flowId),
+    ['morning'],
+    'a one-word "work" hit on a workout is dropped',
+  );
+  assert.equal(curateByKeywords('easy runs', items)[0].reason, 'Matches “easy”, “runs”');
+  assert.deepEqual(curateByKeywords('knitting', items), []);
+  const twin = flow('twin', { title: 'Calm morning' });
+  assert.deepEqual(
+    curateByKeywords('calm morning', [item(twin, ''), item(morning, '')]).map(pick => pick.flowId),
+    ['twin', 'morning'],
+  );
+});
+
+test('timelines interleave posts and logged activity, newest first', () => {
+  const post = item(flow('post'), '2026-11-01T02:00:00.000Z');
+  const activity = (id: string, at: string) => ({
+    id,
+    user: { id: 'u', name: 'U', handle: 'u' },
+    personalFlowId: 'personal-1',
+    publishedId: null,
+    title: 'Run',
+    cards: [card('a')],
+    total: 2,
+    note: '',
+    at,
+    viewer: { own: false },
+  });
+  assert.deepEqual(
+    mergeTimeline([post], [activity('old', '2026-11-01T01:00:00.000Z'), activity('new', '2026-11-01T03:00:00.000Z')]).map(
+      entry => (entry.kind === 'post' ? entry.item.flow.id : entry.activity.id),
+    ),
+    ['new', 'post', 'old'],
   );
 });

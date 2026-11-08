@@ -36,41 +36,23 @@ test('Animal movements is one valid, joinable flow with editable ordered movemen
   }
 });
 
-test('movement controls stay outside the swipe pager while each card retains its own mode', () => {
-  const deck = readFileSync('mobile/src/AnimalMovementDeck.tsx', 'utf8');
-  assert.equal((deck.match(/<MovementControls/g) ?? []).length, 1);
-  assert.ok(deck.indexOf('<MovementControls') < deck.indexOf('<ScrollView'));
-  assert.match(deck, /modes\[movements\[current\].id\] \?\? 'tilt'/);
-  assert.match(deck, /mode: modes\[movement.id\] \?\? 'tilt'/);
-  assert.match(readFileSync('mobile/src/AnimalMovementViewer.tsx', 'utf8'), /!controls &&/);
-});
-
-test('demonstrator appearance is account-wide but movement controls stay local with Tilt default', () => {
-  const viewer = readFileSync('mobile/src/AnimalMovementViewer.tsx', 'utf8');
-  assert.match(viewer, /usePaneState<Demonstrator>\('movementDemonstrator', 'male', 'account'\)/);
-  assert.match(viewer, /useState<'tilt' \| 'slider'>\('tilt'\)/);
-  assert.doesNotMatch(viewer, /usePaneState.*controlMode/);
-  assert.match(viewer, /\$\{media\?\.atlas \?\? 'legacy'\}:\$\{gender\}/);
+test('account preferences stay separate from device-local pane state', () => {
   const state = readFileSync('mobile/src/pane-state.tsx', 'utf8');
   assert.match(state, /scope === 'account' \? `account:\$\{name\}`/);
 });
 
-test('movement deck pages by movement while each card owns its pose controls', () => {
+test('movement deck pages by movement', () => {
   const source = readFileSync('mobile/src/AnimalMovementDeck.tsx', 'utf8');
   assert.match(source, /flow.relatedFlowIds/);
   assert.match(source, /library.filter/);
   assert.match(source, /horizontal/);
   assert.match(source, /pagingEnabled/);
-  assert.match(source, /active=\{page === current && !dragging\}/);
-  assert.match(source, /<AnimalMovementViewer/);
+  assert.match(source, /FlowIllustration/);
   assert.match(source, /accessibilityLabel=\{`\$\{flow.title\} cards/);
   assert.match(
     readFileSync('mobile/src/FlowDetails.tsx', 'utf8'),
     /resolveVisualFlow\(flow, data.flows\)/,
   );
   assert.match(readFileSync('mobile/src/FlowDetails.tsx', 'utf8'), /library=\{resolved.cards\}/);
-  assert.match(
-    readFileSync('mobile/src/FlowTopicBrowser.tsx', 'utf8'),
-    /movementBrowseLibrary\(library\)/,
-  );
+  assert.match(readFileSync('shared/animal-movements.ts', 'utf8'), /export function movementBrowseLibrary/);
 });

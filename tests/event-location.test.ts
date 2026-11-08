@@ -28,8 +28,9 @@ test('location filtering keeps native approval events and source-link deduplicat
 test('Events shows a location control before categories and within event results, without asking for GPS',()=>{
   const screen=readFileSync('mobile/src/HyderabadEvents.tsx','utf8');
   const picker=readFileSync('mobile/src/EventLocationPicker.tsx','utf8');
-  assert.match(screen,/Explore events in/);containsCode(screen,'onPress={()=>setChoosingCity(true)}');
-  assert.ok(screen.indexOf('{locationHeader}')<screen.indexOf('<CategoryRail'));
+  // Luma-style: a new member picks a city on the discovery screen; the city name changes it later.
+  assert.match(screen,/<EventsDiscover/);containsCode(screen,'onPress={()=>setCity(null)}');
+  assert.ok(screen.indexOf('{cityHeader}')<screen.indexOf('groupEventsByDay(shown)'));
   containsCode(screen,'eventsInCity(data.events,selectedCity,scope)');
   assert.match(picker,/Choose a city/);assert.match(picker,/accessibilityRole="radio"/);
   assert.doesNotMatch(screen+picker,/requestForegroundPermissions|requestBackgroundPermissions|navigator\.geolocation/);

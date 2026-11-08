@@ -35,46 +35,49 @@ export function MovementControls({
         gap: 8,
       }}
     >
-      {appearance ? (
-        <View
-          style={{ flexDirection: 'row', gap: 4 }}
-          accessibilityRole="radiogroup"
-          accessibilityLabel="Demonstrator appearance"
-        >
-        {(['male', 'female'] as const).map(value => (
-          <Pressable
-            key={value}
-            accessibilityRole="radio"
-            accessibilityLabel={`${value} demonstrator`}
-            accessibilityState={{ checked: gender === value }}
-            onPress={() => {
-              if (value !== gender) setGender(value);
-            }}
-            style={{
-              minHeight: 44,
-              minWidth: 48,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: gender === value ? C.lime : C.line,
-              backgroundColor: gender === value ? C.lime : 'transparent',
-            }}
-          >
-            <Text style={{ color: gender === value ? C.onAccent : C.muted, fontSize: 24 }}>
-              {value === 'male' ? '♂' : '♀'}
-            </Text>
-          </Pressable>
-        ))}
-        </View>
-      ) : (
-        <View />
-      )}
-      {playback && (
+      {/* Always shown so the bar never jumps between cards; greyed out where a card is a still. */}
+      <View
+        style={{ flexDirection: 'row', gap: 4, opacity: appearance ? 1 : 0.35 }}
+        accessibilityRole="radiogroup"
+        accessibilityLabel="Demonstrator appearance"
+        accessibilityState={{ disabled: !appearance }}
+      >
+        {(['male', 'female'] as const).map(value => {
+          const on = appearance && gender === value;
+          return (
+            <Pressable
+              key={value}
+              accessibilityRole="radio"
+              accessibilityLabel={`${value} demonstrator`}
+              accessibilityState={{ checked: gender === value, disabled: !appearance }}
+              disabled={!appearance}
+              onPress={() => {
+                if (value !== gender) setGender(value);
+              }}
+              style={{
+                minHeight: 44,
+                minWidth: 48,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 14,
+                borderWidth: 1,
+                borderColor: on ? C.lime : C.line,
+                backgroundColor: on ? C.lime : 'transparent',
+              }}
+            >
+              <Text style={{ color: on ? C.onAccent : C.muted, fontSize: 24 }}>
+                {value === 'male' ? '♂' : '♀'}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
       <View
         accessibilityRole="radiogroup"
         accessibilityLabel="Movement control"
+        accessibilityState={{ disabled: !playback }}
         style={{
+          opacity: playback ? 1 : 0.35,
           flexDirection: 'row',
           gap: 4,
           backgroundColor: C.card,
@@ -86,12 +89,15 @@ export function MovementControls({
       >
         {(['tilt', 'slider'] as const).map(mode => {
           const selected = controlMode === mode;
+          // Only light up a mode on cards that can use it.
+          const lit = playback && selected;
           return (
           <Pressable
             key={mode}
             accessibilityRole="radio"
             accessibilityLabel={`${mode === 'tilt' ? 'Tilt' : 'Slider'} control`}
             accessibilityState={{ checked: selected }}
+            disabled={!playback}
             onPress={() => setControlMode(mode)}
             style={{
               minHeight: 44,
@@ -99,28 +105,28 @@ export function MovementControls({
               justifyContent: 'center',
               borderRadius: 10,
               borderWidth: 1,
-              borderColor: selected ? C.lime : C.line,
-              backgroundColor: selected ? C.lime : 'transparent',
+              borderColor: lit ? C.lime : C.line,
+              backgroundColor: lit ? C.lime : 'transparent',
             }}
           >
             <View style={{ alignItems: 'center', gap: 2 }}>
               {Platform.OS === 'ios' ? (
                 <SymbolView
                   name={mode === 'tilt' ? 'rotate.3d' : 'slider.horizontal.3'}
-                  tintColor={selected ? C.onAccent : C.muted}
+                  tintColor={lit ? C.onAccent : C.muted}
                   style={{ width: 18, height: 18 }}
                 />
               ) : (
-                <Text style={{ color: selected ? C.onAccent : C.muted, fontSize: 16 }}>
+                <Text style={{ color: lit ? C.onAccent : C.muted, fontSize: 16 }}>
                   {mode === 'tilt' ? '↻' : '≡'}
                 </Text>
               )}
               <Text
                 style={{
-                  color: selected ? C.onAccent : C.muted,
+                  color: lit ? C.onAccent : C.muted,
                   fontSize: 12,
                   lineHeight: 14,
-                  fontWeight: selected ? '600' : '400',
+                  fontWeight: lit ? '600' : '400',
                 }}
               >
                 {mode === 'tilt' ? 'Tilt' : 'Slider'}
@@ -130,7 +136,6 @@ export function MovementControls({
           );
         })}
       </View>
-      )}
     </View>
   );
 }

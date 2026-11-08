@@ -13,10 +13,15 @@ import { SearchScreen } from './src/SearchScreen';
 import { useOutbound } from './src/OutboundLink';
 import { ExerciseSequence } from './src/ExerciseSequence';
 import type { Exercise } from '../shared/exercises';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { HomeHeader, TabSlide, homeTabs, type BarTab, type HomeTab } from './src/HomeHeader';
+import { EventPage } from './src/EventPage';
+import { EventComposer } from './src/EventComposer';
+import { eventInterests } from '../shared/event-interests';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Platform,
   Pressable,
   Share,
@@ -27,29 +32,46 @@ import { shareFlow, sharePick, shareEvent, type SharedKind } from '../shared/sha
 import { AddToCalendar } from './src/AddToCalendar';
 import { ReportIssue } from './src/ReportIssue';
 import { Text } from './src/design/Text';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { PicksBrowser } from './src/PicksBrowser';
-import { NotificationCentre } from './src/NotificationCentre';
+import { NotificationCentre, ScreenOverlay } from './src/NotificationCentre';
+import { currentActiveRun } from './src/active-run';
+import { RunPip } from './src/RunPip';
 import { YouProfile } from './src/YouProfile';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from './src/api';
+import { avatarUri } from './src/avatar';
 import { type CityEvent, type HabitFlow, type MobilePayload, type Product } from '../shared/mobile';
+import { pickTopicForFlow } from '../shared/flow-picks';
+import { browseProducts } from '../shared/pick-catalog';
+import { defaultSupplementDiscovery, topicProducts } from '../shared/supplement-discovery';
+import { supplementPickCategories } from '../shared/supplement-picks';
 
 const showCatalogueSearch = false;
 export type Tab = 'Flows' | 'Discover' | 'Picks' | 'Events' | 'Studio' | 'You';
 const today = () => habitDay(new Date(), Intl.DateTimeFormat().resolvedOptions().timeZone);
-import { Button, Field, Badge, Sheet, SegmentedControl } from './src/design/components';
+import { Button, Field, Badge, Sheet } from './src/design/components';
 import { useTheme, type Colors } from './src/design/theme';
 import { useSession } from './src/session';
-import { FlowCategories } from './src/FlowCategories';
-import { NeonBackdrop } from './src/design/NeonBackdrop';
+import { CatalogFlowPage, CommunityComingSoon, FlowCatalogHome } from './src/FlowCatalogHome';
+import { catalogFlows } from '../shared/flow-catalog';
+import { gymFlowById } from '../shared/gym-flows';
+import { ScreenBackground } from './src/design/ScreenBackground';
 import { PhoneSignIn } from './src/PhoneSignIn';
-import { HyderabadEvents, CuratedEventDetails } from './src/HyderabadEvents';
+import {
+  HyderabadEvents,
+  CuratedEventDetails,
+  EventCategoryOverlay,
+  type EventsSection,
+} from './src/HyderabadEvents';
+import { useFlowHabits } from './src/flow-habits';
 import { EventLinkFields } from './src/EventLinkFields';
 import { FlowDetails } from './src/FlowDetails';
-import { HomeFeed } from './src/HomeFeed';
-import { CommunityFeed, CommunityFlowSheet } from './src/CommunityFeed';
+import { HomeFeed, YoursSwitch, useYoursMode } from './src/HomeFeed';
+import { CommunityFeed, CommunityFlowSheet, CommunityMemberSheet } from './src/CommunityFeed';
+import { FlowRun } from './src/FlowRun';
+import { TrainingSessionHost } from './src/TrainingSession';
 import { useCommunityStatus } from './src/community';
 import { AddToFlowSheet } from './src/PersonalFlowSheets';
 import { PersonalFlowDetails } from './src/PersonalFlowDetails';
@@ -72,12 +94,27 @@ import {
   type StoryTarget,
 } from '../shared/home-feed';
 
+/** Covers the tab with a quick fade, so a page's first layout isn't seen as a jump. */
+function FadeIn({ children }: { children: React.ReactNode }) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(opacity, { toValue: 1, duration: 140, useNativeDriver: true }).start();
+  }, [opacity]);
+  return <Animated.View style={[StyleSheet.absoluteFill, { zIndex: 30, opacity }]}>{children}</Animated.View>;
+}
+
 export function QramScreen({
   tab = 'Flows',
   initialTarget,
+  memberLink,
+  pushed = false,
 }: {
   tab?: Tab;
   initialTarget?: { kind: SharedKind; id: string };
+  /** A shared profile link: opens this member's profile over Home. */
+  memberLink?: string;
+  /** Opened over the tabs (the profile from Home's avatar), so it needs a way back. */
+  pushed?: boolean;
 }) {
   const detailParams = useLocalSearchParams<{ detailKind?: string; detailId?: string }>();
   const linkedTarget =
@@ -86,26 +123,77 @@ export function QramScreen({
     typeof detailParams.detailId === 'string'
       ? { kind: detailParams.detailKind as SharedKind, id: detailParams.detailId }
       : undefined);
+  // Profile and updates open inside the tab, so the bottom menu stays in reach.
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [openRunRequest, setOpenRunRequest] = useState(0);
+  const [overlay, setOverlay] = useState<React.ReactNode>(null);
+  // Moving to another tab closes them. Opening a member or event keeps them, so back returns here.
+  const pathname = usePathname();
+  useEffect(() => {
+    const tabRoots = ['/', '/flows', '/picks', '/events', '/studio', '/you', '/admin'];
+    const own = { Flows: '/', Discover: '/flows', Picks: '/picks', Events: '/events', Studio: '/studio', You: '/you' }[tab];
+    if (tabRoots.includes(pathname) && pathname !== own) {
+      setProfileOpen(false);
+      setOverlay(null);
+    }
+  }, [pathname, tab]);
   return (
-    <PaneScope name={linkedTarget ? `${linkedTarget.kind}:${linkedTarget.id}` : tab}>
-      <QramPane tab={tab} initialTarget={linkedTarget} />
-    </PaneScope>
+    <ScreenOverlay.Provider value={setOverlay}>
+      <View style={{ flex: 1 }}>
+        <PaneScope
+          name={
+            memberLink
+              ? `member:${memberLink}`
+              : linkedTarget
+                ? `${linkedTarget.kind}:${linkedTarget.id}`
+                : tab
+          }
+        >
+          <QramPane
+            tab={tab}
+            initialTarget={linkedTarget}
+            memberLink={memberLink}
+            pushed={pushed}
+            onProfile={() => setProfileOpen(true)}
+            openRunRequest={openRunRequest}
+          />
+        </PaneScope>
+        {profileOpen ? (
+          <FadeIn>
+            <PaneScope name={`${tab}:profile`}>
+              <QramPane tab="You" pushed onBack={() => setProfileOpen(false)} />
+            </PaneScope>
+          </FadeIn>
+        ) : null}
+        {overlay ? <View style={[StyleSheet.absoluteFill, { zIndex: 40 }]}>{overlay}</View> : null}
+        <RunPip onPress={() => setOpenRunRequest(value => value + 1)} />
+      </View>
+    </ScreenOverlay.Provider>
   );
 }
 function QramPane({
   tab,
   initialTarget,
+  memberLink,
+  pushed,
+  onProfile,
+  onBack,
+  openRunRequest = 0,
 }: {
   tab: Tab;
   initialTarget?: { kind: SharedKind; id: string };
+  memberLink?: string;
+  pushed: boolean;
+  onProfile?: () => void;
+  onBack?: () => void;
+  /** Goes up by one each time the floating square for a workout in progress is tapped. */
+  openRunRequest?: number;
 }) {
   const toast = useToast();
   const openLink = useOutbound();
   const [searchOpen, setSearchOpen] = usePaneState('searchOpen', false);
   const [searchExercise, setSearchExercise] = usePaneState<Exercise | null>('searchExercise', null);
   const router = useRouter();
-  const params = useLocalSearchParams<{ category?: string | string[] }>();
-  const initialCategory = typeof params.category === 'string' ? params.category : undefined;
   const { colors: C } = useTheme();
   const s = useMemo(() => createStyles(C), [C]);
   const {
@@ -121,9 +209,75 @@ function QramPane({
     logout: sessionLogout,
   } = useSession();
   const [selectedFlow, setSelectedFlow] = usePaneState<HabitFlow | null>('flow', null);
+  const [gymFlowId, setGymFlowId] = usePaneState<string | null>('gymFlow', null);
   const [personalFlowId, setPersonalFlowId] = usePaneState<string | null>('personalFlow', null);
-  const [homeTab, setHomeTab] = usePaneState<'for-you' | 'following' | 'yours'>('homeTab', 'for-you');
+  const [homeTab, setHomeTab] = usePaneState<HomeTab>('homeTab', 'for-you', 'account');
+  const [, setYoursMode] = useYoursMode();
+  const [flowsTab, setFlowsTab] = usePaneState<'qram' | 'community'>('flowsTab', 'qram', 'account');
+  // Which way the feed slides in: from the right when moving to a tab further right.
+  const homeTabOrder: HomeTab[] = ['for-you', 'following', 'yours'];
+  const previousHomeTab = useRef(homeTab);
+  const homeTabDirection =
+    homeTabOrder.indexOf(homeTab) - homeTabOrder.indexOf(previousHomeTab.current);
+  useEffect(() => {
+    previousHomeTab.current = homeTab;
+  }, [homeTab]);
+  // Home's header hides while scrolling down and returns on any scroll up.
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const statusBar = useSafeAreaInsets().top;
+  const [curateOpen, setCurateOpen] = useState(false);
+  const [curatePrompt, setCuratePrompt] = usePaneState('curatePrompt', '');
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const headerShift = useMemo(() => {
+    // Slides the glass fully off screen, status bar part included.
+    const height = Math.max(1, headerHeight + statusBar);
+    // Pull-to-refresh overscroll is negative; ignore it so the header does not jump.
+    const offset = scrollY.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 1],
+      extrapolateLeft: 'clamp',
+    });
+    return Animated.diffClamp(offset, 0, height).interpolate({
+      inputRange: [0, height],
+      outputRange: [0, -height],
+    });
+  }, [scrollY, headerHeight, statusBar]);
   const [communityFlowId, setCommunityFlowId] = usePaneState<string | null>('communityFlow', null);
+  const [memberId, setMemberId] = usePaneState<string | null>('communityMember', memberLink ?? null);
+  // The floating square for a workout in progress asks this tab to reopen it.
+  useEffect(() => {
+    if (!openRunRequest) return;
+    const run = currentActiveRun();
+    if (run) setRunQueue([{ kind: run.kind, id: run.id, title: run.title, resume: true }]);
+  }, [openRunRequest]);
+  const [runQueue, setRunQueue] = useState<{ kind: 'flow' | 'personal'; id: string; title: string; resume?: boolean }[] | null>(
+    null,
+  );
+  // Set by the Events category rail; its page covers the tab like other details.
+  const [eventInterestId] = usePaneState<string | null>('eventInterest', null);
+  // Account scope so a supplement flow on any tab can open this section.
+  const [picksTab, setPicksTab] = usePaneState<'yours' | 'products' | 'supplements'>(
+    'picksTab',
+    'yours',
+    'account',
+  );
+  const [, setSupplementTopic] = usePaneState<string | null>('supplementTopic', null, 'account');
+  const [eventsTab, setEventsTab] = usePaneState<EventsSection>('eventsTab', 'upcoming');
+  const { opened } = useFlowHabits(data?.user.id);
+  const openFlow = useCallback(
+    (flow: HabitFlow) => {
+      opened(flow.id);
+      if (gymFlowById(flow.id)) {
+        setSelectedFlow(null);
+        setGymFlowId(flow.id);
+        return;
+      }
+      setGymFlowId(null);
+      setSelectedFlow(flow);
+    },
+    [opened, setGymFlowId, setSelectedFlow],
+  );
+  const [composingEvent, setComposingEvent] = usePaneState('composingEvent', false);
   const communityStatus = useCommunityStatus();
   const [addingCard, setAddingCard] = usePaneState<FlowCardReference | null>('addingCard', null);
   const [selectedProduct, setSelectedProduct] = usePaneState<Product | null>('product', null);
@@ -148,14 +302,14 @@ function QramPane({
           : data.events.find(item => item.id === initialTarget.id && item.status === 'published');
     if (!item) return;
     openedTarget.current = key;
-    if (initialTarget.kind === 'flow') setSelectedFlow(item as HabitFlow);
+    if (initialTarget.kind === 'flow') openFlow(item as HabitFlow);
     else if (initialTarget.kind === 'pick') setSelectedProduct(item as Product);
     else setSelectedEvent(item as CityEvent);
   }, [
     initialTarget?.kind,
     initialTarget?.id,
     data,
-    setSelectedFlow,
+    openFlow,
     setSelectedProduct,
     setSelectedEvent,
   ]);
@@ -199,7 +353,7 @@ function QramPane({
   function closePick() {
     setSelectedProduct(null);
     if (flowReturn) {
-      setSelectedFlow(flowReturn);
+      openFlow(flowReturn);
       setFlowReturn(null);
     }
   }
@@ -381,6 +535,9 @@ function QramPane({
       });
     }
   }
+  function addFlow(flow: HabitFlow) {
+    return change({ action: 'flow', id: flow.id, enabled: true });
+  }
   function removeFlow(flow: HabitFlow) {
     if (busy) return;
     Alert.alert(
@@ -395,6 +552,7 @@ function QramPane({
             void change({ action: 'flow', id: flow.id, enabled: false }).then(ok => {
               if (ok) {
                 setSelectedFlow(current => (current?.id === flow.id ? null : current));
+                setGymFlowId(current => (current === flow.id ? null : current));
                 setFlowReturn(current => (current?.id === flow.id ? null : current));
               }
             }),
@@ -436,7 +594,7 @@ function QramPane({
       return;
     }
     setSelectedStory(null);
-    if (resolved.kind === 'flow') setSelectedFlow(resolved.value);
+    if (resolved.kind === 'flow') openFlow(resolved.value);
     else if (resolved.kind === 'pick') {
       setFlowReturn(null);
       setSelectedProduct(resolved.value);
@@ -460,14 +618,22 @@ function QramPane({
         <Text style={s.copy}>This area is not available for your account.</Text>
       </SafeAreaView>
     );
-  const ownedFlows = data.flows.filter(flow => data.profile.flowIds.includes(flow.id));
-  const personalFlow = data.profile.personalFlows?.find(flow => flow.id === personalFlowId);
-  const activeStepKeys = new Set(
-    ownedFlows.flatMap(flow => flow.steps.map(step => `${today()}:${flow.id}:${step.id}`)),
+  const flowPickTopic = selectedFlow
+    ? pickTopicForFlow(
+        selectedFlow.id,
+        supplementPickCategories(
+          data.library?.settings.supplementDiscovery ?? defaultSupplementDiscovery,
+        ),
+      )
+    : null;
+  const showFlowPicks = Boolean(
+    flowPickTopic && topicProducts(flowPickTopic, browseProducts(data), 1).length,
   );
-  const doneToday = data.profile.completed.filter(key => activeStepKeys.has(key)).length;
+  const personalFlow = data.profile.personalFlows?.find(flow => flow.id === personalFlowId);
   // Home reserves the native tab bar safe area for the whole layout.
   const homeScreen = tab === 'Flows';
+  // Every main tab shares Home's glass bar; the profile opened over the tabs keeps a back bar.
+  const glassBar = !pushed;
   const inlineDetailOpen =
     !editor &&
     !workoutBuilder &&
@@ -475,31 +641,139 @@ function QramPane({
       selectedFlow ||
       personalFlow ||
       communityFlowId ||
+      memberId ||
+      runQueue ||
+      gymFlowId ||
+      composingEvent ||
+      (tab === 'Events' && eventInterestId) ||
       selectedProduct ||
       selectedEvent ||
       selectedCard ||
       magnesiumGuide ||
       gymGuide,
     );
+  const bar: { tabs: BarTab[]; tab: string; onTab: (id: string) => void } | undefined =
+    tab === 'Flows'
+      ? { tabs: homeTabs, tab: homeTab, onTab: id => setHomeTab(id as HomeTab) }
+      : tab === 'Discover'
+        ? {
+            tabs: [
+              { id: 'qram', label: 'Qram' },
+              { id: 'community', label: 'Community' },
+            ],
+            tab: flowsTab,
+            onTab: id => setFlowsTab(id as 'qram' | 'community'),
+          }
+      : tab === 'Picks'
+          ? {
+              tabs: [
+                { id: 'yours', label: 'Yours' },
+                { id: 'products', label: 'Products' },
+                { id: 'supplements', label: 'Supplements' },
+              ],
+              tab: picksTab,
+              onTab: id => setPicksTab(id as 'yours' | 'products' | 'supplements'),
+            }
+          : tab === 'Events'
+            ? {
+                tabs: [
+                  { id: 'upcoming', label: 'Upcoming' },
+                  { id: 'yours', label: 'Yours' },
+                  { id: 'hosting', label: 'Hosting' },
+                ],
+                tab: eventsTab,
+                onTab: id => setEventsTab(id as EventsSection),
+              }
+            : undefined;
+  const selectTab = (next: string) => {
+    bar?.onTab(next);
+    setCurateOpen(false);
+    scrollY.setValue(0);
+  };
+  const notificationCentre = (
+    <NotificationCentre
+      key={data.user.id}
+      onOpen={target => {
+        if (target.kind === 'admin') {
+          router.push('/management');
+          return;
+        }
+        if (target.kind === 'community') {
+          setCommunityFlowId(target.id);
+          return;
+        }
+        if (target.kind === 'submission') {
+          // Hosts follow their submissions from Events → Hosting; admins review in Management.
+          router.push(data.user.role === 'admin' ? '/management' : '/(tabs)/events');
+          return;
+        }
+        router.push(`/${target.kind}/${encodeURIComponent(target.id)}`);
+      }}
+    />
+  );
   return (
     <AddToFlowProvider>
-    <SafeAreaView edges={homeScreen ? ['top', 'bottom'] : ['top']} style={s.safe}>
-      <NeonBackdrop />
+      {/* Inside a tab the insets are known up front; measuring them natively made the page jump as it opened. */}
+      <SafeAreaView
+        edges={onBack ? [] : glassBar ? ['bottom'] : ['top']}
+        style={[s.safe, onBack ? { paddingTop: statusBar } : null]}
+      >
+      <ScreenBackground />
       <View
-        style={{ flex: 1 }}
+          style={{ flex: 1, overflow: 'hidden' }}
         accessibilityElementsHidden={inlineDetailOpen}
         importantForAccessibility={inlineDetailOpen ? 'no-hide-descendants' : 'auto'}
       >
+          {glassBar ? (
+            <HomeHeader
+              tabs={bar?.tabs}
+              name={data.user.name}
+              avatarUrl={avatarUri(data.user.avatarUrl)}
+              tab={bar?.tab ?? ''}
+              onTab={selectTab}
+              menuOpen={curateOpen}
+              onMenu={setCurateOpen}
+              prompt={curatePrompt}
+              onAsk={next => {
+                setCuratePrompt(next);
+                setCurateOpen(false);
+              }}
+              onProfile={() => (onProfile ? onProfile() : router.push('/profile'))}
+              right={notificationCentre}
+              translateY={headerShift}
+              statusBar={statusBar}
+              baseHeight={headerHeight}
+              onLayout={event => setHeaderHeight(event.nativeEvent.layout.height)}
+            />
+          ) : (
         <View style={s.topbar}>
-          <View style={s.lockup}>
-            <BrandMark size={34} />
+          {/* Equal side slots keep the mark centred, like the main tabs' bar. */}
+          <View style={{ flex: 1, alignItems: 'flex-start' }}>
+                {pushed && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel="Go back"
+                    onPress={() => (onBack ? onBack() : router.back())}
+                    hitSlop={8}
+                    style={{ minWidth: 40, minHeight: 48, justifyContent: 'center' }}
+                  >
+                    <Text style={{ color: C.lime, fontSize: 28 }}>←</Text>
+                  </Pressable>
+                )}
           </View>
+          <BrandMark size={30} />
+          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' }}>
           {showCatalogueSearch && (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Search Qram"
             onPress={() => setSearchOpen(true)}
-            style={{ minWidth: 48, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
+                  style={{
+                    minWidth: 48,
+                    minHeight: 48,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
           >
             {Platform.OS === 'ios' ? (
               <SymbolView
@@ -512,32 +786,21 @@ function QramPane({
             )}
           </Pressable>
           )}
-          <NotificationCentre
-            key={data.user.id}
-            onOpen={target => {
-              if (target.kind === 'admin') {
-                router.push('/management');
-                return;
-              }
-              if (target.kind === 'community') {
-                setCommunityFlowId(target.id);
-                return;
-              }
-              if (target.kind === 'submission') {
-                router.push(data.user.role === 'creator' ? '/(tabs)/studio' : '/management');
-                return;
-              }
-              router.push(`/${target.kind}/${encodeURIComponent(target.id)}`);
-            }}
-          />
+              {notificationCentre}
+          </View>
         </View>
+          )}
+        {/* Tabs change only on a tap: no swipe paging between tab screens. */}
         <RootList
-          staticContent={tab === 'Discover'}
-          inset={homeScreen ? 'never' : 'automatic'}
-          contentContainerStyle={s.page}
+          scrollKey={bar?.tab}
+          staticContent={tab === 'Discover' || (tab === 'Picks' && picksTab === 'products')}
+          inset={glassBar || onBack ? 'never' : 'automatic'}
+            topInset={glassBar ? statusBar + headerHeight + 12 : 0}
+            scrollY={glassBar ? scrollY : undefined}
+          contentContainerStyle={onBack ? [s.page, { paddingBottom: 128 }] : s.page}
           refreshing={busy}
           onRefresh={() => void refresh()}
-          updatedAt={tab === 'Discover' ? null : updatedAt}
+          updatedAt={tab === 'Discover' || (tab === 'Picks' && picksTab === 'products') ? null : updatedAt}
         >
           {error ? (
             <Banner
@@ -546,36 +809,29 @@ function QramPane({
               action={{ label: 'Retry', onPress: () => void refresh() }}
             />
           ) : null}
-          {tab === 'Discover' && (
-            <FlowCategories
-              key={initialCategory ?? 'categories'}
-              busy={busy}
-              onRefresh={() => void refresh()}
-              data={data}
-              onSelect={setSelectedFlow}
-              initialCategory={initialCategory}
+          {tab === 'Discover' && flowsTab === 'community' && <CommunityComingSoon />}
+          {tab === 'Discover' && flowsTab === 'qram' && (
+            <FlowCatalogHome
+              ownedIds={data.profile.flowIds}
+              library={data.flows}
+              onStart={flow => setRunQueue([{ kind: 'flow', id: flow.id, title: flow.title }])}
+              onView={openFlow}
+              onAdd={flowId => {
+                const flow = data.flows.find(item => item.id === flowId);
+                return flow ? addFlow(flow) : Promise.resolve(false);
+              }}
             />
           )}
           {tab === 'Flows' && (
             <View style={{ gap: 16 }}>
-              <SegmentedControl
-                options={[
-                  { id: 'for-you', label: 'For you' },
-                  { id: 'following', label: 'Following' },
-                  { id: 'yours', label: 'Yours' },
-                ]}
-                value={homeTab}
-                onChange={value => setHomeTab(value as typeof homeTab)}
-              />
+              <TabSlide key={homeTab} direction={homeTabDirection}>
               {homeTab === 'yours' ? (
                 <HomeFeed
                   data={data}
-                  busy={busy}
-                  onRemove={removeFlow}
                   onExplore={() => router.push('/(tabs)/flows')}
-                  onFlow={setSelectedFlow}
-                  onStory={setSelectedStory}
+                  onFlow={openFlow}
                   onPersonalFlow={flow => setPersonalFlowId(flow.id)}
+                  onStart={target => setRunQueue([target])}
                 />
               ) : (
                 <CommunityFeed
@@ -585,8 +841,10 @@ function QramPane({
                   onOpen={setCommunityFlowId}
                   onSaved={() => void refresh()}
                   onShowYours={() => setHomeTab('yours')}
+                  onMember={setMemberId}
                 />
               )}
+              </TabSlide>
             </View>
           )}
           {tab === 'Picks' && (
@@ -596,18 +854,23 @@ function QramPane({
               onCardChange={cardChange}
               onPick={setSelectedProduct}
               onCard={setSelectedCard}
-              onFlow={setSelectedFlow}
+              onFlow={openFlow}
               onLink={url => void openLink(url)}
               onGuide={guide =>
                 guide === 'magnesium' ? setMagnesiumGuide(true) : setGymGuide(true)
               }
+              section={picksTab}
+              onBrowse={() => setPicksTab('supplements')}
+              onAddCard={() => setPicksTab('products')}
             />
           )}
           {tab === 'Events' && (
             <HyderabadEvents
               data={data}
               onSelect={setSelectedEvent}
-              onHost={data.user.role === 'creator' ? () => startEventEditor() : undefined}
+              onHost={() => setComposingEvent(true)}
+              section={eventsTab}
+              onDiscover={() => setEventsTab('upcoming')}
             />
           )}
           {tab === 'Studio' && data.user.role === 'creator' && (
@@ -625,11 +888,26 @@ function QramPane({
             <YouProfile
               data={data}
               busy={busy}
-              doneToday={doneToday}
               onEvent={setSelectedEvent}
               onPick={setSelectedProduct}
+              onFlowMap={() => {
+                // The profile covers the tab it was opened from, so close it to show the map.
+                onBack?.();
+                setHomeTab('yours');
+                setYoursMode('map');
+                router.navigate('/(tabs)');
+              }}
+              onResumeRun={run => setRunQueue([{ kind: run.kind, id: run.flowId, title: run.title, resume: true }])}
+              onExplore={() => {
+                onBack?.();
+                setFlowsTab('qram');
+                router.navigate('/(tabs)/flows');
+              }}
               onLogout={() => void logout()}
               onSaveName={name => change({ action: 'profile-name', name }, 'Name saved')}
+              onSaveUsername={username =>
+                change({ action: 'profile-username', username }, 'Username saved')
+              }
               onRequestEmail={requestEmailCode}
               onVerifyEmail={(challengeId, code) =>
                 change({ action: 'email-verify', challengeId, code }, 'Mail ID verified')
@@ -645,6 +923,15 @@ function QramPane({
             />
           )}
         </RootList>
+        {homeScreen && homeTab === 'yours' && !inlineDetailOpen && <YoursSwitch />}
+          {homeScreen && curateOpen && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close curation menu"
+              onPress={() => setCurateOpen(false)}
+              style={[StyleSheet.absoluteFill, { zIndex: 9, backgroundColor: 'rgba(0,0,0,0.45)' }]}
+            />
+          )}
       </View>
       {searchOpen && (
         <Sheet title="Search" scrollable={false} fullScreen onClose={() => setSearchOpen(false)}>
@@ -653,7 +940,7 @@ function QramPane({
               data={data}
               onFlow={value => {
                 setSearchOpen(false);
-                setSelectedFlow(value);
+                openFlow(value);
               }}
               onPick={value => {
                 setSearchOpen(false);
@@ -689,9 +976,45 @@ function QramPane({
           onClose={() => setSelectedStory(null)}
         />
       )}
+      {tab === 'Events' && <EventCategoryOverlay data={data} onSelect={setSelectedEvent} />}
+      {selectedEvent && !editor && (
+        <EventPage
+          key={selectedEvent.id}
+          event={selectedEvent}
+          isHost={data.user.role === 'admin' || selectedEvent.createdBy === data.user.id}
+          onClose={() => setSelectedEvent(null)}
+          onShare={() => void shareSelected()}
+          onLink={url => void openLink(url)}
+        />
+      )}
+      {composingEvent && (
+        <EventComposer
+          hostName={data.user.name}
+          city={data.profile.city || 'Hyderabad'}
+          cities={data.library?.settings.eventCities ?? ['Hyderabad']}
+          categories={(data.library?.settings.eventInterests ?? eventInterests).map(item => ({
+            id: item.id,
+            title: item.title,
+            topic: item.topics[0],
+          }))}
+          isAdmin={data.user.role === 'admin'}
+          busy={busy}
+          onClose={() => setComposingEvent(false)}
+          onSubmit={event =>
+            void change(
+              {
+                action: 'event-link',
+                requestId: `compose-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+                event,
+              },
+              'Event submitted for review',
+            ).then(done => done && setComposingEvent(false))
+          }
+        />
+      )}
       {(selectedFlow ||
         selectedProduct ||
-        selectedEvent ||
+        // Events open in EventPage; the sheet only hosts the event editors.
         editor ||
         workoutBuilder ||
         magnesiumGuide ||
@@ -727,8 +1050,9 @@ function QramPane({
           }
           contentKey={selectedCard?.id}
           title={
-            selectedCard?.name ??
-            (gymGuide
+            selectedCard
+              ? ''
+              : gymGuide
               ? 'Understand gym equipment'
               : magnesiumGuide
                 ? 'Understand magnesium'
@@ -745,7 +1069,7 @@ function QramPane({
                     : (selectedStory?.title ??
                       selectedFlow?.title ??
                       selectedProduct?.title ??
-                      (selectedEvent ? 'Event' : '')))
+                      (selectedEvent ? 'Event' : ''))
           }
           onClose={() => {
             setCardHistory([]);
@@ -772,18 +1096,15 @@ function QramPane({
               );
           }}
         >
-          {(selectedProduct?.status === 'published' || selectedEvent?.status === 'published') && (
+          {selectedEvent?.status === 'published' && (
             <Button title="Share" secondary onPress={() => void shareSelected()} />
           )}
-          {selectedProduct?.status === 'published' && (
-            <ReportIssue
-              key={`pick:${selectedProduct.id}`}
-              kind="pick"
-              itemId={selectedProduct.id}
-            />
-          )}
           {selectedEvent?.status === 'published' && (
-            <ReportIssue key={`event:${selectedEvent.id}`} kind="event" itemId={selectedEvent.id} />
+              <ReportIssue
+                key={`event:${selectedEvent.id}`}
+                kind="event"
+                itemId={selectedEvent.id}
+              />
           )}
           {selectedCard && (
             <CreditCardDetails
@@ -844,14 +1165,44 @@ function QramPane({
             />
           )}
           {selectedFlow && (
+            <View style={{ flex: 1, minHeight: 0 }}>
+            {data.profile.flowIds.includes(selectedFlow.id) && (
+              <View
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 8 }}
+              >
+                <Text style={{ flex: 1, color: C.muted, fontSize: 12 }}>On your flow map</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Start this flow"
+                  onPress={() =>
+                    setRunQueue([{ kind: 'flow', id: selectedFlow.id, title: selectedFlow.title }])
+                  }
+                  style={({ pressed }) => ({
+                    minHeight: 36,
+                    paddingHorizontal: 14,
+                    borderRadius: 18,
+                    justifyContent: 'center',
+                    backgroundColor: C.lime,
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Text style={{ color: C.onAccent, fontWeight: '700', fontSize: 14 }}>Start</Text>
+                </Pressable>
+              </View>
+            )}
             <FlowDetails
               flow={selectedFlow}
               data={data}
               busy={busy}
               onRemove={() => removeFlow(selectedFlow)}
               onAddCard={card =>
-                setAddingCard({ sourceFlowId: selectedFlow.id, cardId: card.id, title: card.title })
+                  setAddingCard({
+                    sourceFlowId: selectedFlow.id,
+                    cardId: card.id,
+                    title: card.title,
+                  })
               }
+              onIndexChange={index => opened(selectedFlow.id, index)}
               onComplete={(id, enabled) =>
                 void change({
                   action: 'complete',
@@ -867,11 +1218,7 @@ function QramPane({
               }}
               onAvailable={(id, enabled) => void change({ action: 'equipment', id, enabled })}
               onToggle={() =>
-                void change({
-                  action: 'flow',
-                  id: selectedFlow.id,
-                  enabled: true,
-                }).then(ok => {
+                void addFlow(selectedFlow).then(ok => {
                   if (ok) {
                     setSelectedFlow(null);
                     router.navigate('/(tabs)');
@@ -886,6 +1233,21 @@ function QramPane({
               }}
               onLink={url => void openLink(url)}
             />
+            {showFlowPicks && flowPickTopic ? (
+              <Button
+                title={`See ${flowPickTopic.title.toLowerCase()} picks →`}
+                secondary
+                onPress={() => {
+                  const topicId = flowPickTopic.id;
+                  setSelectedFlow(null);
+                  setFlowReturn(null);
+                  setPicksTab('supplements');
+                  setSupplementTopic(topicId);
+                  router.navigate('/(tabs)/picks');
+                }}
+              />
+            ) : null}
+            </View>
           )}
           {selectedProduct && !editor && (
             <PickDetails
@@ -898,6 +1260,7 @@ function QramPane({
               onReturn={closePick}
               onLink={url => void openLink(url)}
               onVouch={() => startEditor('endorse')}
+              onShare={() => void shareSelected()}
               onSave={() =>
                 void change(
                   { action: 'save', id: selectedProduct.id },
@@ -916,7 +1279,7 @@ function QramPane({
               secondary
               onPress={() => {
                 setSelectedEvent(null);
-                setSelectedFlow(flowReturn);
+                openFlow(flowReturn);
                 setFlowReturn(null);
               }}
             />
@@ -1034,9 +1397,61 @@ function QramPane({
               setPersonalFlowId(null);
               router.push('/(tabs)/flows');
             }}
+              onStart={() =>
+                setRunQueue([{ kind: 'personal', id: personalFlow.id, title: personalFlow.name }])
+              }
           />
         </Sheet>
       )}
+        {gymFlowId && data.flows.some(flow => flow.id === gymFlowId) && (
+          <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, zIndex: 30, backgroundColor: C.bg }}>
+            <CatalogFlowPage
+              title={catalogFlows.find(item => item.flowId === gymFlowId)?.title ?? data.flows.find(flow => flow.id === gymFlowId)?.title ?? 'Flow'}
+              level={catalogFlows.find(item => item.flowId === gymFlowId)?.level ?? data.flows.find(flow => flow.id === gymFlowId)?.level ?? 'Beginner'}
+              tileId={catalogFlows.find(item => item.flowId === gymFlowId)?.tileId ?? 'cal-upper'}
+              source={data.flows.find(flow => flow.id === gymFlowId)}
+              library={data.flows}
+              owned={data.profile.flowIds.includes(gymFlowId)}
+              requested={false}
+              ready
+              topInset={statusBar}
+              onBack={() => setGymFlowId(null)}
+              onRequest={() => undefined}
+              onAdd={flowId => {
+                const flow = data.flows.find(item => item.id === flowId);
+                return flow ? addFlow(flow) : Promise.resolve(false);
+              }}
+              onStart={flow => setRunQueue([{ kind: 'flow', id: flow.id, title: flow.title }])}
+              onView={openFlow}
+            />
+          </View>
+        )}
+        {runQueue?.[0] && (
+          <FlowRun
+            key={`${runQueue[0].kind}:${runQueue[0].id}`}
+            kind={runQueue[0].kind}
+            id={runQueue[0].id}
+            title={runQueue[0].title}
+            resumeOnOpen={runQueue[0].resume === true}
+            data={data}
+            nextTitle={runQueue[1]?.title}
+            onNext={() => setRunQueue(queue => (queue && queue.length > 1 ? queue.slice(1) : null))}
+            onTry={(flowId, flowTitle) => setRunQueue([{ kind: 'flow', id: flowId, title: flowTitle }])}
+            onPosted={() => void refresh()}
+            onClose={() => setRunQueue(null)}
+          />
+        )}
+        {memberId && (
+          <CommunityMemberSheet
+            key={memberId}
+            id={memberId}
+            data={data}
+            onClose={() => setMemberId(null)}
+            onOpen={setCommunityFlowId}
+            onSaved={() => void refresh()}
+            onMember={setMemberId}
+          />
+        )}
       {communityFlowId && (
         <CommunityFlowSheet
           id={communityFlowId}
@@ -1046,8 +1461,14 @@ function QramPane({
           onSaved={() => void refresh()}
           onAddCard={setAddingCard}
           onLink={url => void openLink(url)}
+          onMember={next => {
+            // The profile sheet sits under this one, so close the post first.
+            setCommunityFlowId(null);
+            setMemberId(next);
+          }}
         />
       )}
+      <TrainingSessionHost />
       {addingCard && (
         <AddToFlowSheet
           key={`${addingCard.sourceFlowId}:${addingCard.cardId}`}
@@ -1084,20 +1505,14 @@ function createStyles(C: Colors) {
       marginBottom: 24,
     },
     markText: { fontSize: 32, color: C.onAccent, fontWeight: '700' },
-    lockup: {
-      flex: 1,
-      minWidth: 0,
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 4,
-    },
     topbar: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: 8,
       paddingHorizontal: 16,
-      paddingVertical: 4,
+      // Same height and logo size as the main header, so nothing shifts between them.
+      minHeight: 52,
       borderBottomWidth: 0.5,
       borderColor: C.line,
     },

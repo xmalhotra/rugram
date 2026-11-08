@@ -5,9 +5,7 @@ import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 import { movementBenefits } from '../shared/movement-benefits';
 import { animalMovementFlows } from '../shared/animal-movements';
-import { fitnessMedia, cindyMovementFlows, fitnessGuideFlows } from '../shared/fitness-guides';
-import { morningDrinkFlows } from '../shared/morning-drinks';
-import type { HabitFlow } from '../shared/mobile';
+import { fitnessMedia, cindyMovementFlows } from '../shared/fitness-guides';
 
 test('every illustrated fitness movement has three short, sourced benefits', () => {
   const ids = [
@@ -104,78 +102,4 @@ test('Benefits panel shows only the movement name and benefit summaries, with wo
   assert.ok(!nodes(tree).some(node => ['Button', 'Disclosure'].includes(node.type)));
   (tree.props.onClose as () => void)();
   assert.equal(closed, 1);
-});
-
-test('real viewer routes fitness information to Benefits while preserving the other guide types', () => {
-  const require = createRequire(import.meta.url);
-  const Viewer = loadComponent('AnimalMovementViewer', name => {
-    if (/\.(png|jpg)$/.test(name)) return 'asset';
-    if (name === './morning-stills') return { domainStill: () => undefined };
-    if (name === './pose-frames') return { poseFrameRow: () => null };
-    if (name === './cindy-frames') return { cindyFrameRow: () => null };
-    if (name === './fitness-media')
-      return {
-        fitnessAtlases: Object.fromEntries(
-          [
-            'cindy',
-            'running',
-            'hyrox',
-            'morning',
-            'supplements',
-            'coding-setups',
-            'coding-audio',
-            'coding-habits',
-            'flow-animal',
-            'flow-sleep',
-            'flow-meals',
-            'flow-daily',
-            'flow-fitness',
-            'flow-supports',
-          ].map(atlas => [atlas, { male: 'asset' }]),
-        ),
-      };
-    if (name === './pane-state') return { usePaneState: () => ['male', () => {}] };
-    if (name === './useAtlasImage')
-      return { useAtlasImage: () => ({ key: 'asset:0', ready: true }) };
-    if (name === './useMovementTilt')
-      return {
-        useMovementTilt: () => ({ lean: 0, enabled: false, calibrate: () => {}, scrub: () => {} }),
-      };
-    if (name === '../../shared/movement-quality')
-      return {
-        movementPlaybackQuality: () => ({ playable: false }),
-        reviewedMovementSequences: {},
-      };
-    if (name.startsWith('../../shared/')) return require(`../shared/${name.split('/').at(-1)}`);
-    if (name === '@react-native-community/slider') return { default: 'Slider' };
-    const component = name.split('/').at(-1)!;
-    return { [component]: component };
-  });
-  let closed = 0;
-  const render = (flow: HabitFlow) =>
-    Viewer({
-      flow,
-      row: 0,
-      controls: { mode: 'tilt', infoOpen: true, onCloseInfo: () => closed++ },
-      onLink: () => {},
-    });
-  for (const flow of [
-    cindyMovementFlows[2],
-    animalMovementFlows[0],
-    fitnessGuideFlows.find(flow => flow.id === 'hyrox-full-row')!,
-  ]) {
-    const tree = render(flow);
-    const info = nodes(tree).find(node => node.type === 'MovementBenefits');
-    assert.ok(info, flow.id);
-    assert.equal((info.props.flow as HabitFlow).id, flow.id);
-    assert.ok(!nodes(tree).some(node => node.type === 'Disclosure' || node.type === 'Sheet'));
-    (info.props.onClose as () => void)();
-  }
-  assert.equal(closed, 3);
-  const drinks = render(morningDrinkFlows[0]);
-  assert.ok(nodes(drinks).some(node => node.type === 'Sheet'));
-  assert.ok(!nodes(drinks).some(node => node.type === 'MovementBenefits'));
-  const coding = render(require('../shared/coding-flows').codingCardFlows[0]);
-  assert.ok(nodes(coding).some(node => node.type === 'CodingBenefits'));
-  assert.ok(!nodes(coding).some(node => node.type === 'MovementBenefits' || node.type === 'Sheet'));
 });

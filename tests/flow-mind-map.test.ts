@@ -25,8 +25,7 @@ test('added flows branch under their category and keep addition order', () => {
     [
       ['Fitness', ['workout-cindy', 'workout-animal-movements']],
       ['Tech', ['coding-focus-audio']],
-      ['Lifestyle', ['lifestyle-morning-drinks']],
-      ['Nutrition', ['recipe-example']],
+      ['Lifestyle', ['lifestyle-morning-drinks', 'recipe-example']],
     ],
   );
 });

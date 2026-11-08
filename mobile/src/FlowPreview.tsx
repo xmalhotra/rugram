@@ -17,7 +17,7 @@ export function FlowPreview({
   busy?: boolean;
   onPress: () => void;
   fill?: boolean;
-  layout?: 'card' | 'row';
+  layout?: 'card' | 'row' | 'tile';
 }) {
   const { colors: C } = useTheme();
   const metric =
@@ -58,6 +58,38 @@ export function FlowPreview({
             {added ? ' · Saved' : ''}
           </Text>
         </View>
+      </Pressable>
+    );
+  if (layout === 'tile')
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${flow.title}${added ? ', in your Home' : ''}`}
+        disabled={busy}
+        onPress={onPress}
+        style={({ pressed }) => ({
+          width: 156,
+          opacity: busy ? 0.5 : pressed ? 0.7 : 1,
+        })}
+      >
+        <View style={{ width: 156, height: 156, borderRadius: 10, overflow: 'hidden' }}>
+          <FlowIllustration flow={flow} cover />
+          {added && (
+            <Text style={{ position: 'absolute', right: 4, top: 4, color: C.lime, fontSize: 12 }}>
+              ✓
+            </Text>
+          )}
+        </View>
+        <Text
+          numberOfLines={2}
+          style={{ color: C.text, fontSize: 15, fontWeight: '600', marginTop: 8 }}
+        >
+          {flow.title}
+        </Text>
+        <Text numberOfLines={2} style={{ color: C.muted, fontSize: 13 }}>
+          {metric}
+          {added ? ' · Saved' : ''}
+        </Text>
       </Pressable>
     );
   return (

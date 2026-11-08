@@ -33,18 +33,19 @@ test('detail deck uses native paging, independent vertical reading and a fixed a
   const surface = readFileSync('mobile/src/design/DetailSurface.tsx', 'utf8');
   containsCode(surface, "fullScreen?'fullScreen':'pageSheet'");
 });
-test('Picks retain their detail pages while every Flow uses cards containing visual frames', () => {
-  for (const file of ['mobile/src/PickDetails.tsx', 'mobile/src/CreditCardPicks.tsx']) {
-    const ui = readFileSync(file, 'utf8');
-    containsCode(ui, '<SwipeDeck pages={pages} footer=');
-    assert.match(ui, /details\s*&&\s*\(?\s*<Sheet/, file);
-  }
+test('Picks and card details read as one scrolling page and every Flow uses cards containing visual frames', () => {
+  const picks = readFileSync('mobile/src/PickDetails.tsx', 'utf8');
+  assert.doesNotMatch(picks, /<SwipeDeck|<DeckPage/);
+  assert.match(picks, /details\s*&&\s*\(?\s*<Sheet/);
+  const cardUi = readFileSync('mobile/src/CreditCardPicks.tsx', 'utf8');
+  assert.doesNotMatch(cardUi, /<SwipeDeck|<DeckPage/);
+  assert.match(cardUi, /At a glance/);
   const flow = readFileSync('mobile/src/FlowDetails.tsx', 'utf8');
   assert.match(flow, /resolveVisualFlow\(flow, data.flows\)/);
   assert.match(flow, /<AnimalMovementDeck/);
   assert.doesNotMatch(flow, /<SwipeDeck|<DeckPage/);
   const card = readFileSync('mobile/src/CreditCardPicks.tsx', 'utf8');
-  assert.match(card, /All benefits, limits & conditions/);
+  assert.match(card, /Benefits/);
   assert.match(card, /Verify current issuer terms/);
 });
 test('saved flow action opens Home instead of looking like a disabled add button', () => {

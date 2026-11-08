@@ -1,6 +1,6 @@
-import { formatInr, formatEventTime } from '../../shared/format';
+import { formatEventTime } from '../../shared/format';
 import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Image, Pressable, ScrollView, View } from 'react-native';
 import { Text } from './design/Text';
 import type { MobilePayload } from '../../shared/mobile';
 import {
@@ -10,131 +10,10 @@ import {
   type CreditCard,
   type CardBenefit,
 } from '../../shared/credit-cards';
-import { Badge, Button, Card, Field, HabitToggle, Sheet } from './design/components';
-import { SwipeDeck, DeckPage } from './SwipeDeck';
-import { Disclosure } from './Disclosure';
-import { similarFeeCards, cardFeeBand } from '../../shared/card-discovery';
-import { CreditCardShowcase } from './CreditCardShowcase';
-import { Image } from 'react-native';
+import { cardCell, formatFee, spendCategories } from '../../shared/card-table';
+import { bestCardInCategory } from '../../shared/card-shelves';
+import { Badge, Button, Field, HabitToggle } from './design/components';
 import { useTheme } from './design/theme';
-const money = formatInr;
-
-export function CreditCardPicks({
-  data,
-  busy,
-  onOpen,
-  onChange,
-}: {
-  data: MobilePayload;
-  busy: boolean;
-  onOpen: (card: CreditCard) => void;
-  onChange: (input: unknown) => Promise<boolean>;
-  onLink: (url: string) => void;
-}) {
-  const { colors: C } = useTheme();
-  const [view, setView] = useState<'discover' | 'owned' | 'add'>('discover');
-  const [pending, setPending] = useState<string | null>(null);
-  const catalogue = data.library?.cards ?? creditCards;
-  const owned = data.profile.cardWallet ?? {};
-  const cards = view === 'add' ? catalogue : catalogue.filter(card => Boolean(owned[card.id]));
-  async function add(card: CreditCard) {
-    if (busy || pending || owned[card.id]) return;
-    setPending(card.id);
-    try {
-      await onChange({ action: 'card-owned', id: card.id, enabled: true });
-    } finally {
-      setPending(null);
-    }
-  }
-  return (
-    <View style={{ gap: 16 }}>
-      <Text
-        accessibilityRole="header"
-        style={{ color: C.text, fontSize: 26, lineHeight: 34, fontWeight: '600' }}
-      >
-        {view === 'discover' ? 'Credit cards' : view === 'add' ? 'Add cards' : 'My Cards'}
-      </Text>
-      {view === 'discover' ? (
-        <CreditCardShowcase
-          cards={catalogue}
-          wallet={owned}
-          onOpen={onOpen}
-          onMyCards={() => setView('owned')}
-        />
-      ) : (
-        <>
-          {view === 'add' ? (
-            <Button
-              title="Done"
-              secondary
-              disabled={busy || Boolean(pending)}
-              onPress={() => setView('owned')}
-            />
-          ) : (
-            <>
-              <Button title="← Credit cards" secondary onPress={() => setView('discover')} />
-              <Button title="+ Add cards" onPress={() => setView('add')} />
-            </>
-          )}
-          {view === 'owned' && cards.length === 0 && (
-            <Text style={{ color: C.muted, fontSize: 15, lineHeight: 22 }}>
-              No cards added yet.
-            </Text>
-          )}
-          {cards.map(card => (
-            <Card key={card.id}>
-              <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
-                <View
-                  accessible={false}
-                  style={{
-                    width: 52,
-                    height: 38,
-                    borderRadius: 8,
-                    borderWidth: 1,
-                    borderColor: C.lime,
-                    backgroundColor: C.bg,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Text style={{ color: C.lime, fontSize: 12, fontWeight: '700' }}>
-                    {card.issuer.split(' ')[0].slice(0, 4)}
-                  </Text>
-                </View>
-                <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
-                  <Text style={{ color: C.muted, fontSize: 13 }}>{card.issuer}</Text>
-                  <Text style={{ color: C.text, fontSize: 18, lineHeight: 25, fontWeight: '600' }}>
-                    {card.name}
-                  </Text>
-                </View>
-              </View>
-              {view === 'add' ? (
-                <Button
-                  title={owned[card.id] ? 'Added' : pending === card.id ? 'Adding…' : 'Add'}
-                  secondary
-                  disabled={busy || Boolean(pending) || Boolean(owned[card.id])}
-                  onPress={() => void add(card)}
-                />
-              ) : (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`View ${card.name}`}
-                  onPress={() => onOpen(card)}
-                  style={{ minHeight: 48, justifyContent: 'center' }}
-                >
-                  <Text style={{ color: C.lime, fontSize: 16 }}>View card →</Text>
-                </Pressable>
-              )}
-            </Card>
-          ))}
-          {view === 'add' && cards.length === 0 && (
-            <Text style={{ color: C.muted, fontSize: 15 }}>No cards are available right now.</Text>
-          )}
-        </>
-      )}
-    </View>
-  );
-}
 
 export function CreditCardDetails({
   card,
@@ -154,230 +33,97 @@ export function CreditCardDetails({
   onBack?: () => void;
 }) {
   const { colors: C } = useTheme();
-  const [details, setDetails] = useState(false);
   const wallet = data.profile.cardWallet?.[card.id];
-  const visual = card.imageUrl ? (
-    <Image
-      source={{ uri: card.imageUrl }}
-      accessibilityLabel={card.name}
-      resizeMode="contain"
-      style={{ width: '95%', height: 210 }}
-    />
-  ) : (
-    <View
-      style={{
-        width: '92%',
-        maxWidth: 330,
-        aspectRatio: 1.65,
-        borderRadius: 25,
-        padding: 24,
-        backgroundColor: C.card,
-        borderWidth: 1,
-        borderColor: C.line,
-        justifyContent: 'space-between',
-        transform: [{ rotate: '-5deg' }],
-      }}
-    >
-      <Text style={{ color: C.muted, fontSize: 14 }}>{card.issuer}</Text>
-      <View
-        style={{ height: 25, width: 34, borderRadius: 6, backgroundColor: C.lime, opacity: 0.6 }}
-      />
-      <Text style={{ color: C.text, fontSize: 23, fontWeight: '600' }}>{card.name}</Text>
-    </View>
-  );
-  const pages = [
-    <DeckPage
-      key="intro"
-      eyebrow={card.issuer}
-      title={card.name}
-      caption={card.curation?.summary ?? card.comparison?.bestFor}
-      visual={visual}
-    />,
-    <DeckPage key="benefits" eyebrow="What it offers" title="For the way you spend.">
-      {card.benefits.slice(0, 3).map(benefit => (
-        <View
-          key={benefit.id}
-          style={{ padding: 22, borderRadius: 24, backgroundColor: C.card, gap: 10 }}
-        >
-          <Text style={{ color: C.lime, fontSize: 21, lineHeight: 28 }}>{benefit.title}</Text>
-        </View>
-      ))}
-      <Text style={{ textAlign: 'center', color: C.muted, fontSize: 12, lineHeight: 18 }}>
-        Eligibility, caps and exclusions apply. Rewards are not guaranteed.
-      </Text>
-      <Button
-        title="All benefits, limits & conditions"
-        secondary
-        onPress={() => setDetails(true)}
-      />
-    </DeckPage>,
-    <DeckPage
-      key="fees"
-      eyebrow="Before you decide"
-      title={card.annualFee === 0 ? 'No annual fee.' : `${money(card.annualFee)} a year.`}
-      caption={
-        card.annualFee === 0
-          ? 'Other charges and eligibility conditions can still apply.'
-          : 'Standard renewal fee, before taxes.'
-      }
-      visual={visual}
-    >
-      <Text style={{ color: C.text, textAlign: 'center', fontSize: 17, lineHeight: 25 }}>
-        Joining fee:{' '}
-        {card.joiningFee === null ? 'not confirmed' : `${money(card.joiningFee)} before tax`}
-      </Text>
-      <Button
-        title="Fee waiver, catches & alternatives"
-        secondary
-        onPress={() => setDetails(true)}
-      />
-      <Button
-        title="Verify current issuer terms ↗"
-        secondary
-        onPress={() => onLink(card.sourceUrl)}
-      />
-    </DeckPage>,
-  ];
-  return (
-    <>
-      <SwipeDeck
-        pages={pages}
-        footer={
-          <>
-            <Button
-              title={wallet ? 'Remove from My Cards' : 'Add to My Cards'}
-              secondary={Boolean(wallet)}
-              disabled={busy}
-              onPress={() => void onChange({ action: 'card-owned', id: card.id, enabled: !wallet })}
-            />
-            {onBack && <Button title="← Previous card" secondary onPress={onBack} />}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`All details and conditions for ${card.name}`}
-              onPress={() => setDetails(true)}
-              style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
-            >
-              <Text style={{ color: C.muted, fontSize: 14 }}>All details & conditions</Text>
-            </Pressable>
-          </>
-        }
-      />
-      {details && (
-        <Sheet title="Card details & conditions" onClose={() => setDetails(false)}>
-          <CreditCardReferenceDetails
-            card={card}
-            data={data}
-            busy={busy}
-            onChange={onChange}
-            onLink={onLink}
-            onOpen={onOpen}
-            onBack={onBack}
-          />
-        </Sheet>
-      )}
-    </>
-  );
-}
-function CreditCardReferenceDetails({
-  card,
-  data,
-  busy,
-  onChange,
-  onLink,
-  onOpen,
-  onBack,
-}: {
-  card: CreditCard;
-  data: MobilePayload;
-  busy: boolean;
-  onChange: (input: unknown) => Promise<boolean>;
-  onLink: (url: string) => void;
-  onOpen: (card: CreditCard) => void;
-  onBack?: () => void;
-}) {
-  const { colors: C } = useTheme();
-  const wallet = data.profile.cardWallet?.[card.id];
+  const [pictureWidth, setPictureWidth] = useState(0);
   const [fee, setFee] = useState(
     wallet?.annualFeeOverride === undefined ? '' : String(wallet.annualFeeOverride),
   );
-  const alternatives = similarFeeCards(card, data.library?.cards ?? creditCards);
-  const text = { color: C.muted, fontSize: 15, lineHeight: 23 } as const;
-  const heading = { color: C.text, fontSize: 21, fontWeight: '600', lineHeight: 28 } as const;
+  const catalogue = data.library?.cards ?? creditCards;
+  const ownedLabel = wallet ? '✓ In my cards' : 'Add to my cards';
+  const groups = spendCategories.flatMap(category => {
+    const benefits = card.benefits.filter(benefit => benefit.category === category);
+    return benefits.length ? [{ category, benefits }] : [];
+  });
+  const compared = spendCategories.flatMap(category => {
+    if (!cardCell(card, category)) return [];
+    const best = bestCardInCategory(
+      catalogue.filter(other => other.id !== card.id),
+      category,
+    );
+    return best ? [{ category, card: best.card, label: best.label }] : [];
+  });
+  const glance: { label: string; value: string }[] = [
+    { label: 'Annual fee', value: formatFee(card.annualFee) },
+  ];
+  if (card.joiningFee !== null) glance.push({ label: 'Joining fee', value: formatFee(card.joiningFee) });
+  if (card.waiver.trim()) glance.push({ label: 'Fee waiver', value: card.waiver });
   return (
-    <View style={{ gap: 16 }}>
-      {onBack && <Button title="← Previous card" secondary onPress={onBack} />}
+    <ScrollView
+      style={{ flex: 1 }}
+      keyboardShouldPersistTaps="handled"
+      contentContainerStyle={{ paddingBottom: 48, gap: 16 }}
+    >
       <View
+        onLayout={event => setPictureWidth(event.nativeEvent.layout.width)}
         style={{
-          minHeight: 140,
-          borderRadius: 22,
-          padding: 22,
+          width: '100%',
+          aspectRatio: 1.586,
+          borderRadius: 10,
+          overflow: 'hidden',
           backgroundColor: C.card,
-          borderWidth: 1,
-          borderColor: C.line,
-          justifyContent: 'space-between',
-          gap: 18,
         }}
       >
-        <Text style={{ color: C.lime, fontSize: 14, fontWeight: '600' }}>{card.issuer}</Text>
-        <Text style={{ color: C.text, fontSize: 25, lineHeight: 33, fontWeight: '600' }}>
+        {pictureWidth > 0 &&
+          (card.imageUrl ? (
+            <Image
+              source={{ uri: card.imageUrl }}
+              accessible={false}
+              resizeMode="cover"
+              style={{ width: '100%', height: '100%' }}
+            />
+          ) : (
+            <View style={{ flex: 1, padding: 16, justifyContent: 'space-between' }}>
+              <Text style={{ color: C.muted, fontSize: 13 }}>{card.issuer}</Text>
+              <Text style={{ color: C.text, fontSize: 18, fontWeight: '600' }}>{card.name}</Text>
+            </View>
+          ))}
+      </View>
+      <View style={{ gap: 4 }}>
+        <Text accessibilityRole="header" style={{ color: C.text, fontSize: 26, fontWeight: '700' }}>
           {card.name}
         </Text>
-        <Text style={text}>
-          {card.annualFee === 0
-            ? 'No annual membership fee'
-            : `${money(card.annualFee)} renewal / year + tax`}
-        </Text>
+        <Text style={{ color: C.muted, fontSize: 15 }}>{card.issuer}</Text>
       </View>
-      {card.curation && (
-        <>
-          <Badge>{card.curation.badge} · editorial selection</Badge>
-          <Text style={text}>{card.curation.summary}</Text>
-        </>
-      )}
-      <Button
-        title={wallet ? 'Remove from my cards' : 'Add to My Cards'}
-        secondary={Boolean(wallet)}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={ownedLabel}
+        accessibilityState={{ disabled: busy }}
         disabled={busy}
         onPress={() => void onChange({ action: 'card-owned', id: card.id, enabled: !wallet })}
-      />
-      <Text accessibilityRole="header" style={heading}>
-        What you get
-      </Text>
-      {card.benefits.map(benefit => (
-        <Disclosure key={benefit.id} title={benefit.title}>
-          <Text style={text}>{benefit.summary}</Text>
-          <Text style={{ ...text, fontSize: 13 }}>{benefit.conditions}</Text>
-          <Button
-            title="Issuer benefit terms ↗"
-            secondary
-            onPress={() => onLink(benefit.sourceUrl)}
-          />
-          {wallet && benefit.tracker ? (
-            <Disclosure title="My benefit usage">
-              <BenefitTracker
-                key={`${card.id}:${benefit.id}:${benefitPeriod(benefit.tracker.period, new Date(), wallet.usage[benefit.id])?.start ?? 'unknown'}`}
-                card={card}
-                benefit={benefit}
-                data={data}
-                busy={busy}
-                onChange={onChange}
-              />
-            </Disclosure>
-          ) : null}
-        </Disclosure>
-      ))}
-      <Disclosure title="Fees & catches">
-        <Text style={text}>
-          Renewal: {money(card.annualFee)} before tax. Joining:{' '}
-          {card.joiningFee === null ? 'not confirmed' : `${money(card.joiningFee)} before tax`}.
+        style={({ pressed }) => ({
+          minHeight: 52,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 26,
+          backgroundColor: C.lime,
+          opacity: busy ? 0.5 : pressed ? 0.75 : 1,
+        })}
+      >
+        <Text style={{ color: C.onAccent, fontSize: 16, fontWeight: '700' }}>{ownedLabel}</Text>
+      </Pressable>
+      <View style={{ gap: 10 }}>
+        <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>
+          At a glance
         </Text>
-        <Text style={text}>{card.feeNote}</Text>
-        <Text style={text}>{card.waiver}</Text>
-        {card.reviewNote && <Text style={text}>{card.reviewNote}</Text>}
-        {card.comparison?.watchOut && <Text style={text}>{card.comparison.watchOut}</Text>}
-      </Disclosure>
+        {glance.map(row => (
+          <View key={row.label} style={{ gap: 2 }}>
+            <Text style={{ color: C.muted, fontSize: 13 }}>{row.label}</Text>
+            <Text style={{ color: C.text, fontSize: 15, lineHeight: 21 }}>{row.value}</Text>
+          </View>
+        ))}
+      </View>
       {wallet && (
-        <Disclosure title="My fee terms">
+        <View style={{ gap: 8 }}>
           <Field
             label="Your annual fee before tax (blank = standard; 0 = lifetime free)"
             value={fee}
@@ -398,61 +144,103 @@ function CreditCardReferenceDetails({
               })
             }
           />
-          <Text style={{ ...text, fontSize: 12 }}>
+          <Text style={{ color: C.muted, fontSize: 12, lineHeight: 18 }}>
             User-entered terms, not verified with the issuer. Never enter card numbers, CVV, PIN or
             bank credentials.
           </Text>
-        </Disclosure>
+        </View>
       )}
-      <Disclosure title="Why we shortlisted it">
-        {card.curation?.placements.map(placement => (
-          <View key={placement.topic} style={{ gap: 5 }}>
-            <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>
-              #{placement.rank} · {placement.topic}
-            </Text>
-            <Text style={text}>{placement.reason}</Text>
-          </View>
-        ))}
-        <Text style={{ ...text, fontSize: 12 }}>
-          Editorial assessment of published terms, not a study or guarantee of value. Source checked{' '}
-          {card.checkedAt}; verify current issuer rules.
-        </Text>
-        <Button
-          title="Read issuer fees & terms ↗"
-          secondary
-          onPress={() => onLink(card.sourceUrl)}
-        />
-      </Disclosure>
-      {alternatives.length > 0 && (
-        <View style={{ gap: 12 }}>
-          <Text accessibilityRole="header" style={heading}>
-            Similar annual fee
+      {card.comparison?.bestFor ? (
+        <View style={{ gap: 4 }}>
+          <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>
+            Best for
           </Text>
-          <Text style={{ ...text, fontSize: 13 }}>
-            {cardFeeBand(card.annualFee)} before tax · related uses, not guaranteed substitutes.
+          <Text style={{ color: C.text, fontSize: 15, lineHeight: 21 }}>{card.comparison.bestFor}</Text>
+        </View>
+      ) : null}
+      {card.comparison?.watchOut ? (
+        <View style={{ gap: 4 }}>
+          <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>
+            Watch out
           </Text>
-          {alternatives.map(other => (
-            <Card key={other.id}>
-              <Text style={{ color: C.muted, fontSize: 13 }}>{other.issuer}</Text>
-              <Text style={{ color: C.text, fontSize: 18, lineHeight: 25, fontWeight: '600' }}>
-                {other.name}
-              </Text>
-              <Text style={text}>
-                {other.curation?.summary ?? other.comparison?.bestFor ?? other.benefits[0]?.title}
-              </Text>
-              <Badge>
-                {other.annualFee === 0 ? 'No annual fee' : `${money(other.annualFee)} / year + tax`}
-              </Badge>
-              <Button title="Explore alternative →" secondary onPress={() => onOpen(other)} />
-            </Card>
+          <Text style={{ color: C.text, fontSize: 15, lineHeight: 21 }}>{card.comparison.watchOut}</Text>
+        </View>
+      ) : null}
+      {card.curation?.summary ? (
+        <Text style={{ color: C.text, fontSize: 15, lineHeight: 21 }}>{card.curation.summary}</Text>
+      ) : null}
+      {groups.length > 0 && (
+        <View style={{ gap: 14 }}>
+          <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>
+            Benefits
+          </Text>
+          {groups.map(group => (
+            <View key={group.category} style={{ gap: 10 }}>
+              <Text style={{ color: C.muted, fontSize: 13 }}>{group.category}</Text>
+              {group.benefits.map(benefit => (
+                <View key={benefit.id} style={{ gap: 4 }}>
+                  <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>{benefit.title}</Text>
+                  <Text style={{ color: C.text, fontSize: 15, lineHeight: 21 }}>{benefit.summary}</Text>
+                  <Text style={{ color: C.muted, fontSize: 13, lineHeight: 18 }}>{benefit.conditions}</Text>
+                  {wallet && benefit.tracker ? (
+                    <BenefitTracker
+                      key={`${card.id}:${benefit.id}:${benefitPeriod(benefit.tracker.period, new Date(), wallet.usage[benefit.id])?.start ?? 'unknown'}`}
+                      card={card}
+                      benefit={benefit}
+                      data={data}
+                      busy={busy}
+                      onChange={onChange}
+                    />
+                  ) : null}
+                </View>
+              ))}
+            </View>
           ))}
         </View>
       )}
-      <Text style={{ ...text, fontSize: 12 }}>
-        Choose for spending you already planned. No card is essential for everyone; pay in full
-        because interest can outweigh rewards.
-      </Text>
-    </View>
+      {compared.length > 0 && (
+        <View style={{ gap: 10 }}>
+          <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>
+            Against similar cards
+          </Text>
+          {compared.map(other => (
+            <Pressable
+              key={other.category}
+              accessibilityRole="button"
+              accessibilityLabel={`${other.category}: ${other.card.name}`}
+              onPress={() => onOpen(other.card)}
+              style={({ pressed }) => ({ gap: 2, opacity: pressed ? 0.7 : 1 })}
+            >
+              <Text style={{ color: C.text, fontSize: 15 }}>
+                {other.category}: {other.card.name}
+              </Text>
+              <Text style={{ color: C.muted, fontSize: 13 }}>{other.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Verify current issuer terms"
+        onPress={() => onLink(card.sourceUrl)}
+        style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}
+      >
+        <Text style={{ color: C.lime, fontSize: 15, fontWeight: '600' }}>Verify current issuer terms</Text>
+      </Pressable>
+      {card.reviewNote ? (
+        <Text style={{ color: C.muted, fontSize: 13, lineHeight: 18 }}>{card.reviewNote}</Text>
+      ) : null}
+      {onBack && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Previous card"
+          onPress={onBack}
+          style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}
+        >
+          <Text style={{ color: C.muted, fontSize: 15 }}>Previous card</Text>
+        </Pressable>
+      )}
+    </ScrollView>
   );
 }
 

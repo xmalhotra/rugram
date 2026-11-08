@@ -10,6 +10,7 @@ import {
   nutritionCollectionChildren,
   withNutritionIdeaVisual,
 } from './nutrition-ideas';
+import { gymFlowById, gymHabitCards } from './gym-flows';
 
 export type ResolvedVisualFlow = { flow: HabitFlow; cards: HabitFlow[]; adapted: boolean };
 const customMedia = (
@@ -183,6 +184,15 @@ export function visualFlowCards(flow: HabitFlow): HabitFlow[] {
 
 /** The single entry point for every flow, including old saves and CMS records. */
 export function resolveVisualFlow(flow: HabitFlow, library: HabitFlow[]): ResolvedVisualFlow {
+  const gym = gymFlowById(flow.id);
+  if (gym) {
+    const cards = gymHabitCards(gym);
+    return {
+      flow: { ...flow, relatedFlowIds: cards.map(card => card.id) },
+      cards,
+      adapted: false,
+    };
+  }
   const nutritionCollection = nutritionCollectionForId(flow.id);
   if (nutritionCollection) {
     let ids = nutritionCollectionChildren[nutritionCollection.id];

@@ -29,20 +29,21 @@ export default function TabLayout() {
           freezeOnBlur: true,
         }}
       >
-        {(['index', 'flows', 'picks', 'events', 'studio', 'you'] as const).map((name, index) => (
+        {(['index', 'flows', 'picks', 'events'] as const).map((name, index) => (
           <Tabs.Screen
             key={name}
             name={name}
             options={{
-              title: ['Home', 'Flows', 'Picks', 'Events', 'Studio', 'You'][index],
-              tabBarBadge: name === 'studio' && attention ? attention : undefined,
+              title: ['Home', 'Flows', 'Picks', 'Events'][index],
               tabBarIcon: ({ color }) => (
-                <Text style={{ color, fontSize: 22 }}>{['⌂', '▱', '▢', '▦', '✎', '○'][index]}</Text>
+                <Text style={{ color, fontSize: 22 }}>{['⌂', '▱', '▢', '▦', '✎'][index]}</Text>
               ),
             }}
           />
         ))}
+        <Tabs.Screen name="studio" options={{ href: null }} />
         <Tabs.Screen name="admin" options={{ href: null }} />
+        <Tabs.Screen name="you" options={{ href: null }} />
       </Tabs>
     );
   return (
@@ -56,19 +57,19 @@ export default function TabLayout() {
         <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'house', selected: 'house.fill' }} md="home" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="flows" hidden={admin}>
+      <NativeTabs.Trigger name="flows" disableAutomaticContentInsets hidden={admin}>
         <NativeTabs.Trigger.Label>Flows</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="square.stack.3d.up" md="view_agenda" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="picks" hidden={admin}>
+      <NativeTabs.Trigger name="picks" disableAutomaticContentInsets hidden={admin}>
         <NativeTabs.Trigger.Label>Picks</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf={{ default: 'bag', selected: 'bag.fill' }} md="shopping_bag" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="events" hidden={admin}>
+      <NativeTabs.Trigger name="events" disableAutomaticContentInsets hidden={admin}>
         <NativeTabs.Trigger.Label>Events</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="calendar" md="event" />
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="studio" hidden={data?.user.role !== 'creator'}>
+      <NativeTabs.Trigger name="studio" disableAutomaticContentInsets hidden>
         <NativeTabs.Trigger.Label>Studio</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="square.and.pencil" md="edit" />
         {attention > 0 && <NativeTabs.Trigger.Badge>{String(attention)}</NativeTabs.Trigger.Badge>}
@@ -78,7 +79,8 @@ export default function TabLayout() {
         <NativeTabs.Trigger.Icon sf="slider.horizontal.3" md="admin_panel_settings" />
         {pending > 0 && <NativeTabs.Trigger.Badge>{String(pending)}</NativeTabs.Trigger.Badge>}
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="you">
+      {/* Everyone else reaches You from Home's avatar; admins have no Home, so they keep the tab. */}
+      <NativeTabs.Trigger name="you" disableAutomaticContentInsets hidden={!admin}>
         <NativeTabs.Trigger.Label>You</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'person.crop.circle', selected: 'person.crop.circle.fill' }}

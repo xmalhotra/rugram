@@ -7,7 +7,7 @@ import { AdminWorkspace } from '../src/AdminWorkspace';
 import { Button, Sheet } from '../src/design/components';
 import { useTheme } from '../src/design/theme';
 import { useSession } from '../src/session';
-import { NeonBackdrop } from '../src/design/NeonBackdrop';
+import { ScreenBackground } from '../src/design/ScreenBackground';
 import { api } from '../src/api';
 import type { CityEvent, MobilePayload } from '../../shared/mobile';
 import { NotificationCentre } from '../src/NotificationCentre';
@@ -46,7 +46,7 @@ export default function ManagementScreen() {
   }
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
-      <NeonBackdrop />
+      <ScreenBackground />
       <View
         style={{
           paddingHorizontal: 20,

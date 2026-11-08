@@ -1,0 +1,2 @@
+/** Catalog rows. One record per line. */
+export const drinkItemLines = "# name | aliases | serving\nWarm water | garam paani | \nWater | paani, pani | \nCoffee | kaapi, kapi | \nMilk | doodh | \nTea leaves | chai patti, assam, darjeeling | \nCoconut water | nariyal pani, tender coconut water | \nGreen tea |  | \nMatcha |  | \nOat milk |  | \nAlmond milk |  | \nSoy milk |  | \nChamomile |  | \nHibiscus |  | \nRose water |  | \nBone broth |  | \nChicken broth |  | \nVegetable broth |  | ";

@@ -1,24 +1,37 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import type { MobilePayload } from '../../shared/mobile';
+import { normalizeUsername, usernameProblem } from '../../shared/usernames';
 import { Text } from './design/Text';
 import { useTheme } from './design/theme';
+
+function usernameField(handle: string) {
+  const value = handle.trim().toLowerCase().replace(/^@/, '');
+  return value.startsWith('q_') ? value.slice(2) : value;
+}
 
 export function AccountDetails({
   data,
   busy,
   onSaveName,
+  onSaveUsername,
   onRequestEmail,
   onVerifyEmail,
 }: {
   data: MobilePayload;
   busy: boolean;
   onSaveName: (name: string) => Promise<boolean>;
+  onSaveUsername: (username: string) => Promise<boolean>;
   onRequestEmail: (email: string) => Promise<{ challengeId: string; mockCode?: string } | null>;
   onVerifyEmail: (challengeId: string, code: string) => Promise<boolean>;
 }) {
   const { colors: C } = useTheme();
   const [name, setName] = useState(data.user.name === 'New member' ? '' : data.user.name);
+  const [part, setPart] = useState(usernameField(data.user.handle));
+  useEffect(() => setPart(usernameField(data.user.handle)), [data.user.handle]);
+  const proposed = normalizeUsername(part);
+  const problem = usernameProblem(part);
+  const usernameChanged = proposed !== data.user.handle.trim().toLowerCase();
   const [email, setEmail] = useState(data.user.email ?? '');
   const [challengeId, setChallengeId] = useState('');
   const [code, setCode] = useState('');
@@ -58,6 +71,49 @@ export function AccountDetails({
           })}
         >
           <Text style={{ color: C.lime, fontSize: 16 }}>Save name</Text>
+        </Pressable>
+      </Field>
+      <Field label="Username">
+        <View
+          style={{
+            minHeight: 48,
+            borderWidth: 1,
+            borderColor: C.line,
+            borderRadius: 12,
+            backgroundColor: C.card,
+            flexDirection: 'row',
+            alignItems: 'center',
+          }}
+        >
+          <Text style={{ color: C.muted, fontSize: 16, paddingLeft: 14 }}>q_</Text>
+          <TextInput
+            accessibilityLabel="Username"
+            value={part}
+            onChangeText={value => setPart(value.replace(/\s/g, '').toLowerCase())}
+            placeholder="yourname"
+            placeholderTextColor={C.muted}
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="off"
+            style={{ flex: 1, minHeight: 48, paddingRight: 14, color: C.text, fontSize: 16 }}
+          />
+        </View>
+        <Text style={{ color: C.muted, fontSize: 13 }}>
+          Starts with q_. 4–18 letters, numbers or underscores. You can change it once every 30 days.
+        </Text>
+        {problem ? <Text style={{ color: C.danger, fontSize: 14 }}>{problem}</Text> : null}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Save username"
+          disabled={busy || Boolean(problem) || !usernameChanged}
+          onPress={() => void onSaveUsername(proposed)}
+          style={({ pressed }) => ({
+            minHeight: 44,
+            justifyContent: 'center',
+            opacity: busy || Boolean(problem) || !usernameChanged ? 0.5 : pressed ? 0.6 : 1,
+          })}
+        >
+          <Text style={{ color: C.lime, fontSize: 16 }}>Save</Text>
         </Pressable>
       </Field>
       <Field label="Mobile number">

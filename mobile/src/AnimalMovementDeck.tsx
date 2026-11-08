@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -8,39 +8,29 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import type { HabitFlow } from '../../shared/mobile';
-import { movementRows, type Demonstrator } from '../../shared/movement-viewer';
-import { fitnessFrameCount } from '../../shared/fitness-media-layout';
+import { movementRows } from '../../shared/movement-viewer';
 import { fitnessMedia, fitnessCollectionChildren } from '../../shared/fitness-guides';
+import { gymExerciseId } from '../../shared/gym-flows';
+import { GymCardFace } from './GymCardFace';
 import { deckPage } from '../../shared/swipe-deck';
-import { AnimalMovementViewer } from './AnimalMovementViewer';
 import { Text } from './design/Text';
 import { space, useTheme } from './design/theme';
-import { MovementControls } from './MovementControls';
-import { MovementGlass } from './MovementGlass';
 import { morningDrinksFlowId } from '../../shared/morning-drinks';
 import { trainingSupplementFlowIds } from '../../shared/training-supplements';
 import { FlowCardRail } from './FlowCardRail';
-import { codingCard, codingCollectionIds } from '../../shared/coding-flows';
-import { domainStill } from './morning-stills';
-import { poseFrameRow } from './pose-frames';
+import { codingCollectionIds } from '../../shared/coding-flows';
 import { useRegisterAddToFlow } from './AddToFlowHeader';
-import { usePaneState } from './pane-state';
-import {
-  MovementPositionBar,
-  type MovementPositionState,
-  type MovementPositionUpdate,
-} from './MovementPositionBar';
-
-const startingPosition: MovementPositionState = { progress: 0, phase: 0 };
+import { flowCreationEnabled } from '../../shared/flow-catalog';
+import { FlowIllustration } from './FlowIllustration';
 
 export function AnimalMovementDeck({
   flow,
   library,
-  renderInformation,
+  busy,
   onAddCard,
   uniformHeader = false,
   aside,
-  ...actions
+  onIndexChange,
 }: {
   flow: HabitFlow;
   library: HabitFlow[];
@@ -54,13 +44,10 @@ export function AnimalMovementDeck({
   onAddCard?: (card: HabitFlow) => void;
   uniformHeader?: boolean;
   aside?: React.ReactNode;
+  onIndexChange?: (index: number) => void;
 }) {
   const { colors: C } = useTheme();
   const screen = useWindowDimensions();
-  const host = useRef<React.ElementRef<typeof View>>(null);
-  const [origin, setOrigin] = useState({ x: 0, y: 0 });
-  const [edgeLean, setEdgeLean] = useState(0);
-  const [gender] = usePaneState<Demonstrator>('movementDemonstrator', 'male', 'account');
   const supplementGuide = trainingSupplementFlowIds.includes(flow.id);
   const codingGuide = codingCollectionIds.includes(flow.id);
   const movements = (flow.relatedFlowIds ?? fitnessCollectionChildren[flow.id] ?? []).flatMap(id =>
@@ -68,54 +55,34 @@ export function AnimalMovementDeck({
       item =>
         item.id === id &&
         item.sessionGuide &&
-        (item.visualCard || movementRows[id] !== undefined || fitnessMedia[id]),
+        (gymExerciseId(item.id) != null ||
+          item.visualCard ||
+          movementRows[id] !== undefined ||
+          fitnessMedia[id]),
     ),
   );
   const [index, setIndex] = useState(0);
-  const [dragging, setDragging] = useState(false);
   const [width, setWidth] = useState(0);
   const [height, setHeight] = useState(0);
-  const [modes, setModes] = useState<Record<string, 'tilt' | 'slider'>>({});
-  const [positions, setPositions] = useState<Record<string, MovementPositionState>>({});
-  const updatePosition = useCallback<MovementPositionUpdate>((id, field, value) => {
-    setPositions(previous => {
-      const position = previous[id] ?? startingPosition;
-      if (position[field] === value) return previous;
-      return { ...previous, [id]: { ...position, [field]: value } };
-    });
-  }, []);
-  const [infoOpen, setInfoOpen] = useState(false);
   const ref = useRef<React.ElementRef<typeof ScrollView>>(null);
   const position = useRef(0);
   const pendingPage = useRef<number | null>(null);
   const current = Math.min(index, Math.max(0, movements.length - 1));
-  const placeGlass = useCallback(() => {
-    host.current?.measureInWindow((x: number, y: number) => {
-      const nextX = Math.round(x);
-      const nextY = Math.round(y);
-      setOrigin(currentOrigin =>
-        currentOrigin.x === nextX && currentOrigin.y === nextY
-          ? currentOrigin
-          : { x: nextX, y: nextY },
-      );
-    });
-  }, []);
+  const indexChanged = useRef(onIndexChange);
+  indexChanged.current = onIndexChange;
   useEffect(() => {
-    placeGlass();
-  }, [placeGlass, screen.width, screen.height]);
+    if (movements.length) indexChanged.current?.(current);
+  }, [current, movements.length]);
   useEffect(() => {
     ref.current?.scrollTo({ x: position.current * width, animated: false });
     pendingPage.current = null;
-    setDragging(false);
   }, [width]);
   const settle = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const page = deckPage(event.nativeEvent.contentOffset.x, width, movements.length);
     if (pendingPage.current !== null && page !== pendingPage.current) return;
     pendingPage.current = null;
-    setInfoOpen(false);
     position.current = page;
     setIndex(position.current);
-    setDragging(false);
   };
   const selectCard = (page: number) => {
     const next = Math.max(0, Math.min(movements.length - 1, page));
@@ -123,41 +90,24 @@ export function AnimalMovementDeck({
     // Long jumps skip unmounted intermediate pages rather than animating through blank cards.
     const animated = width > 0 && Math.abs(next - position.current) === 1;
     position.current = next;
-    setInfoOpen(false);
     pendingPage.current = next;
     setIndex(next);
-    setDragging(animated);
     ref.current?.scrollTo({ x: next * width, animated });
   };
   const visibleCard = movements[current];
   const addToFlowInHeader = useRegisterAddToFlow(
-    onAddCard && visibleCard
+    flowCreationEnabled && onAddCard && visibleCard
       ? {
           title: visibleCard.title,
-          busy: actions.busy,
+          busy,
           onPress: () => onAddCard(visibleCard),
         }
       : null,
   );
   if (!movements.length)
     return <Text style={{ color: C.muted }}>No published cards in this flow yet.</Text>;
-  const currentStill = domainStill(movements[current].id);
-  const currentMedia = movements[current].visualCard?.media ?? fitnessMedia[movements[current].id];
-  const currentFrameCount =
-    poseFrameRow(movements[current].id, gender)?.length ||
-    (currentMedia ? fitnessFrameCount(currentMedia, gender) : 4);
-  const currentFrameTerm =
-    movements[current].visualCard ||
-    codingCard(movements[current].id) ||
-    currentMedia?.atlas === 'morning' ||
-    currentMedia?.atlas === 'supplements'
-      ? 'Frame'
-      : 'Pose';
   return (
-    <View
-      ref={host}
-      style={{ flex: 1, minHeight: 0, gap: 8 }}
-    >
+    <View style={{ flex: 1, minHeight: 0, gap: 8 }}>
       {(flow.id === morningDrinksFlowId || supplementGuide) && (
         <Text
           accessibilityRole="header"
@@ -224,12 +174,12 @@ export function AnimalMovementDeck({
         ) : (
           <View style={{ flex: 1 }} />
         )}
-        {onAddCard && !addToFlowInHeader && (
+        {flowCreationEnabled && onAddCard && !addToFlowInHeader && (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Add ${movements[current].title} to a personal flow`}
-            accessibilityState={{ disabled: actions.busy }}
-            disabled={actions.busy}
+            accessibilityState={{ disabled: busy }}
+            disabled={busy}
             onPress={() => onAddCard(movements[current])}
             style={({ pressed }) => ({
               minHeight: 44,
@@ -240,7 +190,7 @@ export function AnimalMovementDeck({
               borderWidth: 1,
               borderColor: C.line,
               backgroundColor: C.card,
-              opacity: actions.busy ? 0.4 : pressed ? 0.7 : 1,
+              opacity: busy ? 0.4 : pressed ? 0.7 : 1,
             })}
           >
             <Text style={{ color: C.text, fontWeight: '600', fontSize: 14 }}>＋ Add to Flow</Text>
@@ -248,26 +198,6 @@ export function AnimalMovementDeck({
         )}
       </View>
       )}
-      <MovementControls
-        appearance={!currentStill}
-        playback={!currentStill}
-        informationLabel={
-          movements[current].visualCard
-            ? 'Card benefits'
-            : codingGuide
-              ? 'Coding benefits'
-              : supplementGuide
-                ? 'Supplement information'
-                : flow.id === morningDrinksFlowId
-                  ? 'Drink information'
-                  : undefined
-        }
-        controlMode={modes[movements[current].id] ?? 'tilt'}
-        setControlMode={mode =>
-          setModes(previous => ({ ...previous, [movements[current].id]: mode }))
-        }
-        onInfo={() => setInfoOpen(true)}
-      />
       {supplementGuide && (
         <View style={{ minHeight: 54, justifyContent: 'center', paddingHorizontal: 2 }}>
           <Text numberOfLines={3} style={{ color: C.muted, fontSize: 13, lineHeight: 18 }}>
@@ -290,13 +220,7 @@ export function AnimalMovementDeck({
           setHeight(event.nativeEvent.layout.height);
         }}
         onScrollBeginDrag={() => {
-          setInfoOpen(false);
           pendingPage.current = null;
-          setDragging(true);
-        }}
-        onMomentumScrollBegin={() => {
-          setInfoOpen(false);
-          if (pendingPage.current === null) setDragging(true);
         }}
         onScrollEndDrag={event => {
           const offset = event.nativeEvent.contentOffset.x;
@@ -323,64 +247,17 @@ export function AnimalMovementDeck({
               accessibilityElementsHidden={page !== current}
               importantForAccessibility={page === current ? 'auto' : 'no-hide-descendants'}
             >
-              {Math.abs(page - current) <= 1 && (
-                <AnimalMovementViewer
-                  flow={movement}
-                  row={movementRows[movement.id] ?? fitnessMedia[movement.id]?.row ?? 0}
-                  active={page === current && !dragging}
-                  controls={{
-                    mode: modes[movement.id] ?? 'tilt',
-                    infoOpen: page === current && infoOpen,
-                    onCloseInfo: () => setInfoOpen(false),
-                    position: {
-                      value: positions[movement.id] ?? startingPosition,
-                      onChange: updatePosition,
-                    },
-                    information: movement.visualCard
-                      ? renderInformation?.(movement, () => setInfoOpen(false))
-                      : undefined,
-                    context: supplementGuide
-                      ? { title: flow.title, description: flow.description }
-                      : undefined,
-                  }}
-                  {...actions}
-                  onLean={page === current ? setEdgeLean : undefined}
-                />
-              )}
+              {Math.abs(page - current) <= 1 &&
+                (gymExerciseId(movement.id) ? (
+                  <GymCardFace card={movement} />
+                ) : (
+                  <View style={{ flex: 1 }}>
+                    <FlowIllustration flow={movement} cover />
+                  </View>
+                ))}
             </View>
           ))}
       </ScrollView>
-      {!currentStill && (
-      <MovementPositionBar
-        {...(positions[movements[current].id] ?? startingPosition)}
-        frameCount={currentFrameCount}
-        frameTerm={currentFrameTerm}
-        controlMode={modes[movements[current].id] ?? 'tilt'}
-        onProgress={value => updatePosition(movements[current].id, 'progress', value)}
-        disabled={dragging || infoOpen}
-        accessibilityLabel={
-          currentMedia?.atlas === 'supplements'
-            ? 'Assessment frame'
-            : currentMedia?.atlas === 'morning'
-              ? 'Preparation frame'
-              : currentFrameTerm === 'Frame'
-                ? 'Workflow frame'
-                : 'Movement phase'
-        }
-      />
-      )}
-      <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          left: -origin.x,
-          top: -origin.y,
-          width: screen.width,
-          height: screen.height,
-        }}
-      >
-        <MovementGlass lean={edgeLean} />
-      </View>
     </View>
   );
 }

@@ -23,14 +23,14 @@ import { movementImageFit } from '../shared/movement-viewer';
 import { buildStoryGroups } from '../shared/home-feed';
 import { flowContentSchema } from '../src/lib/content-validation';
 
-test('Supplements is a Fitness section with four workout contexts, not an automatic personal stack', () => {
+test('Supplements is a Lifestyle section with four workout contexts, not an automatic personal stack', () => {
   assert.deepEqual(
     flowsForFocus(flows, 'supplements').map(flow => flow.title),
     ['Getting started', 'Strength & muscle', 'Running & endurance', 'HYROX & hybrid'],
   );
   assert.ok(
     flowCategoryGroups(focusOptions)
-      .find(group => group.id === 'fitness')!
+      .find(group => group.id === 'lifestyle')!
       .focusIds.includes('supplements'),
   );
   const browse = movementBrowseLibrary(flows);
@@ -49,20 +49,20 @@ test('Supplements is a Fitness section with four workout contexts, not an automa
   );
 });
 
-test('older Fitness settings gain Supplements unless an editor explicitly assigned it elsewhere', () => {
+test('older Lifestyle settings gain Supplements unless an editor explicitly assigned it elsewhere', () => {
   const old = defaultFlowCategoryGroups.map(group =>
-    group.id === 'fitness' ? { ...group, focusIds: ['workout', 'running', 'hyrox'] } : group,
+    group.id === 'lifestyle' ? { ...group, focusIds: ['morning-drinks', 'nutrition', 'sleep'] } : group,
   );
   assert.deepEqual(
-    flowCategoryGroups(focusOptions, old).find(group => group.id === 'fitness')!.focusIds,
-    ['workout', 'running', 'hyrox', 'supplements'],
+    flowCategoryGroups(focusOptions, old).find(group => group.id === 'lifestyle')!.focusIds,
+    ['morning-drinks', 'nutrition', 'sleep', 'supplements'],
   );
   const assigned = [
     ...old,
     { id: 'custom', title: 'Learning', illustration: 'focus', focusIds: ['supplements'] },
   ];
   const groups = flowCategoryGroups(focusOptions, assigned);
-  assert.ok(!groups.find(group => group.id === 'fitness')!.focusIds.includes('supplements'));
+  assert.ok(!groups.find(group => group.id === 'lifestyle')!.focusIds.includes('supplements'));
   assert.deepEqual(groups.find(group => group.id === 'custom')!.focusIds, ['supplements']);
 });
 
@@ -125,15 +125,10 @@ test('the eight topics each have five in-bounds frames for both global appearanc
   }
 });
 
-test('the fixed toolbar and caption remain outside the pager and information retains workout context', () => {
+test('the supplement caption stays outside the pager', () => {
   const deck = readFileSync('mobile/src/AnimalMovementDeck.tsx', 'utf8');
-  const viewer = readFileSync('mobile/src/AnimalMovementViewer.tsx', 'utf8');
-  assert.ok(deck.indexOf('<MovementControls') < deck.indexOf('<ScrollView'));
   assert.ok(deck.indexOf('movements[current].description') < deck.indexOf('<ScrollView'));
   assert.match(deck, /minHeight: 54/);
-  assert.match(viewer, /controls.context.description/);
-  assert.ok(viewer.indexOf('Evidence, suitability & questions') > viewer.indexOf('{infoOpen &&'));
-  assert.match(viewer, /Assessment frame/);
 });
 
 test('saved supplement guides do not promote their internal pages or products as a shopping stack', () => {

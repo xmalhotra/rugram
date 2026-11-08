@@ -10,7 +10,8 @@ export const MovementGlass = memo(function MovementGlass({ lean }: { lean: numbe
   const side = finish.right > 0 ? 'right' : finish.left > 0 ? 'left' : null;
   const amount = side === 'right' ? finish.right : side === 'left' ? finish.left : 0;
   const [box, setBox] = useState({ width: 0, height: 0 });
-  const band = 14 + amount * 22;
+  // A hint, not a highlight: a narrow, soft edge that never washes over the picture.
+  const band = 8 + amount * 14;
   const edge = side === 'right' ? box.width : 0;
   const inward = side === 'right' ? box.width - band : band;
   return (
@@ -38,7 +39,7 @@ export const MovementGlass = memo(function MovementGlass({ lean }: { lean: numbe
               x2={inward}
               y2="0"
             >
-              <Stop offset="0" stopColor="#54F5AA" stopOpacity={0.2 + amount * 0.75} />
+              <Stop offset="0" stopColor="#54F5AA" stopOpacity={0.12 + amount * 0.33} />
               <Stop offset="1" stopColor="#54F5AA" stopOpacity="0" />
             </LinearGradient>
           </Defs>

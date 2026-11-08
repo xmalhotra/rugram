@@ -53,8 +53,6 @@ function mount(file: string, props: object) {
       if (name === './design/theme') return { useTheme: () => ({ colors: {} }), space: { lg: 20 } };
       if (name === './pane-state') return { usePaneState: () => ['male', () => {}] };
       if (name === '@react-native-community/slider') return { default: 'Slider' };
-      if (name === './pose-frames') return { poseFrameRow: () => null };
-      if (name === './morning-stills') return { domainStill: () => undefined };
       if (name === './AddToFlowHeader') return { useRegisterAddToFlow: () => false };
       if (name.startsWith('../../shared/')) return require(`../shared/${name.split('/').at(-1)}`);
       const component = name.split('/').at(-1)!;
@@ -125,13 +123,9 @@ test('actual movement deck keeps the strip outside paging, syncs taps/swipes and
     !nodes(node(tree, 'ScrollView').props.children).some(item => item.type === 'FlowCardRail'),
   );
   assert.equal(node(tree, 'FlowCardRail').props.current, 0);
-  (node(tree, 'MovementControls').props.setControlMode as (mode: string) => void)('slider');
-  tree = render()!;
-  assert.equal(node(tree, 'MovementControls').props.controlMode, 'slider');
   (node(tree, 'FlowCardRail').props.onSelect as (index: number) => void)(1);
   tree = render()!;
   assert.equal(node(tree, 'FlowCardRail').props.current, 1);
-  assert.equal(node(tree, 'MovementControls').props.controlMode, 'tilt');
   assert.deepEqual(scrolls.at(-1), { x: 350, animated: true });
   (node(tree, 'ScrollView').props.onMomentumScrollEnd as (event: object) => void)(event(350));
   (node(tree, 'FlowCardRail').props.onSelect as (index: number) => void)(5);
@@ -146,7 +140,6 @@ test('actual movement deck keeps the strip outside paging, syncs taps/swipes and
   (node(tree, 'ScrollView').props.onMomentumScrollEnd as (event: object) => void)(event(0));
   tree = render()!;
   assert.equal(node(tree, 'FlowCardRail').props.current, 0);
-  assert.equal(node(tree, 'MovementControls').props.controlMode, 'slider');
   const pages = nodes(node(tree, 'ScrollView').props.children).filter(
     item => item.type === 'View' && (item.props.style as { width?: number })?.width === 350,
   );
@@ -162,10 +155,8 @@ test('card selector replaces the repeated heading above the single control bar, 
   const tree = render()!;
   const all = nodes(tree);
   assert.equal(all.filter(item => item.type === 'FlowCardRail').length, 1);
-  assert.equal(all.filter(item => item.type === 'MovementControls').length, 1);
   const rail = node(tree, 'FlowCardRail');
   assert.equal(rail.props.showHeading, false);
-  assert.ok(all.indexOf(rail) < all.indexOf(node(tree, 'MovementControls')));
   assert.ok(all.indexOf(rail) < all.indexOf(node(tree, 'ScrollView')));
   assert.ok(
     !all.some(item => item.type === 'Text' && item.props.children === 'Bear crawl'),
@@ -214,55 +205,6 @@ test('single-card flows retain a readable title when there is no card selector',
     nodes(tree).filter(item => item.type === 'Text' && item.props.children === 'Bear crawl').length,
     1,
   );
-});
-
-test('one fixed position bar stays outside the pager and follows only the selected card', () => {
-  const render = mount('AnimalMovementDeck', {
-    flow: animalMovementCollectionFlow,
-    library: animalMovementFlows,
-  });
-  let tree = render()!;
-  (node(tree, 'ScrollView').props.onLayout as (event: object) => void)(layout(350, 500));
-  tree = render()!;
-  const bar = () => node(tree, 'MovementPositionBar');
-  assert.equal(nodes(tree).filter(item => item.type === 'MovementPositionBar').length, 1);
-  assert.ok(
-    !nodes(node(tree, 'ScrollView').props.children).some(
-      item => item.type === 'MovementPositionBar',
-    ),
-  );
-  const first = node(tree, 'AnimalMovementViewer');
-  const controls = first.props.controls as {
-    position: { onChange: (id: string, field: string, value: number) => void };
-  };
-  controls.position.onChange(animalMovementFlows[0].id, 'progress', 0.75);
-  controls.position.onChange(animalMovementFlows[0].id, 'phase', 3);
-  tree = render()!;
-  assert.equal(bar().props.progress, 0.75);
-  assert.equal(bar().props.phase, 3);
-  (node(tree, 'ScrollView').props.onScrollBeginDrag as () => void)();
-  tree = render()!;
-  assert.equal(bar().props.disabled, true);
-  (node(tree, 'ScrollView').props.onMomentumScrollEnd as (event: object) => void)(event(350));
-  tree = render()!;
-  assert.equal(bar().props.progress, 0);
-  assert.equal(bar().props.phase, 0);
-  assert.equal(bar().props.disabled, false);
-  // An adjacent page cannot overwrite the selected card's range display.
-  controls.position.onChange(animalMovementFlows[0].id, 'phase', 4);
-  tree = render()!;
-  assert.equal(bar().props.phase, 0);
-  (node(tree, 'MovementControls').props.setControlMode as (mode: string) => void)('slider');
-  tree = render()!;
-  assert.equal(bar().props.controlMode, 'slider');
-  (bar().props.onProgress as (value: number) => void)(0.5);
-  tree = render()!;
-  assert.equal(bar().props.progress, 0.5);
-  (node(tree, 'FlowCardRail').props.onSelect as (index: number) => void)(0);
-  tree = render()!;
-  assert.equal(bar().props.progress, 0.75);
-  assert.equal(bar().props.phase, 4);
-  assert.equal(bar().props.controlMode, 'tilt');
 });
 
 test('shared range renders exact frame stops and swaps with segments in the same stationary row', () => {

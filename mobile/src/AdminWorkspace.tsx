@@ -13,6 +13,8 @@ import { defaultFlowCategoryGroups } from '../../shared/flow-categories';
 import { EventRegistrationPanel } from './EventRegistrationPanel';
 import { CreatorEventSettings } from './CreatorEventSettings';
 import { ReportsWorklist } from './ReportsWorklist';
+import { FlowRequestAdmin } from './FlowRequestAdmin';
+import { TrainingAdmin } from './TrainingAdmin';
 import {
   accountChangeNeedsReason,
   accountChangeSummary,
@@ -481,6 +483,8 @@ export function AdminWorkspace({
           'Trust',
           'People',
           'Permissions',
+          'Flow requests',
+          'Training',
           'Overview',
           ...(data.demoMode ? ['Simulation'] : []),
         ]}
@@ -542,7 +546,11 @@ export function AdminWorkspace({
           )}
         </>
       )}
-      {section === 'Overview' ? (
+      {section === 'Flow requests' ? (
+        <FlowRequestAdmin />
+      ) : section === 'Training' ? (
+        <TrainingAdmin />
+      ) : section === 'Overview' ? (
         <>
           <Text style={title}>Last 30 days</Text>
           {[

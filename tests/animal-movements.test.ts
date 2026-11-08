@@ -75,9 +75,9 @@ test('animal memory cards and collection survive admin validation and editing', 
 });
 
 test('Workout exposes the grouped movement flow without redundant collection navigation', () => {
-  const browser = readFileSync('mobile/src/FlowTopicBrowser.tsx', 'utf8');
-  assert.match(browser, /movementBrowseLibrary\(library\)/);
-  assert.doesNotMatch(browser, /Workout collections|activeCollection/);
+  const catalog = readFileSync('mobile/src/FlowCatalogHome.tsx', 'utf8');
+  assert.doesNotMatch(catalog, /Workout collections|activeCollection/);
+  assert.match(readFileSync('shared/animal-movements.ts', 'utf8'), /export function movementBrowseLibrary/);
   const illustration = readFileSync('mobile/src/WorkoutGuideIllustration.tsx', 'utf8');
   for (const icon of animalIllustrations) assert.ok(illustration.includes(`'${icon}'`));
   assert.match(illustration, /Position sketch/);

@@ -51,12 +51,4 @@ test('swipe pages use measured dimensions and mount only the active neighbours',
   assert.match(source, /setHeight\(event.nativeEvent.layout.height\)/);
   assert.match(source, /Math.abs\(page - current\) <= 1/);
   assert.doesNotMatch(source, /height: '100%'/);
-  const viewer = readFileSync('mobile/src/AnimalMovementViewer.tsx', 'utf8');
-  assert.match(readFileSync('mobile/src/MovementControls.tsx', 'utf8'), /height: 56/);
-  assert.match(readFileSync('mobile/src/MovementPositionBar.tsx', 'utf8'), /height: 44/);
-  assert.match(viewer, /active && !infoOpen && imageReady/);
-  assert.match(viewer, /onLoad=/);
-  assert.match(viewer, /onError=/);
-  assert.match(viewer, /Retry movement image/);
-  assert.doesNotMatch(viewer, /title=\{`\$\{tilt.status\} · Enable`\}/);
 });

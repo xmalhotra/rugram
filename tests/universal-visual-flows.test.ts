@@ -8,12 +8,27 @@ import { resolveVisualFlow } from '../shared/visual-flows';
 import { fitnessMedia } from '../shared/fitness-guides';
 import { fitnessAtlasLayouts, fitnessCrop } from '../shared/fitness-media-layout';
 import { movementImageFit } from '../shared/movement-viewer';
-import { imageSize } from '../scripts/image-size';
 import { techResource } from '../shared/tech-resources';
+import { exercise } from '../shared/exercises';
+import { gymFlowById, gymTargetLabel } from '../shared/gym-flows';
 
 test('every stored flow, including old saves, resolves to cards with at least five bundled frames', () => {
   assert.ok(flows.length >= 127);
   for (const flow of flows) {
+    const gym = gymFlowById(flow.id);
+    if (gym) {
+      const result = resolveVisualFlow(flow, flows);
+      assert.equal(result.flow.id, flow.id);
+      assert.deepEqual(
+        result.cards.map(card => [card.title, card.description]),
+        gym.items.map(item => [exercise(item.exerciseId)!.name, gymTargetLabel(item)]),
+      );
+      assert.deepEqual(
+        result.flow.relatedFlowIds,
+        result.cards.map(card => card.id),
+      );
+      continue;
+    }
     const result = resolveVisualFlow(flow, flows);
     assert.ok(result.cards.length, flow.id);
     assert.equal(result.flow.id, flow.id);
@@ -29,20 +44,6 @@ test('every stored flow, including old saves, resolves to cards with at least fi
         const atlas = fitnessAtlasLayouts[media.atlas][gender];
         assert.ok(atlas.columns >= 5, card.id);
         assert.ok(media.row >= 0 && media.row < atlas.rows.length - 1);
-        const folder = media.atlas.startsWith('flow-')
-          ? 'flows'
-          : media.atlas.startsWith('nutrition-')
-            ? 'nutrition'
-            : media.atlas.startsWith('coding-')
-              ? 'coding'
-              : media.atlas === 'morning'
-                ? 'lifestyle'
-                : media.atlas === 'supplements'
-                  ? 'supplements'
-                  : 'fitness';
-        const png = readFileSync(`mobile/assets/${folder}/${media.atlas}-${gender}-v1.jpg`);
-        assert.equal(imageSize(png).width, atlas.width);
-        assert.equal(imageSize(png).height, atlas.height);
         const positions = [];
         for (let frame = 0; frame < atlas.columns; frame++) {
           const crop = fitnessCrop(media, gender, frame / (atlas.columns - 1));

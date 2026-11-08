@@ -19,12 +19,15 @@ function markStyle(size: number, color: string) {
 export function BrandMark({
   size = 22,
   dotTransform,
+  color,
 }: {
   size?: number;
+  /** Defaults to the brand lime; the loader cycles other tints. */
+  color?: string;
   dotTransform?: React.ComponentProps<typeof Animated.View>['style'];
 }) {
   const { colors: C } = useTheme();
-  const style = markStyle(size, C.lime);
+  const style = markStyle(size, color ?? C.lime);
   const lift = { transform: [{ translateY: -Math.round(size * 0.12) }] };
   if (!dotTransform)
     return (

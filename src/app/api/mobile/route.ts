@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { apiError, apiJson, unauthorized } from '@/lib/http';
-import { getSessionUser, updateMemberName } from '@/lib/store';
+import { getSessionUser, updateMemberName, updateUsername } from '@/lib/store';
+import { usernameClientError } from '../../../../shared/usernames';
 import { tokenId } from '@/lib/session';
 import { allowSharedRequest } from '@/lib/rate-limit';
 import { observed, readMobileJson } from '@/lib/mobile-http';
@@ -51,6 +52,7 @@ const action = z.discriminatedUnion('action', [
     .object({ action: z.literal('appearance'), value: z.enum(['system', 'light', 'dark']) })
     .strict(),
   z.object({ action: z.literal('profile-name'), name: z.string().trim().min(2).max(80) }).strict(),
+  z.object({ action: z.literal('profile-username'), username: z.string().max(40) }).strict(),
   z
     .object({ action: z.literal('email-code'), email: z.string().trim().email().max(160) })
     .strict(),
@@ -185,8 +187,6 @@ export const POST = observed(async (request: Request) => {
     const input = parsed.data;
     if ((input.action === 'event' || input.action === 'event-update') && user.role !== 'admin')
       return apiError('Admin access required to curate events.', 403);
-    if (input.action === 'event-link' && user.role !== 'admin' && user.role !== 'creator')
-      return apiError('Only creators and admins can submit listings.', 403);
     if (
       input.action === 'personal-flow-create' ||
       input.action === 'personal-flow-add' ||
@@ -197,6 +197,7 @@ export const POST = observed(async (request: Request) => {
       await editPersonalFlow(user, input);
     else if (input.action === 'appearance') await editAppearance(user, input.value);
     else if (input.action === 'profile-name') await updateMemberName(user, input.name);
+    else if (input.action === 'profile-username') await updateUsername(user, input.username);
     else if (input.action === 'email-code') {
       const emailChallenge = await requestMemberEmail(user, input.email);
       const fresh = (await userFor(request)) ?? user;
@@ -231,7 +232,8 @@ export const POST = observed(async (request: Request) => {
     else if (input.action === 'event')
       return apiError('Use the curated Hyderabad tech event editor.', 410);
     else if (input.action === 'event-link') {
-      const checked = (user.role === 'creator' ? creatorEventSchema : eventLinkSchema).safeParse(
+      const checked = // Any member can host; non-admin events use the host schema and wait for review.
+        (user.role !== 'admin' ? creatorEventSchema : eventLinkSchema).safeParse(
         input.event,
       );
       if (!checked.success)
@@ -285,6 +287,7 @@ export const POST = observed(async (request: Request) => {
         'Event not available for this edit: review capacity, registrations and cancellation.',
       );
     const message = error instanceof Error ? error.message : '';
+    if (usernameClientError(message)) return apiError(message, 400);
     if (
       !/^(Personal flow |Completion |Creator not found|Creator event|Card not available|Card benefit|Add the card|Only creators|Admin access|Creator access|Equipment not available|Exercise not available|Flow not found|Focus not available|Join the flow|Product not available|Listing not found|Event not available|This event|Content event|Content cancelled|Your saved history|Account )/.test(
         message,

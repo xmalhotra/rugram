@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, Pressable, View } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
-import Svg, { Circle, Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { Text } from './design/Text';
 import { useTheme } from './design/theme';
 import { BrandMark } from './design/BrandMark';
@@ -44,6 +44,17 @@ export function useAnimations() {
   return on && !reduce;
 }
 
+/** False only when the system's Reduce Motion is on. */
+export function useMotionAllowed() {
+  const [reduce, setReduce] = useState(false);
+  useEffect(() => {
+    void AccessibilityInfo.isReduceMotionEnabled().then(setReduce);
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduce);
+    return () => subscription.remove();
+  }, []);
+  return !reduce;
+}
+
 export function setAnimationsEnabled(next: boolean) {
   publish(next);
 }
@@ -75,7 +86,7 @@ export function AnimationSettings() {
     >
       <View style={{ flex: 1, gap: 2 }}>
         <Text style={{ color: C.text, fontSize: 16, fontWeight: '500' }}>Enable animations</Text>
-        <Text style={{ color: C.muted, fontSize: 13 }}>Login, background, and loading</Text>
+        <Text style={{ color: C.muted, fontSize: 13 }}>Login and loading</Text>
       </View>
       <Text style={{ color: on ? C.lime : C.muted, fontSize: 15, fontWeight: '600' }}>
         {on ? 'On' : 'Off'}
@@ -110,79 +121,56 @@ export function LoadingPulse({ children }: { children: React.ReactNode }) {
  * spread out, and the mark's own full stop hops like a typing cursor. With
  * motion off it sits still.
  */
+/** Tints the mark drifts through after the brand lime while loading. */
+const loaderAccents = ['#5EE6FF', '#B69CFF'] as const;
+
+/**
+ * The क्र. mark "booms": it swells, settles smaller, then returns to size, sending a ripple out
+ * on each beat while its colour drifts lime → cyan → violet. Static when animations are off.
+ */
 export function LogoLoader({ size = 64, label = 'Loading' }: { size?: number; label?: string }) {
   const { colors: C } = useTheme();
   const animations = useAnimations();
-  const spin = useRef(new Animated.Value(0)).current;
-  const hop = useRef(new Animated.Value(0)).current;
-  const rippleA = useRef(new Animated.Value(0)).current;
-  const rippleB = useRef(new Animated.Value(0)).current;
+  const loaderTints = [C.lime, ...loaderAccents];
+  const beat = useRef(new Animated.Value(0)).current;
+  const hue = useRef(new Animated.Value(0)).current;
+  const ripple = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (!animations) {
-      [spin, hop, rippleA, rippleB].forEach(value => value.setValue(0));
+      [beat, hue, ripple].forEach(value => value.setValue(0));
       return;
     }
-    const ripple = (value: Animated.Value, delay: number) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(delay),
-          Animated.timing(value, {
-            toValue: 1,
-            duration: 2000,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: true,
-          }),
-          Animated.timing(value, { toValue: 0, duration: 0, useNativeDriver: true }),
-          Animated.delay(1000 - delay),
-        ]),
-      );
+    const step = (value: Animated.Value, toValue: number, duration: number, easing: (t: number) => number) =>
+      Animated.timing(value, { toValue, duration, easing, useNativeDriver: true });
     const loops = [
-      Animated.loop(
-        Animated.timing(spin, {
-          toValue: 1,
-          duration: 1400,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        }),
-      ),
+      // 0 → 1 swell, → -1 settle smaller, → 0 rest.
       Animated.loop(
         Animated.sequence([
-          Animated.timing(hop, {
-            toValue: 1,
-            duration: 280,
-            easing: Easing.out(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(hop, {
-            toValue: 0,
-            duration: 320,
-            easing: Easing.bounce,
-            useNativeDriver: true,
-          }),
-          Animated.delay(500),
+          Animated.parallel([
+            step(beat, 1, 240, Easing.out(Easing.back(2))),
+            step(ripple, 1, 900, Easing.out(Easing.cubic)),
+          ]),
+          step(beat, -1, 260, Easing.inOut(Easing.quad)),
+          step(beat, 0, 320, Easing.out(Easing.quad)),
+          step(ripple, 0, 0, Easing.linear),
+          Animated.delay(380),
         ]),
       ),
-      ripple(rippleA, 0),
-      ripple(rippleB, 1000),
+      Animated.loop(step(hue, loaderAccents.length + 1, 1200 * (loaderAccents.length + 1), Easing.linear)),
     ];
     loops.forEach(loop => loop.start());
     return () => loops.forEach(loop => loop.stop());
-  }, [animations, spin, hop, rippleA, rippleB]);
+  }, [animations, beat, hue, ripple]);
   const box = size * 2.2;
   const ring = size * 1.6;
-  const stroke = 2;
-  const radius = ring / 2 - stroke;
-  const circumference = 2 * Math.PI * radius;
-  const rippleStyle = (value: Animated.Value) => ({
-    position: 'absolute' as const,
-    width: ring,
-    height: ring,
-    borderRadius: ring / 2,
-    borderWidth: 1.5,
-    borderColor: C.lime,
-    opacity: value.interpolate({ inputRange: [0, 0.15, 1], outputRange: [0, 0.4, 0] }),
-    transform: [{ scale: value.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1.35] }) }],
-  });
+  const scale = beat.interpolate({ inputRange: [-1, 0, 1], outputRange: [0.86, 1, 1.22] });
+  const tintOpacity = (index: number) => {
+    const count = loaderTints.length;
+    // Each tint peaks at its own index; the first also peaks at the end so the loop wraps smoothly.
+    const inputRange = Array.from({ length: count + 1 }, (_, value) => value);
+    const outputRange = inputRange.map(value => (value % count === index ? 1 : 0));
+    return hue.interpolate({ inputRange, outputRange });
+  };
   return (
     <View
       accessible
@@ -202,57 +190,31 @@ export function LogoLoader({ size = 64, label = 'Loading' }: { size?: number; la
           <Rect width={box} height={box} fill="url(#logo-halo)" />
         </Svg>
       </View>
-      <Animated.View style={rippleStyle(rippleA)} />
-      <Animated.View style={rippleStyle(rippleB)} />
       <Animated.View
         style={{
           position: 'absolute',
-          transform: [
-            { rotate: spin.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) },
-          ],
-        }}
-      >
-        <Svg width={ring} height={ring}>
-          <Defs>
-            <LinearGradient id="logo-arc" x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0" stopColor={C.lime} stopOpacity={1} />
-              <Stop offset="1" stopColor={C.lime} stopOpacity={0} />
-            </LinearGradient>
-          </Defs>
-          <Circle
-            cx={ring / 2}
-            cy={ring / 2}
-            r={radius}
-            stroke={C.line}
-            strokeWidth={1}
-            fill="none"
-          />
-          <Circle
-            cx={ring / 2}
-            cy={ring / 2}
-            r={radius}
-            stroke="url(#logo-arc)"
-            strokeWidth={stroke}
-            strokeLinecap="round"
-            strokeDasharray={`${circumference * 0.3} ${circumference}`}
-            fill="none"
-          />
-        </Svg>
-      </Animated.View>
-      <BrandMark
-        size={size}
-        dotTransform={{
-          transform: [
-            {
-              translateY: hop.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0, -size * 0.22],
-              }),
-            },
-            { scale: hop.interpolate({ inputRange: [0, 1], outputRange: [1, 1.15] }) },
-          ],
+          width: ring,
+          height: ring,
+          borderRadius: ring / 2,
+          borderWidth: 1.5,
+          borderColor: C.lime,
+          opacity: ripple.interpolate({ inputRange: [0, 0.1, 1], outputRange: [0, 0.45, 0] }),
+          transform: [{ scale: ripple.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.4] }) }],
         }}
       />
+      <Animated.View style={{ alignItems: 'center', justifyContent: 'center', transform: [{ scale }] }}>
+        {loaderTints.map((tint, index) => (
+          <Animated.View
+            key={index}
+            style={[
+              index ? { position: 'absolute' } : null,
+              { opacity: animations ? tintOpacity(index) : index ? 0 : 1 },
+            ]}
+          >
+            <BrandMark size={size} color={tint} />
+          </Animated.View>
+        ))}
+      </Animated.View>
     </View>
   );
 }

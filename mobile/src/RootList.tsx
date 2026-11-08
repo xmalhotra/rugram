@@ -1,9 +1,19 @@
-import React, { createContext, useCallback, useContext, useRef } from 'react';
-import { FlatList, RefreshControl, View, type StyleProp, type ViewStyle } from 'react-native';
+import React, { createContext, useCallback, useContext, useMemo, useRef } from 'react';
+import {
+  Animated,
+  FlatList,
+  RefreshControl,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { usePaneState } from './pane-state';
 import { useTheme } from './design/theme';
 const RootListNavigation = createContext(() => {});
 export const useRootListNavigation = () => useContext(RootListNavigation);
+/** Space a screen that scrolls itself should leave for the glass header, so it scrolls beneath it. */
+const RootListInset = createContext(0);
+export const useRootListInset = () => useContext(RootListInset);
 function rows(children: React.ReactNode): React.ReactNode[] {
   return React.Children.toArray(children).flatMap(child =>
     React.isValidElement<{ children?: React.ReactNode }>(child) && child.type === React.Fragment
@@ -19,6 +29,9 @@ export function RootList({
   contentContainerStyle,
   inset = 'automatic',
   staticContent = false,
+  topInset = 0,
+  scrollY,
+  scrollKey,
 }: {
   children: React.ReactNode;
   refreshing: boolean;
@@ -27,12 +40,32 @@ export function RootList({
   contentContainerStyle?: StyleProp<ViewStyle>;
   inset?: 'automatic' | 'never';
   staticContent?: boolean;
+  /** Space reserved for an overlaid header that scrolls away. */
+  topInset?: number;
+  /** Receives the scroll offset on the native thread, for headers that hide on scroll. */
+  scrollY?: Animated.Value;
+  /** Keeps a separate vertical offset for each top tab. */
+  scrollKey?: string;
 }) {
   const { colors: C } = useTheme();
-  const [offset, setOffset] = usePaneState('scrollOffset', 0);
+  const [offset, setOffset] = usePaneState(`scrollOffset:${scrollKey}`, 0);
   const list = useRef<FlatList<React.ReactNode>>(null);
   const restored = useRef(false);
+  const seenKey = useRef(scrollKey);
+  if (seenKey.current !== scrollKey) {
+    seenKey.current = scrollKey;
+    restored.current = false;
+  }
   const items = rows(children);
+  const onScroll = useMemo(
+    () =>
+      scrollY
+        ? Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+            useNativeDriver: true,
+          })
+        : undefined,
+    [scrollY],
+  );
   const resetScroll = useCallback(() => {
     setOffset(0);
     list.current?.scrollToOffset({ offset: 0, animated: false });
@@ -40,14 +73,22 @@ export function RootList({
   return (
     <RootListNavigation.Provider value={resetScroll}>
       {staticContent ? (
-        <View style={{ flex: 1 }}>{items}</View>
+        <RootListInset.Provider value={topInset}>
+          <View style={{ flex: 1 }}>{items}</View>
+        </RootListInset.Provider>
       ) : (
-        <FlatList
-          ref={list}
+        <Animated.FlatList
+          key={String(scrollKey)}
+          ref={list as never}
           style={{ flex: 1 }}
           data={items}
           contentInsetAdjustmentBehavior={inset}
-          contentContainerStyle={contentContainerStyle}
+          contentContainerStyle={[
+            contentContainerStyle,
+            topInset ? { paddingTop: topInset } : null,
+          ]}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           initialNumToRender={8}
@@ -66,7 +107,12 @@ export function RootList({
           }
           renderItem={({ item }) => <View>{item}</View>}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.lime} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={C.lime}
+              progressViewOffset={topInset}
+            />
           }
         />
       )}

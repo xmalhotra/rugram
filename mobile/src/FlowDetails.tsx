@@ -58,6 +58,7 @@ export function FlowDetails(props: React.ComponentProps<typeof FlowReferenceDeta
       onRemove={props.onRemove}
       onLink={props.onLink}
       onAddCard={props.onAddCard}
+      onIndexChange={props.onIndexChange}
       aside={
         flow.id === animalMovementFlowId ? (
           <AnimalStoryEntry inline onLink={props.onLink} />
@@ -107,6 +108,7 @@ function FlowReferenceDetails({
   onLink: (url: string) => void;
   onComplete: (id: string, enabled: boolean) => void;
   onAddCard?: (card: HabitFlow) => void;
+  onIndexChange?: (index: number) => void;
 }) {
   const { colors: C } = useTheme();
   const [budget, setBudget] = useState('1000');

@@ -20,27 +20,15 @@ test('flow browsing exposes only the current hierarchy level with a named parent
     assert.equal(flowBrowseNavigation(group).backLabel, 'All categories');
 });
 
-test('root categories are not retained above child navigation and back resets descendant filters', () => {
-  const source = readFileSync('mobile/src/FlowTopicBrowser.tsx', 'utf8');
-  const rootEnd = source.indexOf('const navigation');
-  assert.ok(rootEnd > 0);
-  assert.match(source, /if \(!group\) \{/);
-  assert.equal((source.match(/accessibilityLabel="Flow categories"/g) ?? []).length, 1);
-  assert.match(source, /flowsForFocus/);
-  assert.doesNotMatch(source, /Try a flow|BrowseShelf|flexWrap: 'wrap'/);
-  assert.doesNotMatch(
-    source,
-    /Workout collections|workoutCollection|activeCollection|In the spotlight/,
-  );
-  assert.match(source, /backLabel=\{browse.backLabel\}/);
-  assert.match(source, /navigation.addListener\('tabPress'/);
-  assert.match(source, /hasFocusedInlineDetail\(\)/);
+test('the Flows tab catalog has no Lifestyle or Tech category chrome', () => {
+  const source = readFileSync('mobile/src/FlowCatalogHome.tsx', 'utf8');
+  assert.match(source, /sectionsInRoot/);
+  assert.doesNotMatch(source, /Lifestyle|Tech|FlowCategoryHome|BrowseShelf/);
+  assert.match(readFileSync('mobile/src/FlowCatalogTile.tsx', 'utf8'), /accessibilityLabel="Go back"|PageBar/);
   assert.match(
     readFileSync('mobile/src/FlowSections.tsx', 'utf8'),
     /accessibilityLabel=\{`Back to \$\{backLabel\}`\}/,
   );
-  assert.match(source, /setGroup\(''\)/);
-  assert.doesNotMatch(source, /groups\[0\]/);
 });
 
 test('flow preview has only a visual, title, one metric, and optional saved mark', () => {
@@ -48,14 +36,15 @@ test('flow preview has only a visual, title, one metric, and optional saved mark
   assert.doesNotMatch(source, /ReasonLine|flowReason|Explore →/);
   assert.match(source, /numberOfLines=\{2\}/);
   assert.match(source, /minHeight: 188/);
-  assert.match(readFileSync('mobile/src/FlowIllustration.tsx', 'utf8'), /FitnessThumbnail/);
+  assert.match(readFileSync('mobile/src/FlowIllustration.tsx', 'utf8'), /ExerciseVisual/);
 });
 
-test('explore flows lists each category and resets vertical position', () => {
-  const source = readFileSync('mobile/src/FlowTopicBrowser.tsx', 'utf8');
-  assert.match(source, /useRootListNavigation/);
-  assert.match(source, /resetScroll\(\)/);
+test('the fitness catalog keeps its scroll position under the glass header', () => {
+  const source = readFileSync('mobile/src/FlowCatalogHome.tsx', 'utf8');
+  assert.match(source, /usePaneState\('catalogScroll'/);
+  assert.match(source, /scrollTo\(\{ y: offset/);
   const app = readFileSync('mobile/App.tsx', 'utf8');
-  assert.match(app, /staticContent=\{tab === 'Discover'\}/);
-  assert.match(app, /updatedAt=\{tab === 'Discover' \? null : updatedAt\}/);
+  assert.match(app, /staticContent=\{tab === 'Discover' \|\| \(tab === 'Picks' && picksTab === 'products'\)\}/);
+  assert.match(app, /updatedAt=\{tab === 'Discover' \|\| \(tab === 'Picks' && picksTab === 'products'\) \? null : updatedAt\}/);
+  assert.match(app, /<FlowCatalogHome/);
 });

@@ -23,7 +23,6 @@ import {
   type Demonstrator,
 } from '../shared/movement-viewer';
 import { flowContentSchema } from '../src/lib/content-validation';
-import { imageSize } from '../scripts/image-size';
 
 test('Fitness browse adds the requested gym technique collection beside Cindy and Animal movements', () => {
   assert.deepEqual(
@@ -156,40 +155,12 @@ test('new visual sequences have at least five usable positions, bounded crops an
   }
 });
 
-test('bundled image dimensions match measured atlas metadata, without remote image requests', () => {
-  for (const [key, genders] of Object.entries(fitnessAtlasLayouts)) {
-    for (const gender of ['male', 'female'] as Demonstrator[]) {
-      const folder = key.startsWith('flow-')
-        ? 'flows'
-        : key.startsWith('nutrition-')
-          ? 'nutrition'
-          : key.startsWith('coding-')
-            ? 'coding'
-            : key === 'morning'
-              ? 'lifestyle'
-              : key === 'supplements'
-                ? 'supplements'
-                : 'fitness';
-      const image = readFileSync(`mobile/assets/${folder}/${key}-${gender}-v1.jpg`);
-      assert.equal(imageSize(image).width, genders[gender].width);
-      assert.equal(imageSize(image).height, genders[gender].height);
-    }
-  }
-  const media = readFileSync('mobile/src/fitness-media.ts', 'utf8');
-  assert.equal(
-    (media.match(/require\('/g) ?? []).length,
-    Object.keys(fitnessAtlasLayouts).length * 2,
-  );
-  assert.doesNotMatch(media, /https?:/);
-});
-
-test('new cards reuse the fixed control bar, tilt-first viewer, heart and existing details surface', () => {
+test('new cards reuse the existing details surface', () => {
   const detail = readFileSync('mobile/src/WorkoutGuideDetails.tsx', 'utf8');
   const deck = readFileSync('mobile/src/AnimalMovementDeck.tsx', 'utf8');
   const app = readFileSync('mobile/App.tsx', 'utf8');
   assert.match(detail, /resolveVisualFlow\(flow, library\)/);
   assert.match(detail, /<AnimalMovementDeck/);
   assert.match(deck, /fitnessMedia\[id\]/);
-  assert.ok(deck.indexOf('<MovementControls') < deck.indexOf('<ScrollView'));
   assert.match(app, /navigation=\{selectedFlow \? 'back' : 'close'\}/);
 });

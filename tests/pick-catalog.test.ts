@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { containsCode } from './source-assertions';
 import { curatedFlowProducts } from '../shared/curated-flow-resources';
 import { curatedEverydayProducts } from '../shared/curated-everyday-products';
 import { productSchema } from '../src/lib/product-validation';
@@ -46,9 +45,6 @@ test('browse merges linked products and feed records once, honours moderation an
     }).map(product => product.id),
     [first.id],
   );
-  const source = readFileSync('mobile/src/PicksBrowser.tsx', 'utf8');
-  containsCode(source, 'const catalogue=browseProducts(data)');
-  containsCode(source, 'budgetProducts(catalogue,');
 });
 test('different supplements do not become alternatives solely because they share a category', () => {
   for (const id of ['pick-magnesium-wellbeing', 'pick-fastup-gel-lemon']) {

@@ -79,18 +79,10 @@ test('actionable motion diagnostics are retained for the information panel', asy
   assert.deepEqual(await startup({ available: false }), ['Tilt unavailable · use slider']);
   assert.deepEqual(await startup({ granted: false }), ['Allow Motion in Settings']);
   assert.deepEqual(await startup({ reducedMotion: true }), ['Reduce Motion is on']);
-  const viewer = readFileSync('mobile/src/AnimalMovementViewer.tsx', 'utf8');
-  const info = viewer.indexOf('{infoOpen &&');
-  assert.ok(viewer.indexOf('{tilt.status}') > info);
-  assert.match(viewer, /tilt.status &&/);
-  assert.doesNotMatch(viewer.slice(0, info), /tilt.status/);
 });
 
-test('swiping closes transient information and clips adjacent page content', () => {
+test('swipe pages clip adjacent card content', () => {
   const deck = readFileSync('mobile/src/AnimalMovementDeck.tsx', 'utf8');
-  assert.match(deck, /onScrollBeginDrag=\{\(\) => \{\s*setInfoOpen\(false\)/);
-  assert.match(deck, /onMomentumScrollBegin=\{\(\) => \{\s*setInfoOpen\(false\)/);
-  assert.match(deck, /position.current = next;\s*setInfoOpen\(false\)/);
   assert.match(deck, /width, height, overflow: 'hidden'/);
   assert.match(deck, /marginHorizontal: -space\.lg/);
 });

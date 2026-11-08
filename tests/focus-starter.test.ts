@@ -18,5 +18,5 @@ test('Home does not list the starter catalog; Flows keeps the guide library', ()
   assert.doesNotMatch(app, /FocusStarter/);
   assert.doesNotMatch(home, /FocusStarter|needsFocusOnboarding/);
   assert.match(flows, /tab="Discover"/);
-  containsCode(app, "tab==='Discover' && (");
+  containsCode(app, "tab==='Discover' && flowsTab==='qram' && (");
 });

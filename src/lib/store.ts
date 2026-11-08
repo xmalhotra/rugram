@@ -4,12 +4,13 @@ import bcrypt from "bcryptjs";
 import { database } from './database';
 import { creatorProfiles, initialPublications, memberAccount, routineComponents } from "./catalog";
 import type { BootstrapPayload, CreatorPublication, PublicUser, Role, TimelineEntry } from "./types";
-import {mockPhoneAccounts} from '../../shared/auth';
+import {mockPhoneAccounts,simulatedAccounts} from '../../shared/auth';
+import { usernameFromHandle,memberHandle,planUsernameChange,searchPeopleList,sqlLikeLiteral} from '../../shared/usernames';
 import {demoModeEnabled} from './runtime-config';
 import {normalizePhone} from './otp';
 import {accountChangeNeedsReason,type AccountAudit,type AccountSnapshot} from '../../shared/admin-content';
 
-type PrivateUser = PublicUser & { passwordHash?: string; password?: string;disabled?:boolean;phone?:string|null;email?:string|null };
+type PrivateUser = PublicUser & { passwordHash?: string; password?: string;disabled?:boolean;phone?:string|null;email?:string|null;handleChangedAt?:string|null };
 type UserState = { following: Set<string>; liked: Set<string>; timeline: TimelineEntry[] };
 
 declare global {
@@ -17,7 +18,7 @@ declare global {
 }
 
 class DemoStore {
-  users: PrivateUser[] = [memberAccount, ...creatorProfiles, { ...memberAccount, id: "creator", handle: "creator", name: "Demo Creator", role: "creator" as const }, { ...memberAccount, id: "admin", handle: "admin", name: "Admin", role: "admin" as const }].map((user) => ({ ...user, password: "12345" }));
+  users: PrivateUser[] = [memberAccount, ...creatorProfiles, { ...memberAccount, id: "creator", handle: "creator", name: "Demo Creator", role: "creator" as const }, { ...memberAccount, id: "admin", handle: "admin", name: "Admin", role: "admin" as const }].map((user) => ({ ...user, handle: usernameFromHandle(user.handle), password: "12345" }));
   publications: Record<string, CreatorPublication[]> = structuredClone(initialPublications);
   state: Record<string, UserState> = {};
   sessions = new Map<string, { userId: string; expiresAt: number }>();
@@ -41,7 +42,7 @@ export async function mockPhoneUser(phone:string):Promise<PublicUser> {
   let user=demo.users.find(account=>account.id===demo.phoneUsers.get(phone))??(fixture?demo.users.find(account=>account.id===fixture.handle):undefined);
   if(!user){
     const id=crypto.randomUUID();
-    user={id,handle:`member-${id}`,name:'New member',role:'member',avatarUrl:null,bio:null,instagramUrl:null};
+    user={id,handle:memberHandle(id,candidate=>demo.users.some(account=>account.handle.toLowerCase()===candidate)),name:'New member',role:'member',avatarUrl:null,bio:null,instagramUrl:null,handleChangedAt:null};
     demo.users.push(user);demo.phoneUsers.set(phone,id);
   }
   user.phone=phone;
@@ -54,6 +55,17 @@ function demoMode() {
   return demoModeEnabled(process.env);
 }
 
+/** Local demo only: signs in as a named simulated account without a code. */
+export async function simulatedPhoneUser(phone:string):Promise<PublicUser> {
+  const account=simulatedAccounts.find(item=>item.phone===phone);
+  if(!account)throw new Error('Unknown simulated account.');
+  const user=await mockPhoneUser(phone);
+  const row=demo.users.find(item=>item.id===user.id)!;
+  row.name=account.name;row.handle=usernameFromHandle(account.handle);
+  if('role' in account)row.role=account.role;
+  return toPublicUser(row as unknown as Record<string,unknown>);
+}
+
 /** Call only with the phone returned by a successful server-side OTP verification.
  * Never link legacy handles to a phone or grant roles from fixture numbers. */
 export async function verifiedPhoneUser(phone:string):Promise<PublicUser> {
@@ -62,7 +74,7 @@ export async function verifiedPhoneUser(phone:string):Promise<PublicUser> {
   const sql=database();
   const id=crypto.randomUUID();
   const rows=await sql`INSERT INTO users(id,handle,name,role,phone_e164,phone_verified_at)
-    VALUES(${id},${`member-${id}`},'New member','member',${phone},now())
+    VALUES(${id},${memberHandle(id)},'New member','member',${phone},now())
     ON CONFLICT(phone_e164) DO UPDATE SET phone_e164=EXCLUDED.phone_e164
     RETURNING id,handle,name,role,avatar_url,bio,instagram_url,is_disabled`;
   if(rows[0].is_disabled)throw new Error('Account is suspended.');
@@ -103,6 +115,79 @@ export async function updateMemberName(user: PublicUser, name: string) {
   await database()`UPDATE users SET name=${clean} WHERE id=${user.id}`;
 }
 
+function uniqueViolation(error: unknown) {
+  return typeof error === 'object' && error !== null && 'code' in error && (error as { code?: string }).code === '23505';
+}
+
+export async function updateUsername(user: PublicUser, input: string) {
+  if (demoMode()) {
+    const row = demo.users.find(item => item.id === user.id);
+    if (!row) throw new Error('Account not found.');
+    const plan = planUsernameChange(
+      { id: row.id, handle: row.handle, handleChangedAt: row.handleChangedAt ?? null },
+      input,
+      demo.users.map(item => ({ id: item.id, handle: item.handle })),
+    );
+    if (!plan.ok) throw new Error(plan.error);
+    if (!plan.changed) return;
+    row.handle = plan.handle;
+    row.handleChangedAt = plan.handleChangedAt;
+    return;
+  }
+  const sql = database();
+  const rows = await sql`SELECT handle, handle_changed_at FROM users WHERE id=${user.id}`;
+  const current = rows[0];
+  if (!current) throw new Error('Account not found.');
+  const normalized = input.trim().toLowerCase().replace(/^@/, '');
+  const candidate = normalized.startsWith('q_') ? normalized : `q_${normalized}`;
+  const clash = await sql`SELECT id, handle FROM users WHERE lower(handle)=${candidate} AND id<>${user.id} LIMIT 1`;
+  const changedAt = current.handle_changed_at ? new Date(String(current.handle_changed_at)).toISOString() : null;
+  const plan = planUsernameChange(
+    { id: user.id, handle: String(current.handle), handleChangedAt: changedAt },
+    input,
+    clash.map(row => ({ id: String(row.id), handle: String(row.handle) })),
+  );
+  if (!plan.ok) throw new Error(plan.error);
+  if (!plan.changed) return;
+  try {
+    await sql`UPDATE users SET handle=${plan.handle}, handle_changed_at=${plan.handleChangedAt} WHERE id=${user.id}`;
+  } catch (error) {
+    if (uniqueViolation(error)) throw new Error('That username is taken.');
+    throw error;
+  }
+}
+
+export async function searchPeople(user: PublicUser, query: string) {
+  const term = query.trim().replace(/^@/, '');
+  if (term.length < 2) throw new Error('Type at least 2 characters.');
+  if (demoMode())
+    return searchPeopleList(
+      user.id,
+      query,
+      demo.users.map(person => ({
+        id: person.id,
+        name: person.name,
+        handle: person.handle,
+        avatarUrl: person.avatarUrl ?? null,
+        disabled: Boolean(person.disabled),
+      })),
+    );
+  const literal = sqlLikeLiteral(term);
+  const contains = `%${literal}%`;
+  const prefix = `${literal}%`;
+  const rows = await database()`SELECT id, name, handle, avatar_url FROM users
+    WHERE NOT is_disabled AND id<>${user.id}
+      AND (name ILIKE ${contains} ESCAPE '\\' OR handle ILIKE ${contains} ESCAPE '\\')
+    ORDER BY CASE WHEN name ILIKE ${prefix} ESCAPE '\\' OR handle ILIKE ${prefix} ESCAPE '\\' THEN 0 ELSE 1 END, lower(name), id
+    LIMIT 20`;
+  return rows.map(row => ({
+    id: String(row.id),
+    name: String(row.name),
+    handle: String(row.handle),
+    avatarUrl: row.avatar_url ? String(row.avatar_url) : null,
+  }));
+}
+
 export async function setMemberEmail(user: PublicUser, email: string) {
   const clean = email.trim().toLowerCase();
   if (demoMode()) {
@@ -134,19 +219,19 @@ function toPublicUser(row: Record<string, unknown>): PublicUser {
 export async function authenticate(handle: string, password: string): Promise<PublicUser | null> {
   const normalized = handle.trim().toLowerCase().replace(/^@/, "");
   if (demoMode()) {
-    const user = demo.users.find((candidate) => candidate.handle === normalized || candidate.id === normalized);
+    const user = demo.users.find((candidate) => candidate.handle === usernameFromHandle(normalized) || candidate.id === normalized);
     return user?.password === password ? toPublicUser(user as unknown as Record<string, unknown>) : null;
   }
   const sql = database();
-  const rows = await sql`SELECT id, handle, name, role, avatar_url, bio, instagram_url, password_hash FROM users WHERE lower(handle) = ${normalized} LIMIT 1`;
+  const rows = await sql`SELECT id, handle, name, role, avatar_url, bio, instagram_url, password_hash FROM users WHERE lower(handle) IN (${normalized}, ${usernameFromHandle(normalized)}) LIMIT 1`;
   const row = rows[0] as Record<string, unknown> | undefined;
   if (!row || typeof row.password_hash !== "string" || !(await bcrypt.compare(password, row.password_hash))) return null;
   return toPublicUser(row);
 }
 
 export async function getCreatorAccount(handle:string):Promise<PublicUser|null>{
-  if(isDemoMode()){const user=demo.users.find(user=>user.role==='creator'&&user.handle.toLowerCase()===handle.trim().toLowerCase());return user?toPublicUser(user as unknown as Record<string,unknown>):null;}
-  const rows=await database()`SELECT id,handle,name,role FROM users WHERE lower(handle)=${handle.trim().toLowerCase()} AND role='creator' LIMIT 1`;
+  if(isDemoMode()){const user=demo.users.find(user=>user.role==='creator'&&user.handle.toLowerCase()===usernameFromHandle(handle));return user?toPublicUser(user as unknown as Record<string,unknown>):null;}
+  const rows=await database()`SELECT id,handle,name,role FROM users WHERE lower(handle)=${usernameFromHandle(handle)} AND role='creator' LIMIT 1`;
   return rows[0]?toPublicUser(rows[0]):null;
 }
 export const peoplePageSize=50;
@@ -164,6 +249,7 @@ export async function userNames(ids:(string|null|undefined)[]):Promise<Record<st
 }
 export async function adminUpdatePerson(admin:PublicUser,input:{id:string;name:string;handle:string;role:Role;bio:string;instagramUrl:string;avatarUrl:string;disabled:boolean;reason?:string}){
   if(admin.role!=='admin')throw new Error('Admin access required.');
+  input={...input,handle:usernameFromHandle(input.handle)};
   if(input.id===admin.id&&(input.role!=='admin'||input.disabled))throw new Error('Content cannot remove your own admin access.');
   const reason=input.reason?.trim()||null;
   if(reason&&reason.length<3)throw new Error('Content reason must be at least 3 characters.');
@@ -306,9 +392,10 @@ export async function getBootstrap(user: PublicUser): Promise<BootstrapPayload> 
 }
 
 export async function getPublicCreator(handle: string) {
-  const normalized = handle.trim().toLowerCase().replace(/^@/, "");
+  // Old links without the q_ prefix keep working.
+  const normalized = usernameFromHandle(handle);
   if (demoMode()) {
-    const creator = creatorProfiles.find((profile) => profile.handle === normalized);
+    const creator = creatorProfiles.find((profile) => usernameFromHandle(profile.handle) === normalized);
     if (!creator) return null;
     const publications = demo.publications[creator.id] ?? [];
     const componentIds = new Set(publications.map((publication) => publication.componentId));
@@ -420,6 +507,25 @@ export async function setPublication(user: PublicUser, publication: CreatorPubli
   if (published) await sql`INSERT INTO creator_component_publications (creator_id, component_id, weekday, start_time, status, sort_order) VALUES (${user.id}, ${publication.componentId}, ${publication.weekday}, ${publication.startTime}, 'published', 0) ON CONFLICT (creator_id, component_id) DO UPDATE SET weekday = EXCLUDED.weekday, start_time = EXCLUDED.start_time, status = 'published'`;
   else await sql`UPDATE creator_component_publications SET status = 'archived' WHERE creator_id = ${user.id} AND component_id = ${publication.componentId}`;
   await sql`INSERT INTO audit_log (id, actor_id, action, entity_type, entity_id, metadata) VALUES (${crypto.randomUUID()}, ${user.id}, ${published ? "published" : "archived"}, 'creator_component_publication', ${`${user.id}:${publication.componentId}`}, ${JSON.stringify({ weekday: publication.weekday, startTime: publication.startTime })}::jsonb)`;
+}
+
+/** A member sets their own display name, e.g. a web guest registering for an event. */
+export async function setOwnName(user: PublicUser, raw: string): Promise<PublicUser> {
+  const name = raw.replace(/\s+/g, ' ').trim();
+  if (name.length < 2 || name.length > 60) throw new Error('Use a name of 2 to 60 characters.');
+  if (demoMode()) {
+    const row = demo.users.find(item => item.id === user.id);
+    if (row) row.name = name;
+    return { ...user, name };
+  }
+  await database()`UPDATE users SET name=${name} WHERE id=${user.id}`;
+  return { ...user, name };
+}
+
+/** Demo profiles keep the public avatar URL on the in-memory user. */
+export function setDemoUserAvatar(userId: string, avatarUrl: string | null) {
+  const row = demo.users.find(item => item.id === userId);
+  if (row) row.avatarUrl = avatarUrl;
 }
 
 export function isDemoMode() {

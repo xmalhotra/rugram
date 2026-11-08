@@ -7,21 +7,31 @@ import {
   indianMobilePhone,
   mockPhoneAccounts,
   type OtpChallenge,
+  type QuickLoginAccount,
 } from '../../shared/auth';
 import { Button, Card, Heading } from './design/components';
 import { useTheme } from './design/theme';
 import { useSession } from './session';
-import { NeonBackdrop } from './design/NeonBackdrop';
+import { ScreenBackground } from './design/ScreenBackground';
 import { BrandMark } from './design/BrandMark';
 import { OtpCodeInput } from './OtpCodeInput';
 import { useAnimations } from './motion';
+import { api } from './api';
 
 export function PhoneSignIn() {
   const { colors: C } = useTheme();
   const animations = useAnimations();
   const enter = useRef(new Animated.Value(0)).current;
   const pulse = useRef(new Animated.Value(1)).current;
-  const { busy, error, setError, requestOtp, verifyOtp } = useSession();
+  const { busy, error, setError, requestOtp, verifyOtp, quickLogin } = useSession();
+  const [quick, setQuick] = useState<QuickLoginAccount[]>([]);
+  useEffect(() => {
+    // The server lists these only in its local mock-SMS demo mode.
+    if (!__DEV__) return;
+    api<{ accounts: QuickLoginAccount[] }>('/api/mobile/auth')
+      .then(result => setQuick(result.accounts))
+      .catch(() => undefined);
+  }, []);
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
@@ -79,7 +89,7 @@ export function PhoneSignIn() {
   }
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
-      <NeonBackdrop />
+      <ScreenBackground />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -143,6 +153,26 @@ export function PhoneSignIn() {
                 disabled={busy || !indianMobilePhone(phone)}
                 onPress={() => void request()}
               />
+              {quick.length > 0 && (
+                <Card>
+                  <Text style={{ color: C.text, fontSize: 17, fontWeight: '600' }}>
+                    Simulated accounts
+                  </Text>
+                  <Text style={text}>
+                    Local demo only. Tap to sign in without a code. They already publish, follow,
+                    upvote and repost each other.
+                  </Text>
+                  {quick.map((account, index) => (
+                    <Button
+                      key={account.number}
+                      title={`${account.number} · ${account.name}`}
+                      secondary
+                      onPress={() => void quickLogin(index + 1)}
+                      disabled={busy}
+                    />
+                  ))}
+                </Card>
+              )}
               {__DEV__ && process.env.EXPO_PUBLIC_DEMO_MODE === 'true' && (
                 <Card>
                   <Text style={{ color: C.text, fontSize: 17, fontWeight: '600' }}>

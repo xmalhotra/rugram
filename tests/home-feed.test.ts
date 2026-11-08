@@ -68,17 +68,20 @@ test('Home prioritises named added flows without the large Today panel or green 
   const app=readFileSync('mobile/App.tsx','utf8');
   const home=readFileSync('mobile/src/HomeFeed.tsx','utf8');
   assert.doesNotMatch(app,/TodayChecklist/);
-  assert.match(home,/Your flows/);
-  assert.match(home,/latest first/);
-  assert.match(home,/No flows added yet/);
-  assert.match(home,/accessibilityLabel="Open Flows"/);
+  // Yours is only the map and Daily: no page title, no stage tabs, just Start when empty.
+  assert.doesNotMatch(home,/Your flows|Your collection|Up next|Resting|Sort new saves/);
+  assert.match(home,/label: 'Flow map'/);
+  assert.match(home,/label: 'Daily'/);
+  assert.match(home,/<StartButton label="Start" onPress=\{onExplore\}/);
+  assert.match(home,/\+ Add flows/);
   assert.match(home,/onPress: \(\) => onFlow\(flow\)/);
   assert.match(home,/<FlowMindMap branches=\{branches\} \/>/);
   assert.match(home,/<FlowIllustration flow=\{flow\}/);
-  assert.match(home,/<FlowHeartAction/);
-  assert.ok(home.indexOf('flows.slice(0, limit)')<home.indexOf('From your flows'));
-  assert.doesNotMatch(home,/todaySteps|done today|ReasonLine|flowReason|flow\.milestone|Open flow →|C\.lime/);
+  assert.doesNotMatch(home,/<FlowHeartAction/);
+  assert.doesNotMatch(home,/From your flows|Nothing for \{/);
+  assert.match(app,/<YoursSwitch \/>/);
   const heart=readFileSync('mobile/src/FlowHeartAction.tsx','utf8');
   assert.match(heart,/label \?\?/);
-  assert.match(heart,/#E10600/);
+  // Saved flows show a filled Save button rather than a red heart.
+  assert.match(heart,/✓ Saved/);
 });

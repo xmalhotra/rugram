@@ -8,8 +8,13 @@ export type FlowMindNode = {
   title: string;
   detail: string;
   onPress: () => void;
+  onLongPress?: () => void;
   art: React.ReactNode;
   action?: React.ReactNode;
+  extra?: React.ReactNode;
+  weight?: 'daily' | 'regular' | 'light';
+  stale?: boolean;
+  streak?: boolean;
 };
 
 export type FlowMindBranchView = {
@@ -47,57 +52,80 @@ export function FlowMindMap({ branches }: { branches: readonly FlowMindBranchVie
               ) : null}
             </View>
             <View style={{ flex: 1, gap: 10, paddingTop: 4, paddingBottom: 16 }}>
-              {branch.nodes.map(node => (
-                <View key={node.id} style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <View style={{ width: 16, height: 2, backgroundColor: C.line }} />
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Open ${node.title}`}
-                    onPress={node.onPress}
-                    style={({ pressed }) => ({
-                      flex: 1,
-                      minWidth: 0,
-                      minHeight: 76,
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 12,
-                      padding: 10,
-                      borderRadius: 16,
-                      borderWidth: 1,
-                      borderColor: C.line,
-                      backgroundColor: C.card,
-                      opacity: pressed ? 0.7 : 1,
-                    })}
-                  >
+              {branch.nodes.map(node => {
+                const tile =
+                  node.weight === 'daily' ? 64 : node.weight === 'light' ? 40 : node.weight === 'regular' ? 48 : 56;
+                return (
+                <View key={node.id} style={{ gap: 6, opacity: node.stale ? 0.45 : 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <View style={{ width: 16, height: 2, backgroundColor: C.line }} />
                     <View
-                      accessible={false}
                       style={{
-                        width: 56,
-                        height: 56,
-                        borderRadius: 12,
-                        overflow: 'hidden',
+                        flex: 1,
+                        minWidth: 0,
+                        minHeight: 76,
+                        flexDirection: 'row',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: C.bg,
+                        gap: 8,
+                        padding: 10,
+                        borderRadius: 16,
+                        borderWidth: 1,
+                        borderColor: C.line,
+                        backgroundColor: C.card,
                       }}
                     >
-                      {node.art}
-                    </View>
-                    <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
-                      <Text
-                        numberOfLines={2}
-                        style={{ color: C.text, fontSize: 16, lineHeight: 21, fontWeight: '600' }}
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel={`Open ${node.title}`}
+                        onPress={node.onPress}
+                        onLongPress={node.onLongPress}
+                        style={({ pressed }) => ({
+                          flex: 1,
+                          minWidth: 0,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 12,
+                          opacity: pressed ? 0.7 : 1,
+                        })}
                       >
-                        {node.title}
-                      </Text>
-                      <Text numberOfLines={1} style={{ color: C.muted, fontSize: 12 }}>
-                        {node.detail}
-                      </Text>
+                        <View
+                          accessible={false}
+                          style={{
+                            width: tile,
+                            height: tile,
+                            borderRadius: 12,
+                            borderWidth: node.streak ? 2 : 0,
+                            borderColor: C.lime,
+                            overflow: 'hidden',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: C.bg,
+                          }}
+                        >
+                          {node.art}
+                        </View>
+                        <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
+                          <Text
+                            numberOfLines={2}
+                            style={{ color: C.text, fontSize: 16, lineHeight: 21, fontWeight: '600' }}
+                          >
+                            {node.title}
+                          </Text>
+                          <Text numberOfLines={2} style={{ color: C.muted, fontSize: 12 }}>
+                            {node.stale ? 'Not opened lately' : node.detail}
+                          </Text>
+                          {node.streak ? (
+                            <Text style={{ color: C.lime, fontSize: 11, fontWeight: '600' }}>3-day streak</Text>
+                          ) : null}
+                        </View>
+                      </Pressable>
+                      {node.action}
                     </View>
-                    {node.action}
-                  </Pressable>
+                  </View>
+                  {node.extra}
                 </View>
-              ))}
+                );
+              })}
             </View>
           </View>
         </View>

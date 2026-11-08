@@ -200,6 +200,7 @@ export async function mobileBootstrap(user: PublicUser, cursor = ''): Promise<Mo
       role: role(user),
       phone: contact.phone,
       email: contact.email,
+      avatarUrl: user.avatarUrl,
     },
     creatorEventQuota: quota,
     profile: {

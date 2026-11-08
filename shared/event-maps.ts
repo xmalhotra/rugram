@@ -6,3 +6,8 @@ export function eventMapsUrl(event: Pick<CityEvent, 'venue' | 'city'>) {
     return null;
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([venue, event.city.trim()].filter(Boolean).join(', '))}`;
 }
+/** Opens a searched venue in Google Maps on any device; needs no API key. */
+export function locationMapsUrl(location: { name: string; address: string; placeId?: string }) {
+  const query = encodeURIComponent(`${location.name}, ${location.address}`);
+  return `https://www.google.com/maps/search/?api=1&query=${query}${location.placeId ? `&query_place_id=${encodeURIComponent(location.placeId)}` : ''}`;
+}

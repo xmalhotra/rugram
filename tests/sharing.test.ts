@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
-import { shareFlow, sharePick, shareEvent, contentLink } from '../shared/sharing';
+import { shareFlow, shareProfile, sharePick, shareEvent, contentLink } from '../shared/sharing';
 import type { HabitFlow, Product, CityEvent } from '../shared/mobile';
 test('flow messages include context and an encoded canonical link', () => {
   const result = shareFlow({ id: 'one space', title: 'A flow', steps: [{ id: 'a' }] } as HabitFlow);
@@ -41,4 +41,9 @@ test('ordinary sign-in lands in a real app root before parameterised link routes
   const screen = readFileSync('mobile/src/ContentLinkScreen.tsx', 'utf8');
   assert.match(screen, /PhoneSignIn/);
   assert.match(screen, /mobile\/item/);
+});
+
+test('a shared profile has the public name, username and a link, and nothing else', () => {
+  const shared = shareProfile({ id: 'a/b', name: ' Aarav ', handle: 'q_aarav' });
+  assert.equal(shared.message, 'Aarav (@q_aarav) on Qram\nqram://member/a%2Fb');
 });

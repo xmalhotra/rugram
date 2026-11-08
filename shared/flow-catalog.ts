@@ -13,6 +13,7 @@ import { morningDrinksFlow, morningDrinkFlows } from './morning-drinks';
 import { trainingSupplementFlows, trainingSupplementTopicFlows } from './training-supplements';
 import { codingFlows, codingCardFlows } from './coding-flows';
 import { techResourceFlows } from './tech-resources';
+import { gymHabitFlows } from './gym-flows';
 
 export const flowAreas: { id: FlowArea; title: string; description: string; symbol: string }[] = [
   {
@@ -144,6 +145,7 @@ export const goalFlows: HabitFlow[] = [
   ...starterFlows,
   ...popularWorkoutFlows,
   ...fitnessGuideFlows,
+  ...gymHabitFlows,
   ...animalMovementFlows,
   animalMovementCollectionFlow,
   morningDrinksFlow,
@@ -470,4 +472,362 @@ export const goalFlows: HabitFlow[] = [
 
 export function discoverFlows(library: HabitFlow[], area: FlowArea, pathId: string) {
   return library.filter(flow => flow.area === area && flow.pathId === pathId);
+}
+
+/** Personal flow creation stays in the code, and off, while a finished run is the way onto the timeline. */
+export const flowCreationEnabled = false;
+
+/** Fitness catalog for the Flows tab. Separate from saved HabitFlow content above. */
+export type CatalogStatus = 'live' | 'coming-soon';
+export type CatalogLevel = 'Beginner' | 'Intermediate' | 'Advanced';
+export type CatalogFlow = {
+  id: string;
+  title: string;
+  tileId: string;
+  level: CatalogLevel;
+  tags: string[];
+  status: CatalogStatus;
+  /** Real HabitFlow id once the entry is live. */
+  flowId?: string;
+  /** Catalog ids to suggest after this one. Unused in the UI for now. */
+  next?: string[];
+};
+export type CatalogTile = {
+  id: string;
+  title: string;
+  sectionId: string;
+  chips?: string[];
+  /** Exercise icon for the tile. A missing picture falls back to the section line icon. */
+  iconKey?: string;
+};
+export type CatalogRoot = { id: string; title: string };
+export type CatalogSection = { id: string; title: string; rootId: string };
+
+/** Top-level categories on the catalog page. Fitness comes first; others join as they are curated. */
+export const catalogRoots: CatalogRoot[] = [{ id: 'fitness', title: 'Fitness' }];
+
+export const catalogSections: CatalogSection[] = [
+  { id: 'gym', title: 'Gym', rootId: 'fitness' },
+  { id: 'calisthenics', title: 'Calisthenics', rootId: 'fitness' },
+  { id: 'crossfit', title: 'CrossFit', rootId: 'fitness' },
+  { id: 'home', title: 'Home Workouts', rootId: 'fitness' },
+  { id: 'running', title: 'Running', rootId: 'fitness' },
+  { id: 'endurance', title: 'Endurance Events', rootId: 'fitness' },
+];
+
+const tile = (
+  id: string,
+  title: string,
+  sectionId: string,
+  chips?: string[],
+): CatalogTile => ({
+  id,
+  title,
+  sectionId,
+  ...(chips ? { chips } : {}),
+});
+
+export const catalogTiles: CatalogTile[] = [
+  tile('gym-back', 'Back', 'gym'),
+  tile('gym-biceps', 'Biceps', 'gym'),
+  tile('gym-chest', 'Chest', 'gym'),
+  tile('gym-triceps', 'Triceps', 'gym'),
+  tile('gym-shoulders', 'Shoulders', 'gym'),
+  tile('gym-legs', 'Legs', 'gym'),
+  tile('gym-core', 'Core', 'gym'),
+  tile('gym-supersets', 'Supersets', 'gym', [
+    'Back + Biceps',
+    'Chest + Triceps',
+    'Shoulders + Arms',
+    'Legs + Core',
+  ]),
+  tile('gym-full', 'Full Body', 'gym'),
+  tile('cal-upper', 'Upper Body', 'calisthenics'),
+  tile('cal-pull', 'Pull', 'calisthenics'),
+  tile('cal-push', 'Push', 'calisthenics'),
+  tile('cal-legs', 'Legs', 'calisthenics'),
+  tile('cal-core', 'Core', 'calisthenics'),
+  tile('cal-skills', 'Skills', 'calisthenics'),
+  tile('cal-full', 'Full Body', 'calisthenics'),
+  tile('cf-benchmark', 'Benchmark WODs', 'crossfit'),
+  tile('cf-amrap', 'AMRAP', 'crossfit'),
+  tile('cf-emom', 'EMOM', 'crossfit'),
+  tile('cf-fortime', 'For Time', 'crossfit'),
+  tile('cf-hero', 'Hero WODs', 'crossfit'),
+  tile('home-none', 'No Equipment', 'home'),
+  tile('home-dumbbells', 'Dumbbells', 'home'),
+  tile('home-bands', 'Resistance Bands', 'home'),
+  tile('home-short', 'Under 20 Minutes', 'home'),
+  tile('run-5k', '5K', 'running'),
+  tile('run-10k', '10K', 'running'),
+  tile('run-half', 'Half Marathon', 'running'),
+  tile('run-marathon', 'Marathon', 'running'),
+  tile('run-ultra', 'Ultramarathon', 'running'),
+  tile('run-trail', 'Trail', 'running'),
+  { ...tile('run-drills', 'Drills & Plyometrics', 'running'), iconKey: 'pogo-jumps' },
+  tile('end-sprint', 'Sprint Triathlon', 'endurance'),
+  tile('end-olympic', 'Olympic Triathlon', 'endurance'),
+  tile('end-half-iron', 'Half Ironman', 'endurance'),
+  tile('end-iron', 'Ironman', 'endurance'),
+  tile('end-duathlon', 'Duathlon', 'endurance'),
+  tile('end-hyrox', 'HYROX', 'endurance'),
+];
+
+const levelOrder: CatalogLevel[] = ['Beginner', 'Intermediate', 'Advanced'];
+
+function coming(
+  tileId: string,
+  items: [string, CatalogLevel, string[]?][],
+): CatalogFlow[] {
+  return items.map(([title, level, tags]) => ({
+    id: `${tileId}-${title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')}`,
+    title,
+    tileId,
+    level,
+    tags: tags ?? [],
+    status: 'coming-soon',
+  }));
+}
+
+export const catalogFlows: CatalogFlow[] = [
+  ...coming('gym-back', [
+    ['Chest-supported row', 'Beginner'],
+    ['Pull-up and row day', 'Intermediate'],
+    ['Weighted pull-up strength', 'Advanced'],
+  ]),
+  ...coming('gym-biceps', [
+    ['First curls', 'Beginner'],
+    ['Arm day curls', 'Intermediate'],
+    ['Peak contraction finishers', 'Advanced'],
+  ]),
+  ...coming('gym-chest', [
+    ['Push-up to bench', 'Beginner'],
+    ['Flat and incline press', 'Intermediate'],
+    ['Heavy bench cycle', 'Advanced'],
+  ]),
+  ...coming('gym-triceps', [
+    ['Press-down basics', 'Beginner'],
+    ['Close-grip press', 'Intermediate'],
+    ['Dips and extensions', 'Advanced'],
+  ]),
+  ...coming('gym-shoulders', [
+    ['Shoulder press start', 'Beginner'],
+    ['Overhead and raises', 'Intermediate'],
+    ['Strict press strength', 'Advanced'],
+  ]),
+  ...coming('gym-legs', [
+    ['Squat pattern start', 'Beginner'],
+    ['Squat and hinge day', 'Intermediate'],
+    ['Lower body strength', 'Advanced'],
+  ]),
+  ...coming('gym-core', [
+    ['Dead bug and plank', 'Beginner'],
+    ['Anti-rotation core', 'Intermediate'],
+    ['Hanging core strength', 'Advanced'],
+  ]),
+  ...coming('gym-supersets', [
+    ['Back + Biceps superset', 'Intermediate', ['Back + Biceps']],
+    ['Chest + Triceps superset', 'Intermediate', ['Chest + Triceps']],
+    ['Shoulders + Arms superset', 'Intermediate', ['Shoulders + Arms']],
+    ['Legs + Core superset', 'Intermediate', ['Legs + Core']],
+  ]),
+  ...coming('gym-full', [
+    ['Full body three days', 'Beginner'],
+    ['Full body strength', 'Intermediate'],
+    ['Full body density', 'Advanced'],
+  ]),
+  ...coming('cal-pull', [
+    ['First pull-up', 'Beginner'],
+    ['Pull-up volume', 'Intermediate'],
+    ['Weighted pull-up', 'Advanced'],
+  ]),
+  ...coming('cal-push', [
+    ['Knee push-up', 'Beginner'],
+    ['Push-up strength', 'Intermediate'],
+    ['Dip progression', 'Advanced'],
+  ]),
+  ...coming('cal-legs', [
+    ['Squat hold', 'Beginner'],
+    ['Pistol prep', 'Intermediate'],
+    ['Shrimp squat', 'Advanced'],
+  ]),
+  ...coming('cal-core', [
+    ['Hollow body', 'Beginner'],
+    ['L-sit prep', 'Intermediate'],
+    ['Hanging leg raise', 'Advanced'],
+  ]),
+  ...coming('cal-skills', [
+    ['Support hold', 'Beginner'],
+    ['Wall handstand', 'Intermediate'],
+    ['Muscle-up prep', 'Advanced'],
+  ]),
+  ...coming('cal-full', [
+    ['Calisthenics circuit', 'Beginner'],
+    ['Mixed skill day', 'Intermediate'],
+    ['Density circuit', 'Advanced'],
+  ]),
+  ...coming('cf-benchmark', [
+    ['Cindy', 'Intermediate'],
+    ['Fran', 'Advanced'],
+    ['Helen', 'Intermediate'],
+  ]),
+  ...coming('cf-amrap', [
+    ['12 minute AMRAP', 'Beginner'],
+    ['20 minute AMRAP', 'Intermediate'],
+    ['Partner AMRAP', 'Advanced'],
+  ]),
+  ...coming('cf-emom', [
+    ['10 minute EMOM', 'Beginner'],
+    ['Strength EMOM', 'Intermediate'],
+    ['Mixed modal EMOM', 'Advanced'],
+  ]),
+  ...coming('cf-fortime', [
+    ['Short for time', 'Beginner'],
+    ['Chipper for time', 'Intermediate'],
+    ['Ladder for time', 'Advanced'],
+  ]),
+  ...coming('cf-hero', [
+    ['Murph scaled', 'Intermediate'],
+    ['DT', 'Advanced'],
+    ['Kelly', 'Intermediate'],
+  ]),
+  ...coming('home-none', [
+    ['Bodyweight starter', 'Beginner'],
+    ['Living room circuit', 'Intermediate'],
+    ['Density no gear', 'Advanced'],
+  ]),
+  ...coming('home-dumbbells', [
+    ['Dumbbell full body', 'Beginner'],
+    ['Dumbbell strength', 'Intermediate'],
+    ['Dumbbell complex', 'Advanced'],
+  ]),
+  ...coming('home-bands', [
+    ['Band warmup', 'Beginner'],
+    ['Band strength', 'Intermediate'],
+    ['Band finisher', 'Advanced'],
+  ]),
+  ...coming('home-short', [
+    ['15 minute starter', 'Beginner'],
+    ['20 minute strength', 'Intermediate'],
+    ['12 minute burner', 'Advanced'],
+  ]),
+  ...coming('run-5k', [
+    ['Couch to 5K', 'Beginner'],
+    ['Easy 5K', 'Beginner'],
+    ['Faster 5K', 'Intermediate'],
+  ]),
+  ...coming('run-10k', [
+    ['First 10K', 'Beginner'],
+    ['10K steady', 'Intermediate'],
+    ['10K speed', 'Advanced'],
+  ]),
+  ...coming('run-half', [
+    ['First half marathon', 'Intermediate'],
+    ['Half marathon base', 'Intermediate'],
+    ['Half marathon sharpen', 'Advanced'],
+  ]),
+  ...coming('run-marathon', [
+    ['First marathon, 16 weeks', 'Intermediate'],
+    ['Marathon long run', 'Intermediate'],
+    ['Marathon race week', 'Advanced'],
+  ]),
+  ...coming('run-ultra', [
+    ['Time on feet', 'Intermediate'],
+    ['First ultra', 'Advanced'],
+    ['Ultra back to back', 'Advanced'],
+  ]),
+  ...coming('run-trail', [
+    ['Trail introduction', 'Beginner'],
+    ['Hilly trail', 'Intermediate'],
+    ['Technical trail', 'Advanced'],
+  ]),
+  ...coming('end-sprint', [
+    ['Sprint triathlon start', 'Beginner'],
+    ['Sprint brick', 'Intermediate'],
+    ['Sprint race week', 'Intermediate'],
+  ]),
+  ...coming('end-olympic', [
+    ['Olympic distance base', 'Intermediate'],
+    ['Olympic brick', 'Intermediate'],
+    ['Olympic race plan', 'Advanced'],
+  ]),
+  ...coming('end-half-iron', [
+    ['Half Ironman brick', 'Intermediate'],
+    ['Half Ironman base', 'Advanced'],
+    ['Half Ironman long', 'Advanced'],
+  ]),
+  ...coming('end-iron', [
+    ['Ironman year', 'Advanced'],
+    ['Ironman long ride', 'Advanced'],
+    ['Ironman run off the bike', 'Advanced'],
+  ]),
+  ...coming('end-duathlon', [
+    ['First duathlon', 'Beginner'],
+    ['Duathlon brick', 'Intermediate'],
+    ['Duathlon speed', 'Advanced'],
+  ]),
+  ...coming('end-hyrox', [
+    ['HYROX introduction', 'Beginner'],
+    ['HYROX stations', 'Intermediate'],
+    ['HYROX race sim', 'Advanced'],
+  ]),
+  {
+    id: 'cal-upper-beginner',
+    title: 'Upper Body at Home',
+    tileId: 'cal-upper',
+    level: 'Beginner',
+    tags: [],
+    status: 'coming-soon',
+    flowId: 'cal-upper-beginner',
+  },
+  {
+    id: 'cal-upper-intermediate',
+    title: 'Upper Body at Home',
+    tileId: 'cal-upper',
+    level: 'Intermediate',
+    tags: [],
+    status: 'coming-soon',
+    flowId: 'cal-upper-intermediate',
+  },
+];
+
+const backAndBiceps = catalogFlows.find(flow => flow.id === 'gym-supersets-back-biceps-superset');
+if (backAndBiceps) backAndBiceps.flowId = 'gym-back-biceps';
+
+for (const flow of catalogFlows) {
+  const rank = levelOrder.indexOf(flow.level);
+  const step = catalogFlows.find(
+    item => item.tileId === flow.tileId && levelOrder.indexOf(item.level) === rank + 1,
+  );
+  if (step) flow.next = [step.id];
+}
+
+export function sectionsWithTiles() {
+  return catalogSections.map(section => ({
+    ...section,
+    tiles: catalogTiles.filter(item => item.sectionId === section.id),
+  }));
+}
+
+export function sectionsInRoot(id: string) {
+  return catalogSections.filter(section => section.rootId === id);
+}
+
+export function tilesInSection(id: string) {
+  return catalogTiles.filter(item => item.sectionId === id);
+}
+
+export function flowsInTile(id: string) {
+  return catalogFlows.filter(item => item.tileId === id);
+}
+
+export function catalogFlow(id: string) {
+  return catalogFlows.find(item => item.id === id);
+}
+
+export function catalogTile(id: string) {
+  return catalogTiles.find(item => item.id === id);
 }

@@ -132,16 +132,12 @@ test('custom non-fitness topics preserve configured order and empty categories h
 });
 
 test('grouped browsers route all categories through one sticky rail with content preferences, not stacked menus', () => {
-  const browser = readFileSync('mobile/src/FlowTopicBrowser.tsx', 'utf8');
+  const catalog = readFileSync('mobile/src/FlowCatalogHome.tsx', 'utf8');
   const section = readFileSync('mobile/src/FlowSections.tsx', 'utf8');
   const nutrition = readFileSync('mobile/src/NutritionDiscovery.tsx', 'utf8');
-  assert.equal((browser.match(/<FlowSections/g) ?? []).length, 1);
-  assert.doesNotMatch(
-    browser,
-    /standalone && !nutrition|setTopic|<NutritionDiscovery|<CategoryRail/,
-  );
-  assert.match(browser, /key=\{group.id\}/);
-  assert.match(browser, /initialSection=\{initialCategory\}/);
+  // The Flows tab is the fitness catalog. Nutrition paths still use FlowSections.
+  assert.doesNotMatch(catalog, /<CategoryRail|<NutritionDiscovery/);
+  assert.match(catalog, /sectionsInRoot/);
   assert.match(nutrition, /<FlowSections/);
   assert.doesNotMatch(nutrition, /<CategoryRail|setCategory|setOption|LegacyNutrition/);
   assert.equal((section.match(/<CategoryRail/g) ?? []).length, 1);

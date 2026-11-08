@@ -17,6 +17,7 @@ type Session = {
   refresh: () => Promise<void>;
   requestOtp: (phone: string) => Promise<OtpChallenge | null>;
   verifyOtp: (challengeId: string, code: string) => Promise<void>;
+  quickLogin: (account: number) => Promise<void>;
   logout: () => Promise<void>;
 };
 const Context = createContext<Session | null>(null);
@@ -95,15 +96,18 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   }
   async function verifyOtp(challengeId: string, code: string) {
+    await signIn({ action: 'verify', challengeId, code });
+  }
+  /** Local demo only: the server refuses this outside its mock-SMS demo mode. */
+  async function quickLogin(account: number) {
+    await signIn({ action: 'quick', account });
+  }
+  async function signIn(body: object) {
     const current = ++generation.current;
     setBusy(true);
     setError('');
     try {
-      const result = await api<{ token: string }>('/api/mobile/auth', {
-        action: 'verify',
-        challengeId,
-        code,
-      });
+      const result = await api<{ token: string }>('/api/mobile/auth', body);
       if (current !== generation.current) return;
       await setToken(result.token);
       const value = await api<MobilePayload>('/api/mobile');
@@ -145,6 +149,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         refresh,
         requestOtp,
         verifyOtp,
+        quickLogin,
         logout,
       }}
     >

@@ -11,24 +11,89 @@ export function CategoryRail({
   onSelect,
   label = 'Categories',
   compact = false,
+  pills = false,
 }: {
   items: readonly RailCategory[];
   selected: string;
   onSelect: (id: string) => void;
   label?: string;
   compact?: boolean;
+  pills?: boolean;
 }) {
   const { colors: C } = useTheme();
   const ref = useRef<React.ElementRef<typeof ScrollView>>(null);
+  const chipFrames = useRef(new Map<string, { x: number; width: number }>());
   const [width, setWidth] = useState(0);
   const [height, setHeight] = useState(compact ? 44 : 80);
   const itemWidth = compact ? 88 : 84;
   const selectedIndex = items.findIndex(item => item.id === selected);
   useEffect(() => {
+    if (pills) return;
     if (selectedIndex < 0 || width <= 0) return;
     const end = 14 + selectedIndex * (itemWidth + 8) + itemWidth;
     ref.current?.scrollTo({ x: Math.max(0, end + 12 - width), animated: true });
-  }, [selectedIndex, itemWidth, width]);
+  }, [pills, selectedIndex, itemWidth, width]);
+  useEffect(() => {
+    if (!pills || selectedIndex < 0 || width <= 0) return;
+    const frame = chipFrames.current.get(selected);
+    if (!frame) return;
+    ref.current?.scrollTo({
+      x: Math.max(0, frame.x + frame.width + 12 - width),
+      animated: true,
+    });
+  }, [pills, selected, selectedIndex, width]);
+  if (pills)
+    return (
+      <View
+        onLayout={event => setWidth(event.nativeEvent.layout.width)}
+        style={{ backgroundColor: C.bg }}
+      >
+        <ScrollView
+          ref={ref}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          accessibilityRole="tablist"
+          accessibilityLabel={label}
+          contentContainerStyle={{ gap: 8, alignItems: 'center' }}
+        >
+          {items.map(item => (
+            <Pressable
+              key={item.id}
+              accessibilityRole="tab"
+              accessibilityLabel={item.title}
+              accessibilityState={{ selected: selected === item.id }}
+              onPress={() => onSelect(item.id)}
+              onLayout={event => {
+                const frame = event.nativeEvent.layout;
+                chipFrames.current.set(item.id, { x: frame.x, width: frame.width });
+                if (item.id !== selected || width <= 0) return;
+                ref.current?.scrollTo({
+                  x: Math.max(0, frame.x + frame.width + 12 - width),
+                  animated: true,
+                });
+              }}
+              style={{
+                height: 34,
+                paddingHorizontal: 16,
+                borderRadius: 17,
+                justifyContent: 'center',
+                backgroundColor: selected === item.id ? C.lime : C.card,
+              }}
+            >
+              <Text
+                style={{
+                  color: selected === item.id ? C.onAccent : C.text,
+                  fontSize: 14,
+                  fontWeight: '600',
+                }}
+              >
+                {item.title}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+    );
   return (
     <View
       onLayout={event => setWidth(event.nativeEvent.layout.width)}

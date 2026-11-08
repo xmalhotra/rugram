@@ -24,22 +24,24 @@ test('event interests match topic and whole keywords, not accidental substrings 
   assert.equal(eventMatchesInterest({...event,title:'Security workshop'},security),true);
 });
 test('default event categories are broad interests; technical tracks stay inside Tech',()=>{
-  assert.deepEqual(eventInterests.map(category=>category.title),['Tech','Marathons','HYROX simulations','Reading groups']);
-  assert.equal(enabledEventInterests(eventInterests,defaultEventTopics).length,4);
+  // The five Luma-style categories; Running gathers races and HYROX.
+  assert.deepEqual(eventInterests.map(category=>category.title),['Tech','AI','Running','Food & Drink','Books']);
+  assert.equal(enabledEventInterests(eventInterests,defaultEventTopics).length,5);
   const tech=eventInterests.find(category=>category.id==='tech')!;
   for(const title of ['AI workshop','Python coding group','Cloud & DevOps meetup','Security forum'])assert.ok(eventMatchesInterest({...event,title},tech));
-  const simulation=eventInterests.find(category=>category.id==='hyrox-simulations')!;
-  assert.equal(eventMatchesInterest({...event,topic:'HYROX'},simulation),false);
-  assert.equal(eventMatchesInterest({...event,topic:'HYROX simulations'},simulation),true);
+  const running=eventInterests.find(category=>category.id==='marathons')!;
+  assert.equal(eventMatchesInterest({...event,topic:'HYROX'},running),true);
+  assert.equal(eventMatchesInterest({...event,topic:'Tech'},running),false);
+  assert.equal(eventMatchesInterest({...event,topic:'HYROX simulations'},running),true);
   const reading=eventInterests.find(category=>category.id==='reading-groups')!;
   assert.equal(eventMatchesInterest({...event,topic:'Reading groups'},reading),true);
 });
 test('event landing page shows city categories followed by events before a category is selected',()=>{
   const source=readFileSync('mobile/src/HyderabadEvents.tsx','utf8');
-  assert.ok(source.indexOf('<CategoryRail')<source.indexOf('Upcoming events'));
-  containsCode(source,'(!interest||eventMatchesInterest(event,interest))');
+  assert.doesNotMatch(source,/Browse by category|Picked for you/);
+  containsCode(source,'!interest||eventMatchesInterest(event,interest)');
   assert.doesNotMatch(source,/if\(!interest\)return/);
-  containsCode(source,'events.map(event=>');
+  containsCode(source,'groupEventsByDay(shown).map(day=>');
 });
 test('admin can edit event category names, topics, illustrations and matching keywords',()=>{
   const settings={id:'app',title:'BetterHabits',eventCities:['Hyderabad'],eventCountry:'IN',eventTopics:['Tech'],defaultCreatorMonthlyEvents:2,productCategories:[{id:'Tech',title:'Tech',subcategories:[]}],tiers:['Essential'],eventInterests};
@@ -48,8 +50,10 @@ test('admin can edit event category names, topics, illustrations and matching ke
   assert.throws(()=>validateContent('settings',{...settings,eventInterests:[{...eventInterests[0],topics:['Party']}]}));
 });
 test('Flows, Picks, supplement goals and Events share the illustrated category slider',()=>{
-  for(const file of ['FlowSections','SupplementDiscovery','HyderabadEvents'])assert.match(readFileSync(`mobile/src/${file}.tsx`,'utf8'),/<CategoryRail\b/);
-  assert.match(readFileSync('mobile/src/FlowCategories.tsx','utf8'),/<FlowTopicBrowser/);
+  for(const file of ['FlowSections'])assert.match(readFileSync(`mobile/src/${file}.tsx`,'utf8'),/<CategoryRail\b/);
+  // Events dropped its category browser for a Luma-style list by day.
+  // The Flows tab is a fitness catalog and no longer uses that slider.
+  assert.doesNotMatch(readFileSync('mobile/src/FlowCatalogHome.tsx','utf8'),/<CategoryRail|<FlowTopicBrowser/);
   const rail=readFileSync('mobile/src/CategoryRail.tsx','utf8');assert.match(rail,/horizontal\s+showsHorizontalScrollIndicator=\{false\}/);containsCode(rail,'accessibilityState={{selected:selected===item.id}}');
   containsCode(rail,"alignItems:'center'");containsCode(rail,"textAlign:'center'");
 });

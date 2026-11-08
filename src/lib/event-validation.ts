@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {eventWithinYear,eventHorizon} from '../../shared/event-registration';
+import {eventWithinYear,eventHorizon,questionLimits} from '../../shared/event-registration';
 import {eventTopics} from '../../shared/event-discovery';
 import {eventWebsite} from '../../shared/event-discovery';
 const link=z.string().max(2048).refine(value=>Boolean(eventWebsite(value)),'Use a public HTTPS event source link.');
@@ -12,6 +12,9 @@ const eventFields=z.object({
   description:z.string().trim().min(10).max(800),
   registrationUrl:z.string().max(2048).optional(),
   approvalRequired:z.boolean().optional(),
+  topicLabel:z.string().trim().min(2).max(40).optional(),requireApproval:z.boolean().optional(),waitlist:z.boolean().optional(),
+  questions:z.array(z.object({id:z.string().regex(/^[a-z0-9-]{1,40}$/),label:z.string().trim().min(2).max(questionLimits.label),kind:z.enum(['choice','text']),options:z.array(z.string().trim().min(1).max(questionLimits.option)).min(2).max(questionLimits.options).optional(),required:z.boolean()}).strict().refine(question=>question.kind==='text'||Boolean(question.options),'Choice questions need at least two options.')).max(questionLimits.questions).optional(),
+  location:z.object({name:z.string().trim().min(2).max(160),address:z.string().trim().min(2).max(300),placeId:z.string().max(300).optional(),lat:z.number().min(-90).max(90).optional(),lng:z.number().min(-180).max(180).optional()}).strict().optional(),
   registrationMode:z.enum(['external','approval']).optional(),guestCapacity:z.number().int().min(1).max(10000).optional(),organizers:z.array(z.object({name:z.string().trim().min(2).max(100),profileUrl:z.string().url().refine(value=>Boolean(eventWebsite(value))).optional(),avatarUrl:z.string().url().refine(value=>Boolean(eventWebsite(value))).optional()}).strict()).max(10).optional(),
   country:z.string().regex(/^[A-Z]{2}$/),
   endsAt:z.string().datetime().optional(),

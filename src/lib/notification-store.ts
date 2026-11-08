@@ -4,25 +4,11 @@ import { isDemoMode } from './store';
 import type { PublicUser } from './types';
 import type { InboxItem, NotificationInbox } from '../../shared/notifications';
 import type { Product, CityEvent } from '../../shared/mobile';
-type Stored = InboxItem & { recipientId: string; businessKey: string };
+import { demoInboxPut } from './demo-inbox';
+export { demoInboxPut };
 declare global {
-  var betterHabitsInbox: Stored[] | undefined;
-}
-export function demoInboxPut(
-  recipientId: string,
-  businessKey: string,
-  item: Omit<InboxItem, 'id' | 'createdAt' | 'readAt'>,
-) {
-  const items = (globalThis.betterHabitsInbox ??= []);
-  if (items.some(row => row.recipientId === recipientId && row.businessKey === businessKey)) return;
-  items.push({
-    ...item,
-    id: crypto.randomUUID(),
-    recipientId,
-    businessKey,
-    createdAt: new Date().toISOString(),
-    readAt: null,
-  });
+  /** Demo event-category subscriptions: topic -> member ids. */
+  var qramTopicSubscriptions: Map<string, Set<string>> | undefined;
 }
 export function demoCatalogNotifications(
   previous: Product | CityEvent | undefined,
@@ -50,6 +36,16 @@ export function demoCatalogNotifications(
       body: `${next.title}${next.status === 'archived' ? `: ${next.reviewNote ?? 'Open Studio for feedback.'}` : ''}`,
       target: { kind: 'submission', id: next.id },
     });
+  // Same rule as the SQL trigger: subscribers hear once when an event in their topic goes live.
+  if ('city' in next && next.status === 'published' && previous?.status !== 'published' && next.topic)
+    for (const recipient of globalThis.qramTopicSubscriptions?.get(next.topic) ?? [])
+      if (recipient !== next.createdBy)
+        demoInboxPut(recipient, `event-topic:${next.id}`, {
+          type: 'event_new_in_topic',
+          title: `New ${next.topic} event`,
+          body: `${next.title} · ${next.city}`,
+          target: { kind: 'event', id: next.id },
+        });
   if (
     previous &&
     'city' in previous &&

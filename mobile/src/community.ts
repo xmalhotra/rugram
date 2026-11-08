@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from './api';
+import { usePaneState } from './pane-state';
 import type {
   CommunityAction,
+  CommunityCuration,
   CommunityFeed,
   CommunityFlow,
+  CommunityMember,
   CommunityTab,
   CommunityVersion,
 } from '../../shared/community-flows';
+import type { PersonHit } from '../../shared/usernames';
 
 type Status = Pick<CommunityFeed, 'mine' | 'copies'>;
 
@@ -34,10 +38,13 @@ export async function communityAct(action: CommunityAction) {
   return result;
 }
 
-function useRemote<T>(path: string | null) {
-  const [value, setValue] = useState<T | null>(null);
+const noop = () => undefined;
+function useRemote<T>(path: string | null, live = true) {
+  // Kept per account across remounts, so switching tabs shows the last result at once
+  // while it refreshes, instead of flashing a loader.
+  const [value, setValue] = usePaneState<T | null>(`remote:${path ?? ''}`, null, 'account');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(Boolean(path));
+  const [loading, setLoading] = useState(Boolean(path) && value === null);
   const load = useCallback(() => {
     if (!path) return;
     let live = true;
@@ -57,9 +64,9 @@ function useRemote<T>(path: string | null) {
     return () => {
       live = false;
     };
-  }, [path]);
+  }, [path, setValue]);
   useEffect(() => load(), [load]);
-  useChanges(load);
+  useChanges(live ? load : noop);
   return { value, setValue, error, loading, reload: load };
 }
 
@@ -75,5 +82,33 @@ export function useCommunityStatus() {
 export function useCommunityFlow(id: string | null) {
   return useRemote<{ flow: CommunityFlow; versions: CommunityVersion[] }>(
     id ? `/api/mobile/community?id=${encodeURIComponent(id)}` : null,
+  );
+}
+
+/** Curation can call a paid model, so it loads once per prompt and never on feed changes. */
+export function useCuration(prompt: string) {
+  return useRemote<CommunityCuration>(
+    prompt ? `/api/mobile/community?curate=${encodeURIComponent(prompt)}` : null,
+    false,
+  );
+}
+
+/** Debounced people search for the Following tab. Empty until the query has 2 characters. */
+export function usePeopleSearch(query: string) {
+  const [debounced, setDebounced] = useState(query);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(query), 250);
+    return () => clearTimeout(timer);
+  }, [query]);
+  const term = debounced.trim().replace(/^@/, '');
+  const path =
+    term.length >= 2 ? `/api/mobile/community?people=${encodeURIComponent(debounced.trim())}` : null;
+  const remote = useRemote<{ people: PersonHit[] }>(path, false);
+  return { ...remote, people: remote.value?.people ?? [], active: term.length >= 2 };
+}
+
+export function useCommunityMember(id: string | null) {
+  return useRemote<CommunityMember>(
+    id ? `/api/mobile/community?member=${encodeURIComponent(id)}` : null,
   );
 }

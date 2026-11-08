@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import { Pressable } from 'react-native';
 import { Text } from './design/Text';
 import { useTheme } from './design/theme';
+import { flowCreationEnabled } from '../../shared/flow-catalog';
 
 type Offer = { title: string; busy: boolean; onPress: () => void };
 
@@ -44,7 +45,7 @@ export function useRegisterAddToFlow(offer: Offer | null) {
 export function AddToFlowHeaderButton() {
   const offer = useContext(OfferContext);
   const { colors: C } = useTheme();
-  if (!offer) return null;
+  if (!flowCreationEnabled || !offer) return null;
   return (
     <Pressable
       accessibilityRole="button"

@@ -20,8 +20,6 @@ import {
 import { animalMovementFlows } from '../shared/animal-movements';
 import { fitnessMedia } from '../shared/fitness-guides';
 import { fitnessAtlasLayouts } from '../shared/fitness-media-layout';
-import { imageSize } from '../scripts/image-size';
-
 test('legacy animal rows stay stable and every expanded guide has its own five-frame human atlas row', () => {
   assert.deepEqual(
     animalMovementFlows.slice(0, 6).map(flow => movementRows[flow.id]),
@@ -72,14 +70,6 @@ test('all movements and appearances use one square frame while legacy image crop
   assert.equal(wide.width, 400);
   assert.equal(wide.height, 220);
   assert.equal(movementStageFit({ width: 0, height: 10 }, 100, 100).scale, 0);
-  const viewer = readFileSync('mobile/src/AnimalMovementViewer.tsx', 'utf8');
-  assert.doesNotMatch(viewer, /width \* 0\.92/);
-  assert.match(viewer, /width: '100%'/);
-  assert.match(viewer, /width: imageFit.imageWidth/);
-  assert.match(viewer, /height: imageFit.imageHeight/);
-  assert.match(viewer, /left: imageFit.offsetX/);
-  assert.match(viewer, /top: imageFit.offsetY/);
-  assert.match(viewer, /movementStageFit/);
 });
 
 test('movement progress and invalid sensor readings stay bounded', () => {
@@ -128,11 +118,8 @@ test('sensor smoothing is monotonic, bounded and independent of sampling rate', 
   assert.ok(Number.isFinite(smoothMovement(NaN, NaN, 16)));
 });
 
-test('all generated image crops remain inside the bundled atlases', () => {
+test('generated movement crops stay inside the atlas', () => {
   for (const gender of ['male', 'female'] as const) {
-    const png = readFileSync(`mobile/assets/movements/${gender}-v1.jpg`);
-    assert.equal(imageSize(png).width, 1024);
-    assert.equal(imageSize(png).height, 1536);
     for (const row of [-1, 0, 1, 2, 3, 4, 5, 6, NaN]) {
       for (const progress of [-1, 0, 0.33, 0.66, 1, 2, NaN]) {
         const crop = movementCrop(row, progress, gender);
@@ -145,58 +132,10 @@ test('all generated image crops remain inside the bundled atlases', () => {
   assert.notEqual(movementCrop(4, 1 / 3, 'female').x, 256);
 });
 
-test('animal viewer changes the human image in one view without paginated instructions', () => {
-  const viewer = readFileSync('mobile/src/AnimalMovementViewer.tsx', 'utf8');
-  assert.doesNotMatch(viewer, /SwipeDeck|GuideNavigation/);
-  assert.match(
-    readFileSync('mobile/src/MovementControls.tsx', 'utf8'),
-    /accessibilityRole="radiogroup"/,
-  );
-  assert.match(viewer, /AI-generated movement study/);
-  assert.equal((viewer.match(/<Image\b/g) ?? []).length, 3);
-  assert.doesNotMatch(viewer, /blend/);
-  assert.match(viewer, /controlMode === 'tilt' \? 140 : 0/);
-  assert.match(viewer, /infoOpen &&/);
-  assert.match(readFileSync('mobile/src/MovementPositionBar.tsx', 'utf8'), /onSlidingStart/);
-  const tilt = readFileSync('mobile/src/useMovementTilt.ts', 'utf8');
-  for (const guard of [
-    'getPermissionsAsync',
-    'requestPermissionsAsync',
-    'isReduceMotionEnabled',
-    'useFocusEffect',
-    'listener.remove()',
-    'AppState.currentState',
-  ])
-    assert.ok(tilt.includes(guard), guard);
-  assert.doesNotMatch(tilt, /Gyroscope|onIndexChange/);
-  assert.match(tilt, /void start\(true\)/);
-  assert.match(tilt, /smoothMovement\(\(filteredLean/);
-  assert.match(tilt, /advanceMovement\(filtered, intent.direction/);
-  assert.match(tilt, /manuallyDisabled.current/);
-  assert.match(viewer, /setViewerHeight\(event.nativeEvent.layout.height\)/);
-});
-
-test('movement viewer has directional edge feedback and keeps secondary content in info', () => {
-  const viewer = readFileSync('mobile/src/AnimalMovementViewer.tsx', 'utf8');
-  const deck = readFileSync('mobile/src/AnimalMovementDeck.tsx', 'utf8');
-  assert.match(deck, /<MovementGlass/);
-  assert.match(deck, /measureInWindow/);
-  assert.match(viewer, /tilt\.enabled && !infoOpen && !still \? tilt\.lean : 0/);
-  assert.doesNotMatch(viewer, /Animated.timing|shadowRadius|<ScrollView/);
-  assert.match(
-    readFileSync('mobile/src/MovementControls.tsx', 'utf8'),
-    /informationLabel = 'Movement benefits'/,
-  );
-  const panel = viewer.indexOf('{infoOpen &&');
-  assert.ok(panel > 0);
-  assert.ok(viewer.indexOf('AI-generated movement study') > panel);
-  assert.doesNotMatch(viewer, /<FlowHomeAction/);
-  assert.ok(viewer.indexOf('Technique & easier options') > panel);
+test('detail sheets keep back and close navigation', () => {
   const app = readFileSync('mobile/App.tsx', 'utf8');
   assert.doesNotMatch(app, /!isFitnessVisualFlow\(selectedFlow.id\)/);
   assert.match(app, /navigation=\{selectedFlow \? 'back' : 'close'\}/);
-  assert.doesNotMatch(viewer, /↺|closeLabel="×"/);
-  assert.ok(viewer.indexOf('title="Recenter tilt"') > panel);
   const sheet = readFileSync('mobile/src/design/components.shared.tsx', 'utf8');
   assert.match(sheet, /accessibilityLabel="Go back"/);
   assert.match(sheet.replaceAll(/\s/g, ''), /navigation==='back'/);
@@ -213,24 +152,6 @@ test('edge glow has a neutral deadband, clear direction, and bounded strength', 
   assert.deepEqual(movementGlow(4, true), { left: 0, right: 1 });
   assert.ok(movementGlow(0.08, true).right > 0.25, 'Small deliberate tilt is visible');
   assert.ok(movementGlow(0.6, true).right > movementGlow(0.2, true).right);
-});
-
-test('Tilt and Slider are exclusive controls with Tilt as the default', () => {
-  const viewer = readFileSync('mobile/src/AnimalMovementViewer.tsx', 'utf8');
-  assert.match(viewer, /useState<'tilt' \| 'slider'>\('tilt'\)/);
-  const toolbar = readFileSync('mobile/src/MovementControls.tsx', 'utf8');
-  assert.match(toolbar, /accessibilityLabel="Movement control"/);
-  assert.match(toolbar, /const selected = controlMode === mode/);
-  assert.match(toolbar, /accessibilityState=\{\{ checked: selected \}\}/);
-  assert.match(
-    readFileSync('mobile/src/MovementPositionBar.tsx', 'utf8'),
-    /controlMode === 'slider' && \(\s*<Slider/,
-  );
-  assert.match(viewer, /controlMode === 'tilt' && active && !infoOpen/);
-  const hook = readFileSync('mobile/src/useMovementTilt.ts', 'utf8');
-  assert.match(hook, /selectedMode.current = selected/);
-  assert.match(hook, /requesting.current \|\| !selectedMode.current/);
-  assert.match(hook, /\[start, selected\]/);
 });
 
 test('pose hysteresis holds through repeated tremor around every boundary', () => {

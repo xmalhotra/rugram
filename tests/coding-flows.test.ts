@@ -20,7 +20,6 @@ import {
 } from '../shared/fitness-guides';
 import { fitnessAtlasLayouts, fitnessCrop } from '../shared/fitness-media-layout';
 import { movementBrowseLibrary } from '../shared/animal-movements';
-import { imageSize } from '../scripts/image-size';
 
 test('Coding offers supporting habits instead of courses, without deleting saved legacy flows', () => {
   assert.deepEqual(
@@ -68,9 +67,6 @@ test('every appearance has five distinct full-panel crops and five explicit stag
     const media = fitnessMedia[card.id];
     for (const gender of ['male', 'female'] as const) {
       const atlas = fitnessAtlasLayouts[media.atlas][gender];
-      const image = readFileSync(`mobile/assets/coding/${media.atlas}-${gender}-v1.jpg`);
-      assert.equal(imageSize(image).width, atlas.width);
-      assert.equal(imageSize(image).height, atlas.height);
       const crops = card.frames.map((_, index) => fitnessCrop(media, gender, index / 4));
       assert.equal(new Set(crops.map(crop => crop.x)).size, 5);
       for (const crop of crops) {

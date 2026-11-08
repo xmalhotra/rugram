@@ -1,5 +1,5 @@
 import type {CityEvent} from './mobile';
-export const eventTopics=['Tech','HYROX','Marathons','HYROX simulations','Reading groups'] as const;
+export const eventTopics=['Tech','AI','HYROX','Marathons','HYROX simulations','Reading groups','Food & Drink','Other'] as const;
 export type EventTopic=typeof eventTopics[number];
 export function eventWebsite(url:string):string|null {
   try {

@@ -1,5 +1,4 @@
 import 'server-only';
-import { z } from 'zod';
 import {
   communityChanges,
   communityLimits,
@@ -7,20 +6,31 @@ import {
   mergeFollowing,
   rankForYou,
   type CommunityAction,
+  type CommunityActivity,
   type CommunityCopyStatus,
   type CommunityFeed,
   type CommunityFeedItem,
   type CommunityFlow,
+  type CommunityMember,
   type CommunityTab,
   type CommunityVersion,
 } from '../../../shared/community-flows';
-import { resolvePersonalFlow, type FlowCardReference, type PersonalFlow } from '../../../shared/personal-flows';
+import {
+  resolvePersonalFlow,
+  type FlowCardReference,
+  type PersonalFlow,
+} from '../../../shared/personal-flows';
 import { isDemoMode } from '../store';
 import type { PublicUser } from '../types';
 import { demoInboxPut } from '../notification-store';
 import { cardLibrary, mutatePersonalFlows } from './personal-flows';
 import { getProfile } from './profile';
+import { resolveVisualFlow } from '../../../shared/visual-flows';
 import { sqlClient } from './state';
+import { communityActionSchema } from '../community-schema';
+import { completedSessionPost } from '../../../shared/training';
+
+export { communityActionSchema };
 
 export class CommunityError extends Error {
   constructor(
@@ -30,26 +40,6 @@ export class CommunityError extends Error {
     super(message);
   }
 }
-
-const id = z.string().regex(/^community-[a-zA-Z0-9-]{8,80}$/);
-const personalId = z.string().regex(/^personal-[a-zA-Z0-9-]{8,80}$/);
-export const communityActionSchema = z.discriminatedUnion('action', [
-  z
-    .object({
-      action: z.literal('publish'),
-      personalFlowId: personalId,
-      description: z.string().max(communityLimits.description * 2),
-    })
-    .strict(),
-  z.object({ action: z.literal('unpublish'), id }).strict(),
-  z.object({ action: z.literal('upvote'), id, enabled: z.boolean() }).strict(),
-  z.object({ action: z.literal('repost'), id, enabled: z.boolean() }).strict(),
-  z
-    .object({ action: z.literal('follow'), authorId: z.string().min(1).max(128), enabled: z.boolean() })
-    .strict(),
-  z.object({ action: z.literal('save'), id, personalFlowId: personalId }).strict(),
-  z.object({ action: z.literal('take-update'), personalFlowId: personalId }).strict(),
-]);
 
 type Stored = {
   id: string;
@@ -64,7 +54,10 @@ type Stored = {
 };
 type Author = CommunityFlow['author'];
 
+type StoredActivity = Omit<CommunityActivity, 'user' | 'viewer'> & { userId: string };
+
 type DemoCommunity = {
+  activities: StoredActivity[];
   flows: Map<string, Stored>;
   versions: Map<string, CommunityVersion[]>;
   votes: Map<string, Set<string>>;
@@ -74,14 +67,18 @@ type DemoCommunity = {
 declare global {
   var qramDemoCommunity: DemoCommunity | undefined;
 }
-function demo() {
-  return (globalThis.qramDemoCommunity ??= {
+function demo(): DemoCommunity {
+  const store: DemoCommunity = (globalThis.qramDemoCommunity ??= {
+    activities: [],
     flows: new Map(),
     versions: new Map(),
     votes: new Map(),
     reposts: new Map(),
     follows: new Map(),
   });
+  // Stores created before activity logs existed survive hot reloads.
+  store.activities ??= [];
+  return store;
 }
 
 function cleanDescription(value: string) {
@@ -155,7 +152,9 @@ async function publish(user: PublicUser, personalFlowId: string, rawDescription:
     const changes = communityChanges(existing, next);
     if (!changes.length) return existing.id;
     Object.assign(existing, next, { version: existing.version + 1, editedAt: now });
-    store.versions.get(existing.id)!.push({ version: existing.version, ...next, changes, createdAt: now });
+    store.versions
+      .get(existing.id)!
+      .push({ version: existing.version, ...next, changes, createdAt: now });
     for (const reposter of store.reposts.get(existing.id)?.keys() ?? [])
       if (reposter !== user.id)
         demoInboxPut(reposter, `community:${existing.id}:${existing.version}`, {
@@ -195,7 +194,8 @@ async function publish(user: PublicUser, personalFlowId: string, rawDescription:
     sql`INSERT INTO community_flow_versions(flow_id,version,title,description,cards,changes) SELECT ${current.id},${version},${next.title},${next.description},${JSON.stringify(cards)}::jsonb,${JSON.stringify(changes)}::jsonb WHERE EXISTS(SELECT 1 FROM community_flows WHERE id=${current.id} AND version=${version})`,
     sql`SELECT mobile_inbox_put(user_id,${`community:${current.id}:${version}`},'community_flow_edited',${`${next.title} was edited`},${summary},'community',${current.id}) FROM community_flow_reposts WHERE flow_id=${current.id} AND user_id<>${user.id} AND EXISTS(SELECT 1 FROM community_flows WHERE id=${current.id} AND version=${version})`,
   ]);
-  if (!updated.length) throw new CommunityError('This flow changed in another session. Try again.', 409);
+  if (!updated.length)
+    throw new CommunityError('This flow changed in another session. Try again.', 409);
   return String(current.id);
 }
 
@@ -272,7 +272,10 @@ async function signals(user: PublicUser, ids: string[]) {
 async function present(user: PublicUser, flows: Stored[]): Promise<Map<string, CommunityFlow>> {
   const [people, counts, follows] = await Promise.all([
     authors(flows.map(flow => flow.authorId)),
-    signals(user, flows.map(flow => flow.id)),
+    signals(
+      user,
+      flows.map(flow => flow.id),
+    ),
     following(user),
   ]);
   const result = new Map<string, CommunityFlow>();
@@ -306,7 +309,11 @@ async function present(user: PublicUser, flows: Stored[]): Promise<Map<string, C
 
 async function followingItems(user: PublicUser, follows: Set<string>) {
   const people = [...follows];
-  if (!people.length) return { flows: [] as Stored[], reposts: [] as { userId: string; flowId: string; at: string }[] };
+  if (!people.length)
+    return {
+      flows: [] as Stored[],
+      reposts: [] as { userId: string; flowId: string; at: string }[],
+    };
   if (isDemoMode()) {
     const store = demo();
     const reposts = [...store.reposts.entries()].flatMap(([flowId, users]) =>
@@ -331,14 +338,151 @@ async function followingItems(user: PublicUser, follows: Set<string>) {
   const authored = (
     await sql`SELECT id FROM community_flows WHERE author_id=ANY(${people}::text[]) ORDER BY published_at DESC LIMIT 200`
   ).map(row => String(row.id));
-  return { flows: await stored([...new Set([...authored, ...reposts.map(item => item.flowId)])]), reposts };
+  return {
+    flows: await stored([...new Set([...authored, ...reposts.map(item => item.flowId)])]),
+    reposts,
+  };
+}
+
+async function followCounts(memberId: string) {
+  if (isDemoMode()) {
+    const follows = demo().follows;
+    let followers = 0;
+    for (const authors of follows.values()) if (authors.has(memberId)) followers++;
+    return { followers, following: follows.get(memberId)?.size ?? 0 };
+  }
+  const [row] = await sqlClient()`SELECT
+      (SELECT count(*) FROM community_follows WHERE author_id=${memberId}) AS followers,
+      (SELECT count(*) FROM community_follows WHERE user_id=${memberId}) AS following`;
+  return { followers: Number(row.followers), following: Number(row.following) };
+}
+
+/** Newest activity first, for the given members. */
+async function activitiesOf(
+  user: PublicUser,
+  userIds: string[],
+  limit = 60,
+): Promise<CommunityActivity[]> {
+  const ids = [...new Set(userIds)];
+  if (!ids.length) return [];
+  let rows: StoredActivity[];
+  if (isDemoMode())
+    rows = demo()
+      .activities.filter(activity => ids.includes(activity.userId))
+      .sort((a, b) => b.at.localeCompare(a.at))
+      .slice(0, limit);
+  else
+    rows = (
+      await sqlClient()`SELECT * FROM community_activities WHERE user_id=ANY(${ids}::text[]) ORDER BY created_at DESC LIMIT ${limit}`
+    ).map(row => ({
+      id: String(row.id),
+      userId: String(row.user_id),
+      personalFlowId: String(row.personal_flow_id),
+      publishedId: row.published_id ? String(row.published_id) : null,
+      title: String(row.title),
+      cards: row.cards as FlowCardReference[],
+      total: Number(row.total),
+      note: String(row.note),
+      at: new Date(row.created_at as string).toISOString(),
+    }));
+  const people = await authors(rows.map(row => row.userId));
+  return rows.flatMap(({ userId, ...row }) => {
+    const person = people.get(userId);
+    return person ? [{ ...row, user: person, viewer: { own: userId === user.id } }] : [];
+  });
+}
+
+/** A catalogue flow, on your map or tried without adding, shaped like a personal flow so it logs the same way. */
+async function mapFlow(flowId: string): Promise<PersonalFlow | undefined> {
+  const library = await cardLibrary();
+  const source = library.find(item => item.id === flowId);
+  if (!source) return undefined;
+  const now = new Date().toISOString();
+  return {
+    id: source.id,
+    name: source.title,
+    cards: resolveVisualFlow(source, library).cards.map(card => ({
+      sourceFlowId: source.id,
+      cardId: card.id,
+      title: card.title,
+    })),
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+/** Posts the cards a finished run marked Done. The only way to create a timeline activity. */
+export async function recordFlowActivity(
+  user: PublicUser,
+  input: { personalFlowId?: string; flowId?: string; cardIds: string[]; note: string },
+) {
+  const profile = await getProfile(user);
+  if (!input.personalFlowId === !input.flowId)
+    throw new CommunityError('Choose one flow to log.');
+  const flow = input.personalFlowId
+    ? profile.personalFlows?.find(item => item.id === input.personalFlowId)
+    : await mapFlow(input.flowId!);
+  if (!flow) throw new CommunityError('Flow not found.', 404);
+  const chosen = new Set(input.cardIds);
+  // Keep the flow's order and only cards that are really in it.
+  const cards = flow.cards
+    .filter(card => chosen.has(card.cardId))
+    .map(({ sourceFlowId, cardId, title }) => ({ sourceFlowId, cardId, title }));
+  if (!cards.length) throw new CommunityError('Choose at least one card you did.');
+  const note = cleanDescription(input.note);
+  const publishedId = !input.personalFlowId
+    ? null
+    : flow.source?.publishedId ??
+    (await ownFlows(user)).find(item => item.personalFlowId === flow.id)?.id ??
+    null;
+  const activity: StoredActivity = {
+    id: `activity-${crypto.randomUUID()}`,
+    userId: user.id,
+    personalFlowId: flow.id,
+    publishedId,
+    title: flow.name.slice(0, 60),
+    cards,
+    total: flow.cards.length,
+    note,
+    at: new Date().toISOString(),
+  };
+  if (isDemoMode()) demo().activities.push(activity);
+  else
+    await sqlClient()`INSERT INTO community_activities(id,user_id,personal_flow_id,published_id,title,cards,total,note)
+      VALUES(${activity.id},${user.id},${flow.id},${publishedId},${activity.title},${JSON.stringify(cards)}::jsonb,${activity.total},${note})`;
+  return { id: activity.id };
+}
+
+/** A finished training session, posted the same way as a flow: title and note, never the recorded values. */
+export async function recordTrainingActivity(user: PublicUser, input: { sessionId: string; title: string; note: string }) {
+  const post = completedSessionPost(input.title, input.sessionId, cleanDescription(input.note));
+  if (!post.title) throw new CommunityError('Choose a session to log.');
+  const activity: StoredActivity = {
+    id: `activity-${crypto.randomUUID()}`,
+    userId: user.id,
+    personalFlowId: post.personalFlowId,
+    publishedId: null,
+    title: post.title,
+    cards: post.cards,
+    total: post.total,
+    note: post.note,
+    at: new Date().toISOString(),
+  };
+  if (isDemoMode()) demo().activities.push(activity);
+  else
+    await sqlClient()`INSERT INTO community_activities(id,user_id,personal_flow_id,published_id,title,cards,total,note)
+      VALUES(${activity.id},${user.id},${post.personalFlowId},${null},${activity.title},${JSON.stringify(post.cards)}::jsonb,${activity.total},${activity.note})`;
+  return { id: activity.id };
 }
 
 async function copyStatuses(personal: PersonalFlow[]): Promise<CommunityCopyStatus[]> {
   const copies = personal.filter(flow => flow.source);
   if (!copies.length) return [];
   const current = new Map(
-    (await stored(copies.map(flow => flow.source!.publishedId))).map(flow => [flow.id, flow.version]),
+    (await stored(copies.map(flow => flow.source!.publishedId))).map(flow => [
+      flow.id,
+      flow.version,
+    ]),
   );
   return copies.map(flow => ({
     personalFlowId: flow.id,
@@ -354,6 +498,13 @@ export async function communityFeed(user: PublicUser, tab: CommunityTab): Promis
   let items: CommunityFeedItem[];
   if (tab === 'for-you') {
     const flows = await present(user, await stored());
+    // Feedback: catalogue sources the member follows, builds with, upvotes or reposts.
+    const interests = new Set(profile.flowIds);
+    for (const personal of profile.personalFlows ?? [])
+      for (const card of personal.cards) interests.add(card.sourceFlowId);
+    for (const flow of flows.values())
+      if (flow.viewer.upvoted || flow.viewer.reposted)
+        for (const card of flow.cards) interests.add(card.sourceFlowId);
     items = rankForYou(
       [...flows.values()].map(flow => ({
         flow,
@@ -361,7 +512,7 @@ export async function communityFeed(user: PublicUser, tab: CommunityTab): Promis
         at: flow.editedAt ?? flow.publishedAt,
       })),
       Date.now(),
-      new Set(profile.flowIds),
+      interests,
     );
   } else {
     const source = await followingItems(user, follows);
@@ -374,15 +525,25 @@ export async function communityFeed(user: PublicUser, tab: CommunityTab): Promis
       ...source.reposts.flatMap(repost => {
         const flow = flows.get(repost.flowId);
         const by = names.get(repost.userId);
-        return flow && by ? [{ flow, repostedBy: { id: by.id, name: by.name }, at: repost.at }] : [];
+        return flow && by
+          ? [{ flow, repostedBy: { id: by.id, name: by.name }, at: repost.at }]
+          : [];
       }),
     ]);
   }
-  return { tab, items: items.slice(0, communityLimits.feedSize), ...(await communityStatus(user)) };
+  return {
+    tab,
+    items: items.slice(0, communityLimits.feedSize),
+    // Following includes your own logs, so you see what you just posted.
+    activities: tab === 'following' ? await activitiesOf(user, [...follows, user.id]) : [],
+    ...(await communityStatus(user)),
+  };
 }
 
 /** The viewer's published flows and saved copies, without a feed. */
-export async function communityStatus(user: PublicUser): Promise<Pick<CommunityFeed, 'mine' | 'copies'>> {
+export async function communityStatus(
+  user: PublicUser,
+): Promise<Pick<CommunityFeed, 'mine' | 'copies'>> {
   const [mine, profile] = await Promise.all([ownFlows(user), getProfile(user)]);
   return {
     mine: mine.map(flow => ({
@@ -423,7 +584,12 @@ async function requirePublished(flowId: string) {
   return flow;
 }
 
-function copyOf(flow: Stored, personalFlowId: string, authorName: string, now: string): PersonalFlow {
+function copyOf(
+  flow: Stored,
+  personalFlowId: string,
+  authorName: string,
+  now: string,
+): PersonalFlow {
   return {
     id: personalFlowId,
     name: flow.title,
@@ -434,11 +600,12 @@ function copyOf(flow: Stored, personalFlowId: string, authorName: string, now: s
   };
 }
 
-export async function communityAction(user: PublicUser, raw: CommunityAction) {
+export async function communityAction(user: PublicUser, raw: CommunityAction): Promise<{ id?: string }> {
   const input = communityActionSchema.parse(raw);
   const demoMode = isDemoMode();
   const sql = demoMode ? null : sqlClient();
-  if (input.action === 'publish') return { id: await publish(user, input.personalFlowId, input.description) };
+  if (input.action === 'publish')
+    return { id: await publish(user, input.personalFlowId, input.description) };
   if (input.action === 'follow') {
     if (input.authorId === user.id) throw new CommunityError('You cannot follow yourself.');
     if (!(await authors([input.authorId])).size) throw new CommunityError('Person not found.', 404);
@@ -449,7 +616,8 @@ export async function communityAction(user: PublicUser, raw: CommunityAction) {
       demo().follows.set(user.id, follows);
     } else if (input.enabled)
       await sql!`INSERT INTO community_follows(user_id,author_id) VALUES(${user.id},${input.authorId}) ON CONFLICT DO NOTHING`;
-    else await sql!`DELETE FROM community_follows WHERE user_id=${user.id} AND author_id=${input.authorId}`;
+    else
+      await sql!`DELETE FROM community_follows WHERE user_id=${user.id} AND author_id=${input.authorId}`;
     return {};
   }
   if (input.action === 'take-update') {
@@ -472,13 +640,31 @@ export async function communityAction(user: PublicUser, raw: CommunityAction) {
     );
     return {};
   }
+  if (input.action === 'unlog') {
+    if (demoMode) {
+      const store = demo();
+      const found = store.activities.find(activity => activity.id === input.id);
+      if (!found) throw new CommunityError('Activity not found.', 404);
+      if (found.userId !== user.id && user.role !== 'admin')
+        throw new CommunityError('Only you can remove your activity.', 403);
+      store.activities = store.activities.filter(activity => activity.id !== input.id);
+    } else {
+      const removed =
+        user.role === 'admin'
+          ? await sql!`DELETE FROM community_activities WHERE id=${input.id} RETURNING id`
+          : await sql!`DELETE FROM community_activities WHERE id=${input.id} AND user_id=${user.id} RETURNING id`;
+      if (!removed.length) throw new CommunityError('Activity not found.', 404);
+    }
+    return {};
+  }
   const flow = await requirePublished(input.id);
   if (input.action === 'unpublish') {
     if (flow.authorId !== user.id && user.role !== 'admin')
       throw new CommunityError('Only the author can remove this flow.', 403);
     if (demoMode) {
       const store = demo();
-      for (const map of [store.flows, store.versions, store.votes, store.reposts]) map.delete(flow.id);
+      for (const map of [store.flows, store.versions, store.votes, store.reposts])
+        map.delete(flow.id);
     } else await sql!`DELETE FROM community_flows WHERE id=${flow.id}`;
     return {};
   }
@@ -489,14 +675,17 @@ export async function communityAction(user: PublicUser, raw: CommunityAction) {
       if (previous.some(item => item.source?.publishedId === flow.id)) return previous;
       if (previous.some(item => item.id === input.personalFlowId))
         throw new CommunityError('That flow already exists.');
-      if (previous.length >= 50) throw new CommunityError('Personal flow limit reached (50 flows).');
+      if (previous.length >= 50)
+        throw new CommunityError('Personal flow limit reached (50 flows).');
       return [...previous, copyOf(flow, input.personalFlowId, author?.name ?? 'A member', now)];
     });
     return {};
   }
   if (flow.authorId === user.id)
     throw new CommunityError(
-      input.action === 'upvote' ? 'You cannot upvote your own flow.' : 'You cannot repost your own flow.',
+      input.action === 'upvote'
+        ? 'You cannot upvote your own flow.'
+        : 'You cannot repost your own flow.',
     );
   if (input.action === 'upvote') {
     if (demoMode) {
@@ -506,7 +695,8 @@ export async function communityAction(user: PublicUser, raw: CommunityAction) {
       demo().votes.set(flow.id, votes);
     } else if (input.enabled)
       await sql!`INSERT INTO community_flow_votes(user_id,flow_id) VALUES(${user.id},${flow.id}) ON CONFLICT DO NOTHING`;
-    else await sql!`DELETE FROM community_flow_votes WHERE user_id=${user.id} AND flow_id=${flow.id}`;
+    else
+      await sql!`DELETE FROM community_flow_votes WHERE user_id=${user.id} AND flow_id=${flow.id}`;
     return {};
   }
   if (demoMode) {
@@ -517,6 +707,47 @@ export async function communityAction(user: PublicUser, raw: CommunityAction) {
     demo().reposts.set(flow.id, reposts);
   } else if (input.enabled)
     await sql!`INSERT INTO community_flow_reposts(user_id,flow_id) VALUES(${user.id},${flow.id}) ON CONFLICT DO NOTHING`;
-  else await sql!`DELETE FROM community_flow_reposts WHERE user_id=${user.id} AND flow_id=${flow.id}`;
+  else
+    await sql!`DELETE FROM community_flow_reposts WHERE user_id=${user.id} AND flow_id=${flow.id}`;
   return {};
+}
+
+export async function communityMember(
+  user: PublicUser,
+  memberId: string,
+): Promise<CommunityMember> {
+  const author = (await authors([memberId])).get(memberId);
+  if (!author) throw new CommunityError('This member is not available.', 404);
+  // A profile timeline is the Following feed of exactly one person.
+  const source = await followingItems(user, new Set([memberId]));
+  const [flows, counts, follows, profile, activities] = await Promise.all([
+    present(user, source.flows),
+    followCounts(memberId),
+    following(user),
+    getProfile(user),
+    activitiesOf(user, [memberId]),
+  ]);
+  const authored = [...flows.values()].filter(flow => flow.author.id === memberId);
+  const items = mergeFollowing([
+    ...authored.map(flow => ({ flow, repostedBy: null, at: flow.publishedAt })),
+    ...source.reposts.flatMap(repost => {
+      const flow = flows.get(repost.flowId);
+      return flow && flow.author.id !== memberId
+        ? [{ flow, repostedBy: { id: author.id, name: author.name }, at: repost.at }]
+        : [];
+    }),
+  ]);
+  return {
+    member: {
+      ...author,
+      ...counts,
+      published: authored.length,
+      upvotes: authored.reduce((sum, flow) => sum + flow.upvotes, 0),
+      followedByViewer: follows.has(memberId),
+      own: memberId === user.id,
+    },
+    items,
+    activities,
+    copies: await copyStatuses(profile.personalFlows ?? []),
+  };
 }

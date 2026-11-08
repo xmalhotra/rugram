@@ -12,7 +12,7 @@ async function main() {
   const { getUser } = await import('../src/lib/store');
   const { editPersonalFlow } = await import('../src/lib/mobile/personal-flows');
   const { getProfile } = await import('../src/lib/mobile/profile');
-  const { communityAction, communityFeed, communityFlow, communityStatus } =
+  const { communityAction, communityFeed, communityFlow, communityMember, communityStatus } =
     await import('../src/lib/mobile/community');
   const { notificationInbox } = await import('../src/lib/notification-store');
   const { flows } = await import('../shared/mobile');
@@ -80,6 +80,18 @@ async function main() {
     assert.equal(reposted?.repostedBy?.id, fan!.id);
     assert.equal(reposted?.flow.upvotes, 1, 'repeated upvotes count once');
     assert.equal(reposted?.flow.reposts, 1);
+    // The fan's profile shows the repost; the author's shows the flow and its upvote.
+    const fanProfile = await communityMember(stranger!, fan!.id);
+    assert.deepEqual(
+      [fanProfile.member.followers, fanProfile.member.following, fanProfile.member.followedByViewer],
+      [1, 1, true],
+    );
+    assert.equal(fanProfile.items[0]?.repostedBy?.id, fan!.id);
+    const authorProfile = await communityMember(fan!, author!.id);
+    assert.deepEqual(
+      [authorProfile.member.published, authorProfile.member.upvotes, authorProfile.items.length],
+      [1, 1, 1],
+    );
 
     await editPersonalFlow(author!, {
       action: 'personal-flow-add',
@@ -125,6 +137,39 @@ async function main() {
     const updated = (await getProfile(fan!)).personalFlows?.find(flow => flow.id === copyId);
     assert.equal(updated?.cards.length, 3);
     assert.equal(updated?.source?.version, 2);
+
+    // A finished run is the only way onto the timeline. Two of three cards are Done.
+    const { beginRun, postRun, saveRun } = await import('../src/lib/flow-run-store');
+    const started = await beginRun(author!, { kind: 'personal', id: personalFlowId, level: 'Regular' });
+    const postedState = {
+      ...started.run.state,
+      phase: 'finished' as const,
+      cards: started.run.state.cards.map(card =>
+        card.cardId === drinks[1].id
+          ? { ...card, status: 'skipped' as const, seconds: null }
+          : { ...card, status: 'done' as const, seconds: card.targetSeconds },
+      ),
+    };
+    await saveRun(author!, started.run.id, postedState);
+    const logged = await postRun(author!, started.run.id, '  Good   start ');
+    await assert.rejects(
+      communityAction(author!, {
+        action: 'log',
+        personalFlowId,
+        cardIds: [drinks[0].id],
+        note: '',
+      } as never),
+    );
+    const fanFollowing = await communityFeed(fan!, 'following');
+    const activity = fanFollowing.activities.find(item => item.id === logged.activityId);
+    assert.deepEqual(
+      [activity?.cards.map(card => card.cardId), activity?.total, activity?.note, activity?.publishedId],
+      [[drinks[0].id, drinks[2].id], 3, 'Good start', id],
+    );
+    assert.equal((await communityMember(stranger!, author!.id)).activities.length, 1);
+    await assert.rejects(communityAction(fan!, { action: 'unlog', id: logged.activityId }), /not found/);
+    await communityAction(author!, { action: 'unlog', id: logged.activityId });
+    assert.equal((await communityFeed(fan!, 'following')).activities.length, 0);
 
     await assert.rejects(
       communityAction(fan!, { action: 'unpublish', id: id! }),

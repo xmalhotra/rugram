@@ -54,12 +54,24 @@ function mount(file: string, component: string, props: object) {
       if (name === 'react-native')
         return { View: 'View', Pressable: 'Pressable', ScrollView: 'ScrollView', Image: 'Image', useWindowDimensions: () => ({ width: 390, height: 844 }) };
       if (name === './design/theme') return { useTheme: () => ({ colors: {} }), space: { lg: 20 } };
-      if (name === './pane-state') return { usePaneState: () => ['male', () => {}] };
+      if (name === './pane-state')
+        return {
+          usePaneState: (_name: string, initial: unknown) => [
+            typeof initial === 'function' ? (initial as () => unknown)() : initial,
+            () => {},
+          ],
+        };
+      if (name === './flow-habits')
+        return {
+          useFlowHabits: () => ({
+            habits: { lastOpened: {}, position: {}, slots: {} },
+            opened() {},
+            setSlot() {},
+          }),
+        };
       if (name === './design/components')
-        return { Button: 'Button', Field: 'Field', Sheet: 'Sheet', Card: 'Card' };
+        return { Button: 'Button', Field: 'Field', Sheet: 'Sheet', Card: 'Card', useToast: () => () => {} };
       if (name === './PersonalFlowSheets') return { PersonalFlowEditor: 'PersonalFlowEditor' };
-      if (name === './pose-frames') return { poseFrameRow: () => null };
-      if (name === './morning-stills') return { domainStill: () => undefined };
       if (name === './AddToFlowHeader') return { useRegisterAddToFlow: () => false };
       if (name.startsWith('../../shared/')) return require(`../shared/${name.split('/').at(-1)}`);
       const component = name.split('/').at(-1)!;
@@ -176,57 +188,31 @@ test('failed saves keep the picker open, reuse the creation ID on retry, and blo
   assert.equal(inputs.length, 2);
   assert.equal(inputs[0].id, inputs[1].id);
 });
-test('actual deck Add to Flow targets the visible card and stays separate from Tilt/Slider', async () => {
-  const chosen: string[] = [];
+test('flow creation stays off the deck', async () => {
   const render = mount('AnimalMovementDeck', 'AnimalMovementDeck', {
     flow: { ...source, relatedFlowIds: cards.map(card => card.id) },
     library: cards,
-    onAddCard: (card: { id: string }) => chosen.push(card.id),
+    onAddCard: () => {},
     busy: false,
   });
   let tree = render();
-  await press(find(tree, 'accessibilityLabel', `Add ${cards[0].title} to a personal flow`));
+  assert.equal(
+    nodes(tree).some(node => String(node.props.accessibilityLabel ?? '').includes('to a personal flow')),
+    false,
+  );
   const rail = nodes(tree).find(node => node.type === 'FlowCardRail')!;
   (rail.props.onSelect as (index: number) => void)(1);
   tree = render();
-  await press(find(tree, 'accessibilityLabel', `Add ${cards[1].title} to a personal flow`));
-  assert.deepEqual(
-    chosen,
-    cards.slice(0, 2).map(card => card.id),
-  );
+  assert.equal(nodes(tree).find(node => node.type === 'FlowCardRail')!.props.current, 1);
   assert.equal(
-    nodes(tree).find(node => node.type === 'MovementControls')!.props.controlMode,
-    'tilt',
+    nodes(tree).some(node => String(node.props.accessibilityLabel ?? '').includes('to a personal flow')),
+    false,
   );
 });
-test('Home opens a named personal flow and does not display the no-flows empty state', async () => {
-  const opened: string[] = [];
-  const tree = mount('HomeFeed', 'HomeFeed', {
-    data: {
-      profile: { flowIds: [], personalFlows: personal },
-      flows,
-      products: [],
-      events: [],
-      flowResources: { products: [], events: [] },
-    },
-    onPersonalFlow: (flow: { id: string }) => opened.push(flow.id),
-  })();
-  // Home hands its flows to the shared mind map, which renders each node as "Open <title>".
-  const map = nodes(tree).find(node => node.type === 'FlowMindMap')!;
-  assert.ok(map, 'Home renders the flow mind map');
-  const branches = map.props.branches as {
-    id: string;
-    nodes: { title: string; detail: string; art: Element; onPress: () => void }[];
-  }[];
-  const yours = branches.find(branch => branch.id === 'yours')!;
-  assert.ok(yours, 'Made by you branch');
-  const [node] = yours.nodes;
-  assert.equal(node.title, 'My morning');
-  assert.equal(node.detail, '1 card');
-  assert.equal(node.art.type, 'FlowIllustration');
-  node.onPress();
-  assert.deepEqual(opened, [personal[0].id]);
-  assert.ok(!nodes(tree).some(node => node.props.children === 'No flows added yet'));
+test('Home keeps old and self-made flows out of Yours while creating is off', () => {
+  const home = readFileSync('mobile/src/HomeFeed.tsx', 'utf8');
+  assert.match(home, /addedFlows\(data\)\.filter\(flow => liveFlowIds\.has\(flow\.id\)\)/);
+  assert.match(home, /const personalFlows = flowCreationEnabled/);
 });
 test('personal flow editor connects rename, card ordering and remove to explicit actions', async () => {
   const inputs: PersonalFlowAction[] = [];

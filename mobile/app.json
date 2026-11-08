@@ -33,7 +33,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Choose a product or event image to share for review.",
+          "photosPermission": "Choose a profile photo, or an image for a product or event you share for review.",
           "cameraPermission": false,
           "microphonePermission": false
         }
@@ -56,7 +56,8 @@
         {
           "motionPermission": "Allow optional phone tilt to navigate workout guides. Motion readings stay on your device."
         }
-      ]
+      ],
+      "expo-audio"
     ]
   }
 }

@@ -6,7 +6,7 @@ import {Checkbox,Host,Picker,TextInput,useNativeState} from '@expo/ui';
 import {accessibilityLabel} from '@expo/ui/swift-ui/modifiers';
 import {semantics} from '@expo/ui/jetpack-compose/modifiers';
 import {useTheme,type as typography,space,radius} from './theme';
-import {NeonBackdrop} from './NeonBackdrop';
+import {ScreenBackground} from './ScreenBackground';
 export type ButtonProps={title:string;onPress:()=>void;secondary?:boolean;disabled?:boolean;destructive?:boolean};
 export function Chip({title,active,onPress,disabled=false}:{title:string;active:boolean;onPress:()=>void;disabled?:boolean}){const {colors:C}=useTheme();return <Pressable accessibilityRole="button" accessibilityLabel={title} accessibilityState={{selected:active,disabled}} disabled={disabled} onPress={onPress} style={({pressed})=>({alignSelf:'flex-start',maxWidth:'100%',minHeight:48,justifyContent:'center',paddingHorizontal:16,paddingVertical:10,borderRadius:12,borderWidth:1,borderColor:active?C.lime:C.line,backgroundColor:active?C.lime:C.card,opacity:disabled?.45:pressed?0.7:1})}><Text style={{color:active?C.onAccent:C.text,fontSize:16,flexShrink:1}}>{title}</Text></Pressable>;}
 export {DateTimeField} from './DateTimeField';
@@ -22,7 +22,7 @@ export function HabitToggle({title,detail,checked,disabled,onChange}:{title:stri
 export function Sheet({title,onClose,children,contentKey,scrollable=true,fullScreen=false,closeLabel='Done',navigation='close',headerAction,presentation}:{title:string;onClose:()=>void;children:React.ReactNode;contentKey?:string;scrollable?:boolean;fullScreen?:boolean;closeLabel?:string;navigation?:'back'|'close';headerAction?:React.ReactNode;presentation?:'inline'|'modal'}) {
   const {colors:C}=useTheme();
   return <DetailSurface onClose={onClose} fullScreen={fullScreen} presentation={presentation}>
-        <NeonBackdrop/>
+        <ScreenBackground/>
         <KeyboardAvoidingView behavior={Platform.OS==='ios'?'padding':undefined} style={{flex:1,paddingHorizontal:space.lg}}>
           <View style={{flexDirection:'row',alignItems:'center',paddingVertical:12,gap:space.md}}>
             {navigation==='back' && <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={onClose} hitSlop={4} style={{minWidth:48,minHeight:48,alignItems:'center',justifyContent:'center'}}><Text style={{color:C.lime,fontSize:30}}>←</Text></Pressable>}
@@ -30,7 +30,7 @@ export function Sheet({title,onClose,children,contentKey,scrollable=true,fullScr
             {headerAction}
             {navigation==='close' && <Pressable accessibilityRole="button" accessibilityLabel="Close details" onPress={onClose} style={{minWidth:60,minHeight:48,alignItems:'center',justifyContent:'center',flexShrink:0}}><Text style={{color:C.lime,fontSize:17,fontWeight:'600'}}>{closeLabel}</Text></Pressable>}
           </View>
-          {scrollable?<ScrollView key={contentKey} style={{flex:1}} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" contentContainerStyle={{paddingBottom:space.xxl,gap:space.sm}}>{children}</ScrollView>:<View key={contentKey} style={{flex:1,minHeight:0}}>{children}</View>}
+          {scrollable?<ScrollView key={contentKey} style={{flex:1,marginHorizontal:-space.lg}} keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" contentContainerStyle={{paddingHorizontal:space.lg,paddingBottom:space.xxl,gap:space.sm}}>{children}</ScrollView>:<View key={contentKey} style={{flex:1,minHeight:0}}>{children}</View>}
         </KeyboardAvoidingView>
   </DetailSurface>;
 }

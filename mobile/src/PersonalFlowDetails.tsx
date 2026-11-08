@@ -16,6 +16,7 @@ import { communityAct, useCommunityStatus } from './community';
 import { useSession } from './session';
 import { Text } from './design/Text';
 import { useTheme } from './design/theme';
+import { flowCreationEnabled } from '../../shared/flow-catalog';
 import { gymTechnique } from '../../shared/gym-techniques';
 import { GymTechniqueNotes } from './GymTechniqueNotes';
 import { nutritionIdea } from '../../shared/nutrition-ideas';
@@ -29,6 +30,7 @@ export function PersonalFlowDetails({
   onChange,
   onBrowse,
   onLink,
+  onStart,
 }: {
   flow: PersonalFlow;
   library: HabitFlow[];
@@ -37,6 +39,8 @@ export function PersonalFlowDetails({
   onChange: (action: PersonalFlowAction, message?: string) => Promise<boolean>;
   onBrowse: () => void;
   onLink: (url: string) => void;
+  /** Start the clock for this flow. */
+  onStart: () => void;
 }) {
   const { colors: C } = useTheme();
   const [editing, setEditing] = useState(false);
@@ -51,19 +55,36 @@ export function PersonalFlowDetails({
           gap: 12,
         }}
       >
-        <Text style={{ color: C.muted, fontSize: 12 }}>
+        <Text style={{ flex: 1, color: C.muted, fontSize: 12 }}>
           Your mix · {flow.cards.length} {flow.cards.length === 1 ? 'card' : 'cards'}
         </Text>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Edit flow name and cards"
-          onPress={() => setEditing(true)}
-          style={{ minHeight: 44, paddingHorizontal: 12, justifyContent: 'center' }}
+          accessibilityLabel="Start this flow"
+          onPress={onStart}
+          style={({ pressed }) => ({
+            minHeight: 36,
+            paddingHorizontal: 14,
+            borderRadius: 18,
+            justifyContent: 'center',
+            backgroundColor: C.lime,
+            opacity: pressed ? 0.7 : 1,
+          })}
         >
-          <Text style={{ color: C.text, fontWeight: '600', fontSize: 14 }}>Edit flow</Text>
+          <Text style={{ color: C.onAccent, fontWeight: '700', fontSize: 14 }}>Start</Text>
         </Pressable>
+        {flowCreationEnabled && (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Edit flow name and cards"
+            onPress={() => setEditing(true)}
+            style={{ minHeight: 44, paddingHorizontal: 12, justifyContent: 'center' }}
+          >
+            <Text style={{ color: C.text, fontWeight: '600', fontSize: 14 }}>Edit flow</Text>
+          </Pressable>
+        )}
       </View>
-      <PublishControls flow={flow} />
+      {flowCreationEnabled && <PublishControls flow={flow} />}
       {resolved.missing.length > 0 && (
         <Text style={{ color: C.muted, fontSize: 12 }}>
           {resolved.missing.length} {resolved.missing.length === 1 ? 'card is' : 'cards are'}{' '}
@@ -80,7 +101,9 @@ export function PersonalFlowDetails({
           busy={busy}
           onAdd={onBrowse}
           onHome={onBrowse}
-          onRemove={() => setEditing(true)}
+          onRemove={() => {
+            if (flowCreationEnabled) setEditing(true);
+          }}
           onLink={onLink}
           onAddCard={card => {
             const reference = flow.cards.find(item => item.cardId === card.id);
@@ -102,7 +125,7 @@ export function PersonalFlowDetails({
           <Button title="Explore cards" onPress={onBrowse} />
         </View>
       )}
-      {editing && (
+      {flowCreationEnabled && editing && (
         <PersonalFlowEditor
           flow={flow}
           library={library}

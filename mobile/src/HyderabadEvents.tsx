@@ -14,10 +14,7 @@ import {
 } from '../../shared/hyderabad-tech';
 import { eventCost } from '../../shared/flow-connections';
 import { eventProvider, eventWebsite } from '../../shared/event-discovery';
-import { Badge, Button, Card, Choice, HabitToggle } from './design/components';
-import { CategoryRail } from './CategoryRail';
-import { BrowseShelf } from './BrowseShelf';
-import { EventPreview } from './EventPreview';
+import { Badge, Button, Card, EmptyState } from './design/components';
 import {
   eventInterests,
   defaultEventTopics,
@@ -29,7 +26,11 @@ import { Disclosure } from './Disclosure';
 import { EventHosts } from './EventHosts';
 import { FocusIllustration } from './FocusIllustration';
 import { eventCities, eventCity, eventsInCity } from '../../shared/event-location';
-import { EventLocationPicker } from './EventLocationPicker';
+import { EventDayGroup, EventRow, eventMark } from './EventRows';
+import { EventCategoryPage } from './EventCategoryPage';
+import { EventsDiscover } from './EventsDiscover';
+import { useEventCity } from './event-city';
+import { groupEventsByDay } from '../../shared/event-timeline';
 const when = (value: string) =>
   formatDate(new Date(value), {
     timeZone: 'Asia/Kolkata',
@@ -39,18 +40,8 @@ const when = (value: string) =>
     hour: 'numeric',
     minute: '2-digit',
   });
-export function HyderabadEvents({
-  data,
-  onSelect,
-  onHost,
-}: {
-  data: MobilePayload;
-  onSelect: (event: CityEvent) => void;
-  onHost?: () => void;
-}) {
-  const { colors: C } = useTheme();
-  const [savedOnly, setSavedOnly] = usePaneState('savedEvents', false);
-  const [order, setOrder] = usePaneState('eventOrder', 'Soonest');
+/** City, category and your-events state shared by the Events list and a category's page. */
+function useEventsView(data: MobilePayload) {
   const [interestId, setInterest] = usePaneState<string | null>('eventInterest', null);
   const scope = data.library?.settings ?? {
     eventCities: ['Hyderabad'],
@@ -58,148 +49,290 @@ export function HyderabadEvents({
     eventTopics: defaultEventTopics,
   };
   const cities = eventCities(scope);
-  const [city, setCity] = usePaneState<string | null>('eventCity', () =>
-    eventCity(cities, data.profile.city),
-  );
-  const [choosingCity, setChoosingCity] = useState(false);
-  const selectedCity = eventCity(cities, city);
+  const { city, setCity, loading: cityLoading } = useEventCity(data.user.id);
+  // Only an enabled city counts; a city an admin has since removed sends the member back to discovery.
+  const selectedCity = city && cities.some(item => item === city) ? eventCity(cities, city) : null;
   const categories = enabledEventInterests(
     data.library?.settings.eventInterests ?? eventInterests,
     data.library?.settings.eventTopics ?? defaultEventTopics,
   );
   const interest = categories.find(item => item.id === interestId);
-  const events = eventsInCity(data.events, selectedCity, scope).filter(
-    event =>
-      (!interest || eventMatchesInterest(event, interest)) &&
-      (!savedOnly || data.profile.savedEventIds?.includes(event.id)),
+  // Your own relationship to an event: registered (approved or waiting) or saved.
+  const registered = new Map(
+    (data.registrations ?? [])
+      .filter(item => item.status === 'approved' || item.status === 'pending')
+      .map(item => [item.eventId, item.status === 'approved' ? ('going' as const) : ('requested' as const)]),
   );
-  if (order === 'Editorial priority')
-    events.sort(
-      (a, b) =>
-        (b.editorialPriority?.score ?? 0) - (a.editorialPriority?.score ?? 0) ||
-        Date.parse(a.startsAt) - Date.parse(b.startsAt),
-    );
-  const copy = { color: C.muted, fontSize: 16, lineHeight: 24 } as const;
-  const locationHeader = (
-    <View style={{ gap: 10 }}>
-      <Text style={{ color: C.muted, fontSize: 14 }}>Explore events in</Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Event location: ${selectedCity ?? 'unavailable'}. Choose city`}
-        accessibilityState={{ expanded: choosingCity, disabled: cities.length === 0 }}
-        disabled={cities.length === 0}
-        onPress={() => setChoosingCity(true)}
-        style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12 }}
-      >
-        <View
-          accessible={false}
-          style={{ width: 20, height: 26, alignItems: 'center', justifyContent: 'center' }}
-        >
-          <View
-            style={{
-              width: 16,
-              height: 16,
-              borderRadius: 8,
-              borderBottomLeftRadius: 2,
-              borderWidth: 2,
-              borderColor: C.lime,
-              transform: [{ rotate: '-45deg' }],
-            }}
-          />
-          <View
-            style={{
-              position: 'absolute',
-              width: 4,
-              height: 4,
-              borderRadius: 2,
-              backgroundColor: C.lime,
-              top: 11,
-              left: 8,
-            }}
-          />
-        </View>
-        <Text
-          numberOfLines={2}
-          style={{ flexShrink: 1, color: C.text, fontSize: 29, lineHeight: 37, fontWeight: '600' }}
-        >
-          {selectedCity ?? 'No city available'}
-        </Text>
-        <Text style={{ color: C.lime, fontSize: 23 }}>⌄</Text>
-      </Pressable>
-    </View>
-  );
-  const locationPicker = choosingCity && (
-    <EventLocationPicker
-      cities={cities}
-      selected={selectedCity}
-      country={scope?.eventCountry ?? 'IN'}
-      onClose={() => setChoosingCity(false)}
-      onSelect={next => {
-        setCity(next);
-        setSavedOnly(false);
-        setChoosingCity(false);
-      }}
+  const saved = new Set(data.profile.savedEventIds ?? []);
+  const mine = (event: CityEvent) =>
+    registered.get(event.id) ?? (saved.has(event.id) ? ('saved' as const) : undefined);
+  const markFor = (event: CityEvent) => eventMark(event, mine(event));
+  const now = Date.now();
+  // Everything you registered for or saved, in any city; the Your events tab splits it.
+  const yours = data.events
+    .filter(event => mine(event) && event.status === 'published')
+    .map(event => ({ event, mine: mine(event)!, past: Date.parse(event.endsAt ?? event.startsAt) <= now }))
+    .sort((a, b) => Date.parse(a.event.startsAt) - Date.parse(b.event.startsAt));
+  const events = eventsInCity(data.events, selectedCity, scope);
+  const cityCounts = cities.map(name => ({ name, events: eventsInCity(data.events, name, scope).length }));
+  // From discovery (no city yet) a category spans every enabled city.
+  const pool = selectedCity
+    ? events
+    : cities
+        .flatMap(name => eventsInCity(data.events, name, scope))
+        .sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
+  const categoryEvents = pool.filter(event => !interest || eventMatchesInterest(event, interest));
+  return {
+    scope,
+    cities,
+    cityCounts,
+    cityLoading,
+    selectedCity,
+    setCity,
+    categories,
+    interest,
+    setInterest,
+    markFor,
+    yours,
+    events,
+    categoryEvents,
+  };
+}
+
+/** A category's page, opened from the rail. Rendered at screen level so it covers the whole tab. */
+export function EventCategoryOverlay({
+  data,
+  onSelect,
+}: {
+  data: MobilePayload;
+  onSelect: (event: CityEvent) => void;
+}) {
+  const view = useEventsView(data);
+  if (!view.interest) return null;
+  return (
+    <EventCategoryPage
+      interest={view.interest}
+      city={view.selectedCity}
+      events={view.categoryEvents}
+      markFor={view.markFor}
+      onSelect={onSelect}
+      onClose={() => view.setInterest(null)}
     />
   );
-  return (
-    <View style={{ gap: 16, backgroundColor: C.bg }}>
-      {locationHeader}
-      {onHost && (
-        <Button
-          title="+ Host an event"
-          secondary
-          disabled={!data.creatorEventQuota?.remaining}
-          onPress={onHost}
-        />
-      )}
-      <View style={{ marginHorizontal: -16 }}>
-        <CategoryRail
-          items={[{ id: 'all', title: 'All events', illustration: 'community' }, ...categories]}
-          selected={interest?.id ?? 'all'}
-          onSelect={id => {
-            setInterest(id === 'all' ? null : id);
-            setSavedOnly(false);
-          }}
-          label="Event categories"
-        />
-      </View>
-      <Text accessibilityRole="header" style={{ color: C.text, fontSize: 21, fontWeight: '600' }}>
-        Upcoming events
+}
+
+export type EventsSection = 'upcoming' | 'yours' | 'hosting';
+
+export function HyderabadEvents({
+  data,
+  onSelect,
+  onHost,
+  section,
+  onDiscover,
+}: {
+  data: MobilePayload;
+  onSelect: (event: CityEvent) => void;
+  onHost?: () => void;
+  /** Chosen in the top bar. Upcoming shows discovery until a city is picked. */
+  section: EventsSection;
+  onDiscover: () => void;
+}) {
+  const { colors: C } = useTheme();
+  const {
+    categories,
+    cityCounts,
+    cityLoading,
+    selectedCity,
+    setCity,
+    setInterest,
+    markFor,
+    yours,
+    events,
+  } = useEventsView(data);
+  // Category chips on the city page filter in place.
+  const [filter, setFilter] = usePaneState<string | null>('eventFilter', null);
+  const copy = { color: C.muted, fontSize: 16, lineHeight: 24 } as const;
+  const sectionTitle = { color: C.text, fontSize: 22, fontWeight: '700' } as const;
+  const row = (event: CityEvent, mark = markFor(event)) => (
+    <EventRow key={event.id} event={event} mark={mark} showDate onPress={() => onSelect(event)} />
+  );
+  if (cityLoading) return <View style={{ minHeight: 200 }} />;
+  // Upcoming before a city is chosen: Luma-style discovery of categories and cities.
+  if (section === 'upcoming' && !selectedCity)
+    return (
+      <EventsDiscover
+        categories={categories}
+        cities={cityCounts}
+        onCategory={setInterest}
+        onCity={name => {
+          setCity(name);
+          setFilter(null);
+          onDiscover();
+        }}
+      />
+    );
+  const cityHeader = (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${selectedCity}. Change city`}
+      onPress={() => setCity(null)}
+      hitSlop={8}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start' }}
+    >
+      <Text style={{ color: C.text, fontSize: 22, lineHeight: 28, fontWeight: '700' }}>
+        {selectedCity}
       </Text>
-      <Disclosure title="Filter events">
-        <HabitToggle
-          title="Saved events"
-          detail="Your shortlist, not confirmed bookings."
-          checked={savedOnly}
-          disabled={false}
-          onChange={setSavedOnly}
-        />
-        <Choice
-          label="Sort by"
-          value={order}
-          options={['Soonest', 'Editorial priority']}
-          onChange={setOrder}
-        />
-      </Disclosure>
-      <BrowseShelf label="Upcoming events">
-        {events.map(event => (
-          <EventPreview key={event.id} event={event} onPress={() => onSelect(event)} />
+      <Text style={{ color: C.muted, fontSize: 18 }}>⌄</Text>
+    </Pressable>
+  );
+  if (section === 'hosting') {
+    const hosted = data.events
+      .filter(event => event.createdBy === data.user.id)
+      .sort((a, b) => Date.parse(b.startsAt) - Date.parse(a.startsAt));
+    const stateMark = (event: CityEvent) =>
+      event.status === 'pending'
+        ? ({ label: 'In review', tone: 'info' } as const)
+        : event.status === 'archived'
+          ? ({ label: 'Not live', tone: 'muted' } as const)
+          : ({ label: 'Live', tone: 'accent' } as const);
+    return (
+      <View style={{ gap: 18 }}>
+        {onHost ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Create an event"
+            onPress={onHost}
+            style={({ pressed }) => ({
+              minHeight: 52,
+              borderRadius: 26,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: C.lime,
+              opacity: pressed ? 0.75 : 1,
+            })}
+          >
+            <Text style={{ color: C.onAccent, fontSize: 16, fontWeight: '700' }}>+ Create event</Text>
+          </Pressable>
+        ) : null}
+        {hosted.length ? (
+          <View>
+            <Text accessibilityRole="header" style={sectionTitle}>
+              Your hosted events
+            </Text>
+            {hosted.map(event => row(event, stateMark(event)))}
+          </View>
+        ) : (
+          <EmptyState
+            title={onHost ? 'Host your first event' : 'Hosting is for creators'}
+            description={
+              onHost
+                ? 'Create an event with seats, a waitlist and signup questions. It goes live after review.'
+                : 'Creators can host events here. Ask the Qram team to become a creator.'
+            }
+          />
+        )}
+      </View>
+    );
+  }
+  if (section === 'yours') {
+    // Your events span cities, so they sit by date and each one links to its city.
+    const showCity = (city: string) => {
+      setCity(city);
+      setFilter(null);
+      onDiscover();
+    };
+    const upcoming = yours.filter(item => !item.past).map(item => item.event);
+    const past = yours
+      .filter(item => item.past && item.mine !== 'saved')
+      .map(item => item.event)
+      .reverse();
+    return (
+      <View style={{ gap: 22 }}>
+        {upcoming.length === 0 && past.length === 0 ? (
+          <EmptyState
+            title="Nothing planned yet"
+            description="Register for or save an event and it shows up here, with its date and city."
+          />
+        ) : null}
+        {groupEventsByDay(upcoming).map(day => (
+          <EventDayGroup
+            key={day.key}
+            day={day}
+            markFor={markFor}
+            onSelect={onSelect}
+            onCity={showCity}
+          />
         ))}
-      </BrowseShelf>
-      {events.length === 0 && (
+        {past.length > 0 && (
+          <View style={{ opacity: 0.55 }}>
+            <Text accessibilityRole="header" style={sectionTitle}>
+              Past
+            </Text>
+            {past.map(event => (
+              <EventRow
+                key={event.id}
+                event={event}
+                mark={markFor(event)}
+                showDate
+                onPress={() => onSelect(event)}
+                onCity={showCity}
+              />
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  }
+  const chosen = categories.find(item => item.id === filter);
+  const shown = events.filter(event => !chosen || eventMatchesInterest(event, chosen));
+  return (
+    <View style={{ gap: 20 }}>
+      {cityHeader}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        {categories.map(item => {
+          const on = item.id === filter;
+          return (
+            <Pressable
+              key={item.id}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on }}
+              onPress={() => setFilter(on ? null : item.id)}
+              style={({ pressed }) => ({
+                paddingHorizontal: 14,
+                height: 34,
+                borderRadius: 17,
+                justifyContent: 'center',
+                backgroundColor: on ? C.lime : C.card,
+                borderWidth: 1,
+                borderColor: on ? C.lime : C.line,
+                opacity: pressed ? 0.7 : 1,
+              })}
+            >
+              <Text style={{ color: on ? C.onAccent : C.text, fontSize: 14, fontWeight: '600' }}>
+                {item.title}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {/* Luma-style: what's coming up, by day. */}
+      {groupEventsByDay(shown).map(day => (
+        <EventDayGroup key={day.key} day={day} markFor={markFor} onSelect={onSelect} />
+      ))}
+      {shown.length === 0 && (
         <Card>
           <Text style={copy}>
-            {savedOnly
-              ? `No saved upcoming events in ${selectedCity ?? 'this city'} for this category.`
-              : `No upcoming ${interest ? `${interest.title} ` : ''}events in ${selectedCity ?? 'this city'} yet.`}
+            {`No upcoming ${chosen ? `${chosen.title} ` : ''}events in ${selectedCity} yet.`}
           </Text>
         </Card>
       )}
-      <Badge>Curated, not a live feed · India time</Badge>
-      {locationPicker}
+      <Text style={{ color: C.muted, fontSize: 12, textAlign: 'center' }}>
+        Curated, not a live feed · India time
+      </Text>
     </View>
   );
 }
+
 export function CuratedEventDetails({
   event,
   data,

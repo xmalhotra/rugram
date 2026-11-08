@@ -38,9 +38,11 @@ test('Home shows added flows and leaves the guide library on the Flows tab',()=>
   const onboarding=readFileSync('mobile/app/onboarding.tsx','utf8');
   assert.match(onboarding,/<Redirect href="\/\(tabs\)"/);
   const app=readFileSync('mobile/App.tsx','utf8');
-  containsCode(app,"edges={homeScreen?['top','bottom']:['top']}");
+  // Every main tab's header glass runs behind the status bar, so they reserve only the bottom edge.
+  containsCode(app,"edges={onBack?[]:glassBar?['bottom']:['top']}");
+  containsCode(app,"topInset={glassBar?statusBar+headerHeight+12:0}");
   assert.match(tabs,/name="index" disableAutomaticContentInsets/);
-  containsCode(app,"inset={homeScreen?'never':'automatic'}");
+  containsCode(app,"inset={glassBar||onBack?'never':'automatic'}");
   const rootList=readFileSync('mobile/src/RootList.tsx','utf8');
   containsCode(rootList,'contentInsetAdjustmentBehavior={inset}');
   assert.doesNotMatch(app,/FocusStarter/);
@@ -48,7 +50,7 @@ test('Home shows added flows and leaves the guide library on the Flows tab',()=>
   containsCode(app,"tab==='Flows' && (<View");
   containsCode(app,"homeTab==='yours'?(<HomeFeed");
   containsCode(app,"<CommunityFeed key={homeTab} tab={homeTab}");
-  containsCode(app,"tab==='Discover' && (");
+  containsCode(app,"tab==='Discover' && flowsTab==='qram' && (");
   assert.ok(!app.includes("tab==='Flows' && (onboarding"));
 });
 test('first-time journey stays in setup through focus selection, then reaches Home after adding a flow',()=>{

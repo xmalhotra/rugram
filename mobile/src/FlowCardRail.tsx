@@ -88,7 +88,8 @@ export function FlowCardRail({
                 color: current === index ? C.text : C.muted,
                 fontSize: 13,
                 lineHeight: 17,
-                fontWeight: current === index ? '600' : '400',
+                // One weight for every state, so selecting a card never re-wraps its title.
+                fontWeight: '500',
               }}
             >
               {card.title}

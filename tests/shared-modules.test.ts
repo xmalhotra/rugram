@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {eventHorizon,eventWithinYear,hostedEventEditError} from '../shared/event-registration';
 import {cardWalletSchema} from '../shared/card-wallet-validation';
-import {indianMobileInput,indianMobilePhone,mockPhoneAccounts} from '../shared/auth';
+import {indianMobileInput,indianMobilePhone,mockPhoneAccounts,simulatedAccounts} from '../shared/auth';
+import {readFileSync} from 'node:fs';
 import {flowsForFocus,focusIds,focusOptions} from '../shared/focus';
 import {hostedDemoEvent} from '../shared/hosted-demo-event';
 import {flows} from '../shared/mobile';
@@ -49,6 +50,12 @@ test('Indian mobile input and reserved demo accounts',()=>{
   assert.equal(indianMobilePhone('5876543210'),null);
   assert.equal(new Set(mockPhoneAccounts.map(account=>account.phone)).size,mockPhoneAccounts.length);
   assert.ok(mockPhoneAccounts.every(account=>/^\+120255501\d\d$/.test(account.phone)),'Demo numbers stay in the reserved fictional range');
+  assert.deepEqual(simulatedAccounts.map(account=>account.phone),['1','2','3','4','5'].map(n=>`+91000000000${n}`));
+  // Indian mobiles start with 6-9, so these can never be typed into the real OTP flow.
+  assert.ok(simulatedAccounts.every(account=>indianMobilePhone(account.phone.slice(3))===null));
+  const route=readFileSync('src/app/api/mobile/auth/route.ts','utf8');
+  assert.match(route,/const quickLoginAllowed = \(\) => mockOtpAllowed\(process\.env, isDemoMode\(\)\)/);
+  assert.match(route,/if \(!quickLoginAllowed\(\)\) return apiError/);
 });
 
 test('every focus references available flows',()=>{

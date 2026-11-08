@@ -4,12 +4,11 @@ import { OutboundProvider } from '../src/OutboundLink';
 import React from 'react';
 import { Stack } from 'expo-router';
 import { View } from 'react-native';
-import { NeonBackdrop } from '../src/design/NeonBackdrop';
+import { ScreenBackground } from '../src/design/ScreenBackground';
 import { LogoLoader } from '../src/motion';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { SessionProvider, useSession } from '../src/session';
-import { KeptCardCache } from '../src/KeptCardCache';
 import { useTheme, AppearancePreferenceContext } from '../src/design/theme';
 import { useFonts } from 'expo-font';
 import { Inter_400Regular } from '@expo-google-fonts/inter/400Regular';
@@ -72,7 +71,7 @@ function NavigationContent() {
         }}
       >
         <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-        <NeonBackdrop />
+        <ScreenBackground />
         <LogoLoader size={72} label="Loading Qram" />
       </View>
     );
@@ -96,7 +95,6 @@ function NavigationContent() {
   return (
     <>
       <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
-      {data ? <KeptCardCache /> : null}
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: C.bg } }}>
         <Stack.Protected guard={!data}>
           <Stack.Screen name="index" />
@@ -108,6 +106,7 @@ function NavigationContent() {
         <Stack.Protected guard={Boolean(data)}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="profile" />
+          <Stack.Screen name="member/[id]" />
           <Stack.Screen name="onboarding" />
         </Stack.Protected>
         <Stack.Screen name="flow/[id]" />

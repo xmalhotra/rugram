@@ -2,6 +2,7 @@ export const notificationTypes = [
   'registration_requested',
   'registration_approved',
   'registration_declined',
+  'registration_waitlisted',
   'event_cancelled',
   'event_changed',
   'listing_published',
@@ -9,6 +10,8 @@ export const notificationTypes = [
   'admin_queue_digest',
   'report_resolved',
   'community_flow_edited',
+  'event_new_in_topic',
+  'flow_ready',
 ] as const;
 export type NotificationType = (typeof notificationTypes)[number];
 export type InboxItem = {

@@ -39,9 +39,11 @@ test('New arrivals requires a confirmed recent launch date; a watchlist label is
   assert.equal(newCreditCards([recent],now).length,1);
   assert.equal(newCreditCards([{...recent,curation:{...recent.curation,launchedAt:'2027-01-01'}}],now).length,0);
 });
-test('card pages progressively disclose details and support alternative navigation without preserving old scroll',()=>{
+test('card pages show recorded terms and open another card without preserving old scroll',()=>{
   const ui=readFileSync('mobile/src/CreditCardPicks.tsx','utf8');
-  assert.match(ui,/Disclosure title="Fees & catches"/);assert.match(ui,/Disclosure key=\{benefit.id\} title=\{benefit.title\}/);
-  assert.match(ui,/Similar annual fee/);containsCode(ui,'onPress={()=>onOpen(other)}');
+  assert.match(ui,/At a glance/);
+  assert.match(ui,/Against similar cards/);
+  containsCode(ui,'onPress={() => onOpen(other.card)}');
+  assert.doesNotMatch(ui,/Similar annual fee/);
   const app=readFileSync('mobile/App.tsx','utf8');containsCode(app,'contentKey={selectedCard?.id}');containsCode(app,'setCardHistory(previous=>previous.slice(0,-1))');
 });

@@ -4,6 +4,14 @@ export type SharedKind = 'flow' | 'pick' | 'event';
 export const contentLink = (kind: SharedKind, id: string) =>
   `qram://${kind}/${encodeURIComponent(id)}`;
 const title = (value: string) => value.replace(/\s+/g, ' ').trim();
+export const memberLink = (id: string) => `qram://member/${encodeURIComponent(id)}`;
+/** Only the public name and username: never stats, weights or details. */
+export function shareProfile(user: { id: string; name: string; handle: string }) {
+  return {
+    title: user.name,
+    message: [`${title(user.name)} (@${user.handle}) on Qram`, memberLink(user.id)].join('\n'),
+  };
+}
 export function shareFlow(flow: HabitFlow) {
   return {
     title: flow.title,

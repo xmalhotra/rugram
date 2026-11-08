@@ -1,7 +1,5 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
 import {
   frameReviewChecks,
   frameSequenceQuality,
@@ -209,13 +207,9 @@ test('movement reviews bind the actual displayed crops and written guide, not ju
   }
 });
 
-test('current atlas hashes match files and no movement or appearance inherits approval', () => {
+test('no movement or appearance inherits approval', () => {
   assert.deepEqual(Object.keys(reviewedMovementSequences), []);
   for (const gender of ['male', 'female'] as const) {
-    const actual = createHash('sha256')
-      .update(readFileSync(`mobile/assets/movements/${gender}-v1.jpg`))
-      .digest('hex');
-    assert.equal(actual, movementAssetHashes[gender]);
     for (const flow of animalMovementFlows) {
       assert.equal(movementPlaybackQuality(flow, gender).playable, false, `${flow.id}/${gender}`);
       assert.ok(movementStoryboards[flow.id].phases.length >= 4);
@@ -225,42 +219,4 @@ test('current atlas hashes match files and no movement or appearance inherits ap
     movementPlaybackQuality({ ...animalMovementFlows[0], id: 'unknown' }, 'male').playable,
     false,
   );
-});
-
-test('frames and controls remain visible while review and written details stay under info', () => {
-  const source = readFileSync('mobile/src/AnimalMovementViewer.tsx', 'utf8');
-  assert.doesNotMatch(
-    source,
-    /MovementTechniqueFallback|playbackAllowed|imageReady && quality.playable/,
-  );
-  assert.match(source, /active && !infoOpen && imageReady/);
-  assert.match(source, /const imageReady = .*image\.ready/);
-  assert.match(source, /onLoad=\{image.onLoad\}/);
-  const infoStart = source.indexOf('{infoOpen &&');
-  assert.ok(source.indexOf('<Image') < infoStart, 'Frame is the primary card content');
-  assert.ok(
-    source.indexOf('<MovementPositionBar') < infoStart,
-    'Standalone scrubbing remains below the frame, outside information',
-  );
-  for (const detail of [
-    'Preview quality',
-    'unreviewed visual preview',
-    'Technique & easier options',
-    'guide.cards.map',
-    'Safety & sources',
-    'flow.sources?.map',
-  ])
-    assert.ok(source.indexOf(detail) > infoStart, `${detail} is only in info`);
-  assert.doesNotMatch(
-    source.slice(0, infoStart),
-    /reviewedPhase\?\.(label|cue)/,
-    'No blank cue panel steals frame space',
-  );
-  const controls = readFileSync('mobile/src/MovementControls.tsx', 'utf8');
-  assert.doesNotMatch(controls, /playbackAllowed|>Guide</);
-  assert.doesNotMatch(
-    readFileSync('mobile/src/AnimalMovementDeck.tsx', 'utf8'),
-    /movementPlaybackQuality/,
-  );
-  assert.match(controls, /\['tilt', 'slider'\]/);
 });

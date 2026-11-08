@@ -111,10 +111,28 @@ function mount() {
             ];
           },
         };
-      if (name === 'react-native') return { View: 'View', Pressable: 'Pressable', Image: 'Image' };
+      if (name === 'react-native')
+        return { View: 'View', Pressable: 'Pressable', Image: 'Image', ScrollView: 'ScrollView' };
       if (name === './design/theme') return { useTheme: () => ({ colors: {} }) };
+      // Topic selection moved from component useState to account-scoped pane state so a flow can open it.
+      if (name === './pane-state')
+        return {
+          usePaneState(_name: string, initial: unknown) {
+            const index = cursor++;
+            if (!(index in state))
+              state[index] = typeof initial === 'function' ? (initial as () => unknown)() : initial;
+            return [
+              state[index],
+              (next: unknown) => {
+                state[index] =
+                  typeof next === 'function' ? (next as (current: unknown) => unknown)(state[index]) : next;
+              },
+            ];
+          },
+        };
       if (name === './design/components') return { Button: 'Button', Sheet: 'Sheet' };
       if (name === './OutboundLink') return { HealthNote: 'HealthNote' };
+      if (name === './picks-icons') return { supplementIcons: {}, cardShelfIcons: {} };
       if (name.startsWith('../../shared/')) return require(`../shared/${name.split('/').at(-1)}`);
       const component = name.split('/').at(-1)!;
       return { [component]: component };
@@ -147,7 +165,7 @@ function mount() {
   return { render, press, backCount: () => back };
 }
 
-test('real Supplements component opens products directly; all explanatory copy stays behind information', () => {
+test('real Supplements component opens products directly; no goal heading or information button', () => {
   const screen = mount();
   let tree = screen.render();
   assert.ok(
@@ -161,14 +179,13 @@ test('real Supplements component opens products directly; all explanatory copy s
   assert.ok(
     !nodes(tree).some(node => ['HealthNote', 'Sheet', 'SupplementJourney'].includes(node.type)),
   );
-  screen.press(tree, 'Supplement information');
+  // No goal heading and no information button: tiles and products only.
+  assert.ok(!nodes(tree).some(node => node.props?.accessibilityLabel === 'Supplement information'));
+  // Inside a goal there is no category row; switching goes back to the tiles.
+  assert.ok(!nodes(tree).some(node => node.type === 'CategoryRail'));
+  screen.press(tree, 'Back to Supplement categories');
   tree = screen.render();
-  assert.ok(nodes(tree).some(node => node.type === 'HealthNote'));
-  assert.ok(
-    nodes(tree).some(node => node.type === 'Text' && node.props.children === supplementOrderNote),
-  );
-  const rail = nodes(tree).find(node => node.type === 'CategoryRail')!;
-  (rail.props.onSelect as (id: string) => void)('plant-protein');
+  screen.press(tree, 'Plant-based protein');
   tree = screen.render();
   assert.ok(!nodes(tree).some(node => node.type === 'Sheet'));
   assert.equal(

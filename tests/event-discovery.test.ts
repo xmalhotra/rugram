@@ -6,7 +6,7 @@ import type {CityEvent} from '../shared/mobile';
 import {hyderabadTechEvents,hyderabadTechSeeds,canOpenRegistration,registrationState,eventSourceKey} from '../shared/hyderabad-tech';
 const base:CityEvent={id:'one',title:'Developer gathering',city:'Bengaluru',venue:'Community space',startsAt:'2099-01-01T10:00:00.000Z',capacity:0,price:0,description:'An isolated fixture, not a real public event.',createdBy:'admin',status:'published',topic:'Tech',registrationUrl:'https://luma.com/test-fixture'};
 test('event discovery includes only future curated Tech, HYROX and marathon links in the selected city',()=>{
-  assert.deepEqual(eventTopics,['Tech','HYROX','Marathons','HYROX simulations','Reading groups']);
+  assert.deepEqual(eventTopics,['Tech','AI','HYROX','Marathons','HYROX simulations','Reading groups','Food & Drink','Other']);
   const items:CityEvent[]=[base,{...base,id:'race',topic:'HYROX'},{...base,id:'other-city',city:'Mumbai'},{...base,id:'old',startsAt:'2000-01-01T00:00:00Z'},{...base,id:'pending',status:'pending'},{...base,id:'legacy',topic:undefined,registrationUrl:undefined},{...base,id:'party',topic:'Party' as CityEvent['topic']},{...base,id:'unsafe',registrationUrl:'javascript:alert(1)'}];
   assert.deepEqual(discoverEvents(items,' bengaluru ').map(event=>event.id),['one','race']);
   assert.deepEqual(discoverEvents(items,'Bengaluru','HYROX').map(event=>event.id),['race']);

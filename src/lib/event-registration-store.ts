@@ -12,6 +12,7 @@ import type {
   RegistrationStatus,
 } from '../../shared/event-registration';
 import type { HostedEventAction } from '../../shared/event-registration';
+import { answersError, promotedStatus, requestStatus } from '../../shared/event-registration';
 import type { EventInviteInbox } from '../../shared/event-invites';
 type Registry = Record<string, EventRegistration>;
 declare global {
@@ -94,7 +95,36 @@ async function registrations(id: string): Promise<EventRegistration[]> {
     status: row.status as RegistrationStatus,
     requestedAt: String(row.requested_at),
     updatedAt: String(row.updated_at),
+    answers: (row.answers as Record<string, string> | null) ?? {},
   }));
+}
+
+/** Waitlist position, waitlist size and, for managers, how guests answered choice questions. */
+function extras(event: CityEvent, rows: EventRegistration[], viewerId: string, manage: boolean) {
+  const queue = rows
+    .filter(item => item.status === 'waitlisted')
+    .sort((a, b) => Date.parse(a.requestedAt) - Date.parse(b.requestedAt));
+  const position = queue.findIndex(item => item.userId === viewerId);
+  const counted = rows.filter(item => ['approved', 'pending', 'waitlisted'].includes(item.status));
+  return {
+    requireApproval: event.requireApproval !== false,
+    waitlistCount: queue.length,
+    waitlistPosition: position >= 0 ? position + 1 : undefined,
+    answerTally: manage
+      ? (event.questions ?? [])
+          .filter(question => question.kind === 'choice')
+          .map(question => ({
+            questionId: question.id,
+            label: question.label,
+            counts: Object.fromEntries(
+              (question.options ?? []).map(option => [
+                option,
+                counted.filter(item => item.answers?.[question.id] === option).length,
+              ]),
+            ),
+          }))
+      : undefined,
+  };
 }
 export async function registrationView(
   user: PublicUser,
@@ -145,6 +175,7 @@ export async function registrationView(
     });
     return {
       ...meta,
+      ...extras(event, await registrations(id), user.id, manage),
       pendingCount: manage ? Number(totals[0].pending) : undefined,
       mode: 'approval',
       ownStatus: own ?? null,
@@ -188,6 +219,7 @@ export async function registrationView(
     : [];
   return {
     ...meta,
+    ...extras(event, rows, user.id, manage),
     pendingCount: manage ? rows.filter(item => item.status === 'pending').length : undefined,
     mode: 'approval',
     ownStatus: own?.status ?? null,
@@ -257,20 +289,57 @@ export async function manageHostedEvent(user: PublicUser, id: string, action: Ho
   );
   return registrationView(user, id);
 }
+/** Demo counterpart of the SQL promotion: the longest-waiting guest takes a freed seat. */
+function promoteDemo(event: CityEvent, id: string) {
+  const rows = Object.values(state).filter(item => item.eventId === id);
+  if (rows.filter(item => item.status === 'approved').length >= (event.guestCapacity ?? 0)) return;
+  const next = rows
+    .filter(item => item.status === 'waitlisted')
+    .sort((a, b) => Date.parse(a.requestedAt) - Date.parse(b.requestedAt))[0];
+  if (!next) return;
+  const status = promotedStatus(event);
+  state[`${id}:${next.userId}`] = { ...next, status, updatedAt: new Date().toISOString() };
+  const key = `registration:${id}:${next.userId}:${next.requestedAt}:${status}`;
+  if (status === 'approved')
+    demoInboxPut(next.userId, key, {
+      type: 'registration_approved',
+      title: "A seat opened: you're in",
+      body: event.title,
+      target: { kind: 'event', id },
+    });
+  else
+    demoInboxPut(event.createdBy, key, {
+      type: 'registration_requested',
+      title: 'New registration request',
+      body: `A waitlisted guest moved up for ${event.title}.`,
+      target: { kind: 'event', id },
+    });
+}
+
 export async function changeRegistration(
   user: PublicUser,
   id: string,
   action: 'request' | 'cancel' | 'approve' | 'decline',
   guestId?: string,
+  answers?: Record<string, string>,
 ) {
   const { event, manage } = await eventFor(user, id);
+  if (action === 'request') {
+    const problem = answersError(event.questions, answers);
+    if (problem) throw new RegistrationError(problem);
+  }
+  const cleanAnswers = Object.fromEntries(
+    Object.entries(answers ?? {})
+      .map(([key, value]) => [key, value.trim()])
+      .filter(([, value]) => value),
+  );
   if (event.registrationMode !== 'approval')
     throw new RegistrationError('Use the external provider for registration and cancellation.');
   if ((action === 'approve' || action === 'decline') && !manage)
     throw new RegistrationError('Only the event organiser or an admin can review guests.', 403);
   const target = action === 'request' || action === 'cancel' ? user.id : guestId;
   if (!target) throw new RegistrationError('Choose a registration.');
-  const status: RegistrationStatus =
+  let status: RegistrationStatus =
     action === 'request'
       ? 'pending'
       : action === 'cancel'
@@ -297,17 +366,20 @@ export async function changeRegistration(
     if (action === 'request') {
       if (current && !['cancelled'].includes(current.status))
         throw new RegistrationError('Your existing registration cannot be requested again.');
-      if (
+      const next = requestStatus(
+        event,
         Object.values(state).filter(item => item.eventId === id && item.status === 'approved')
-          .length >= (event.guestCapacity ?? 0)
-      )
-        throw new RegistrationError('Event is full.');
+          .length,
+      );
+      if (!next) throw new RegistrationError('Event is full.');
+      status = next;
       state[key] = {
         eventId: id,
         userId: target,
         status,
         requestedAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        answers: cleanAnswers,
       };
       changed = true;
     } else {
@@ -324,20 +396,25 @@ export async function changeRegistration(
         throw new RegistrationError('Event is full.');
       state[key] = { ...current, status, updatedAt: new Date().toISOString() };
       changed = true;
+      if (action === 'cancel' || action === 'decline') promoteDemo(event, id);
     }
   } else {
     const sql = database();
     const query =
       action === 'request'
-        ? sql`INSERT INTO mobile_event_registrations(event_id,user_id,status) SELECT ${id},${target},'pending' WHERE EXISTS(SELECT 1 FROM mobile_catalog WHERE id=${id} AND data->>'status'='published' AND (data->>'startsAt')::timestamptz>now() AND COALESCE(data->>'registrationStatus','') NOT IN ('Cancelled','Closed','Sold out','Tickets coming soon') AND (data->>'registrationClosesAt' IS NULL OR (data->>'registrationClosesAt')::timestamptz>now()) AND (SELECT count(*) FROM mobile_event_registrations WHERE event_id=${id} AND status='approved')<COALESCE((data->>'guestCapacity')::int,0)) ON CONFLICT(event_id,user_id) DO UPDATE SET status='pending',requested_at=now(),updated_at=now() WHERE mobile_event_registrations.status='cancelled' RETURNING user_id`
+        ? sql`INSERT INTO mobile_event_registrations(event_id,user_id,status,answers) SELECT ${id},${target},next,${JSON.stringify(cleanAnswers)}::jsonb FROM (SELECT CASE WHEN (SELECT count(*) FROM mobile_event_registrations WHERE event_id=${id} AND status='approved')<COALESCE((data->>'guestCapacity')::int,0) THEN CASE WHEN data->>'requireApproval'='false' THEN 'approved' ELSE 'pending' END WHEN data->>'waitlist'='true' THEN 'waitlisted' END AS next FROM mobile_catalog WHERE id=${id} AND data->>'status'='published' AND (data->>'startsAt')::timestamptz>now() AND COALESCE(data->>'registrationStatus','') NOT IN ('Cancelled','Closed','Sold out','Tickets coming soon') AND (data->>'registrationClosesAt' IS NULL OR (data->>'registrationClosesAt')::timestamptz>now())) seat WHERE next IS NOT NULL ON CONFLICT(event_id,user_id) DO UPDATE SET status=EXCLUDED.status,answers=EXCLUDED.answers,requested_at=now(),updated_at=now() WHERE mobile_event_registrations.status='cancelled' RETURNING user_id,status`
         : action === 'approve'
           ? sql`UPDATE mobile_event_registrations SET status='approved',updated_at=now() WHERE event_id=${id} AND user_id=${target} AND status='pending' AND EXISTS(SELECT 1 FROM mobile_catalog WHERE id=${id} AND data->>'status'='published' AND (data->>'startsAt')::timestamptz>now() AND COALESCE(data->>'registrationStatus','')<>'Cancelled' AND (SELECT count(*) FROM mobile_event_registrations WHERE event_id=${id} AND status='approved')<COALESCE((data->>'guestCapacity')::int,0)) RETURNING user_id`
           : sql`UPDATE mobile_event_registrations SET status=${status},updated_at=now() WHERE event_id=${id} AND user_id=${target} AND status<>${status} AND (${action}='cancel' OR status IN ('pending','approved')) RETURNING user_id`;
+    // A freed seat goes to the longest-waiting guest, inside the same locked transaction.
+    const promote = sql`UPDATE mobile_event_registrations SET status=CASE WHEN (SELECT data->>'requireApproval' FROM mobile_catalog WHERE id=${id})='false' THEN 'approved' ELSE 'pending' END,updated_at=now() WHERE event_id=${id} AND user_id=(SELECT user_id FROM mobile_event_registrations WHERE event_id=${id} AND status='waitlisted' ORDER BY requested_at,user_id LIMIT 1) AND (SELECT count(*) FROM mobile_event_registrations WHERE event_id=${id} AND status='approved')<(SELECT COALESCE((data->>'guestCapacity')::int,0) FROM mobile_catalog WHERE id=${id}) AND EXISTS(SELECT 1 FROM mobile_catalog WHERE id=${id} AND data->>'status'='published' AND (data->>'startsAt')::timestamptz>now() AND COALESCE(data->>'registrationStatus','')<>'Cancelled')`;
     const result = await sql.transaction([
       sql`SELECT id FROM mobile_catalog WHERE id=${id} FOR UPDATE`,
       query,
+      ...(action === 'cancel' || action === 'decline' ? [promote] : []),
     ]);
     changed = result[1].length > 0;
+    if (action === 'request' && changed) status = result[1][0].status as RegistrationStatus;
     if (!changed) {
       const current = (await registrations(id)).find(item => item.userId === target);
       if (current?.status !== status)
@@ -356,6 +433,13 @@ export async function changeRegistration(
         body: event.title,
         target: { kind: 'event', id },
       });
+    else if (status === 'waitlisted')
+      demoInboxPut(target, key, {
+        type: 'registration_waitlisted',
+        title: "You're on the waitlist",
+        body: `${event.title}. We'll tell you if a seat opens.`,
+        target: { kind: 'event', id },
+      });
     else if (status === 'pending')
       demoInboxPut(event.createdBy, key, {
         type: 'registration_requested',
@@ -366,4 +450,17 @@ export async function changeRegistration(
   }
   if (changed) await trackMobile(user, `registration_${status}`, { kind: 'event', id });
   return registrationView(user, id);
+}
+
+/** What anyone may see about a published event without signing in: the event and seat counts. */
+export async function publicEventView(id: string) {
+  const item = await getItem(id);
+  if (!item || !('city' in item) || item.status !== 'published') return null;
+  const rows = item.registrationMode === 'approval' ? await registrations(id) : [];
+  return {
+    event: item,
+    capacity: item.guestCapacity ?? 0,
+    approvedCount: rows.filter(row => row.status === 'approved').length,
+    waitlistCount: rows.filter(row => row.status === 'waitlisted').length,
+  };
 }

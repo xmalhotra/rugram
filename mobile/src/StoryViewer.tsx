@@ -19,7 +19,7 @@ import { storySwipe, swipeStoryGroup } from '../../shared/story-playback';
 import { Button } from './design/components';
 import { useTheme } from './design/theme';
 import { FocusIllustration } from './FocusIllustration';
-import { NeonBackdrop } from './design/NeonBackdrop';
+import { ScreenBackground } from './design/ScreenBackground';
 export function StoryViewer({
   group,
   groups,
@@ -143,7 +143,7 @@ export function StoryViewer({
   return (
     <Modal visible animationType="fade" presentationStyle="fullScreen" onRequestClose={close}>
       <SafeAreaView style={{ flex: 1, backgroundColor: C.bg, paddingHorizontal: 16 }}>
-        <NeonBackdrop />
+        <ScreenBackground />
         <View
           accessibilityRole="progressbar"
           accessibilityLabel="Story progress"

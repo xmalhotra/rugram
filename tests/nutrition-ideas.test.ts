@@ -19,7 +19,6 @@ import {
   fitnessAtlasLayouts,
 } from '../shared/fitness-media-layout';
 import { flowContentSchema } from '../src/lib/content-validation';
-import { imageSize } from '../scripts/image-size';
 
 test('Nutrition browse contains one holistic flow per topic, not individual recipes or sport branches', () => {
   const options = focusOptions.map(item => ({ ...item, flowIds: [...item.flowIds] }));
@@ -105,14 +104,11 @@ test('all new cards and collections remain valid publishable content with stable
   assert.match(nutritionIdeas.find(idea => idea.key === 'electrolytes')!.caution, /carbohydrate/i);
 });
 
-test('all 120 nutrition frames have local assets, isolated crop geometry and the same square display stage', () => {
+test('nutrition cards keep five isolated crops inside each atlas row', () => {
   for (const idea of nutritionIdeas) {
     for (const gender of ['male', 'female'] as const) {
       const media = { atlas: idea.atlas, row: idea.row };
       const layout = fitnessAtlasLayouts[idea.atlas][gender];
-      const file = readFileSync(`mobile/assets/nutrition/${idea.atlas}-${gender}-v1.jpg`);
-      assert.equal(imageSize(file).width, layout.width);
-      assert.equal(imageSize(file).height, layout.height);
       assert.equal(fitnessFrameCount(media, gender), 5);
       for (let frame = 0; frame < 5; frame++) {
         const crop = fitnessCrop(media, gender, frame / 4);

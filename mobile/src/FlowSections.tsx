@@ -29,7 +29,8 @@ export function FlowSections({
   library: HabitFlow[];
   ownedIds: string[];
   busy: boolean;
-  onBack: () => void;
+  /** Omitted where the category is chosen in the top bar, so there is nothing to go back to. */
+  onBack?: () => void;
   onSelect: (flow: HabitFlow, focusId: string) => void;
   onRefresh?: () => void;
   nutritionPaths?: NutritionPath[];
@@ -94,6 +95,7 @@ export function FlowSections({
           gap: 8,
         }}
       >
+        {onBack && (
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
           <Pressable
             accessibilityRole="button"
@@ -110,8 +112,8 @@ export function FlowSections({
             {title}
           </Text>
         </View>
-        <CategoryRail
-          compact
+        )}
+        <CategoryRail compact pills
           label={`${title} sections`}
           items={sections.map(section => ({
             id: section.id,
@@ -154,7 +156,7 @@ export function FlowSections({
           ) && (
             <Text
               accessibilityRole="header"
-              style={{ color: C.text, fontSize: 18, fontWeight: '600' }}
+              style={{ color: C.text, fontSize: 22, fontWeight: '700' }}
             >
               {section.title}
             </Text>
@@ -164,23 +166,29 @@ export function FlowSections({
                 {group.title && (
                   <Text
                     accessibilityRole="header"
-                    style={{ color: C.text, fontSize: 22, fontWeight: '700', marginBottom: 6 }}
+                    style={{ color: C.muted, fontSize: 17, fontWeight: '600', marginBottom: 4 }}
                   >
                     {group.title}
                   </Text>
                 )}
-                {group.flows.map(flow => (
-                  <FlowPreview
-                    key={flow.id}
-                    layout="row"
-                    flow={flow}
-                    added={ownedIds.includes(flow.id)}
-                    busy={busy}
-                    onPress={() => {
-                      if (!busy) onSelect(flow, section.focusId);
-                    }}
-                  />
-                ))}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{ gap: 14, paddingRight: 20 }}
+                >
+                  {group.flows.map(flow => (
+                    <FlowPreview
+                      key={flow.id}
+                      layout="tile"
+                      flow={flow}
+                      added={ownedIds.includes(flow.id)}
+                      busy={busy}
+                      onPress={() => {
+                        if (!busy) onSelect(flow, section.focusId);
+                      }}
+                    />
+                  ))}
+                </ScrollView>
               </View>
           ))}
         </View>
