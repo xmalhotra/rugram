@@ -548,6 +548,7 @@ function QuestionField({
               <Pressable
                 key={option}
                 accessibilityRole="button"
+                accessibilityLabel={`Choose ${option}`}
                 accessibilityState={{ selected }}
                 onPress={() => onChange(option)}
                 style={{
@@ -610,6 +611,7 @@ function LimeButton({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={{ disabled: Boolean(disabled) }}
       disabled={disabled}
       onPress={onPress}
@@ -639,6 +641,7 @@ function SecondaryButton({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={{ disabled: Boolean(disabled) }}
       disabled={disabled}
       onPress={onPress}
@@ -695,6 +698,7 @@ function MiniAction({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={label}
       accessibilityState={{ disabled: Boolean(disabled) }}
       disabled={disabled}
       onPress={onPress}

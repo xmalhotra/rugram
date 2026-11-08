@@ -52,6 +52,7 @@ function CurateMenu({ prompt, onAsk }: { prompt: string; onAsk: (prompt: string)
     <Pressable
       key={label}
       accessibilityRole="button"
+      accessibilityLabel={label}
       onPress={onPress}
       style={({ pressed }) => ({
         flexDirection: 'row',
@@ -340,6 +341,7 @@ export function HomeHeader({
                   <Pressable
                     key={item.id}
                     accessibilityRole="tab"
+                    accessibilityLabel={item.label}
                     accessibilityState={{
                       selected: active,
                       expanded: forYou ? menuOpen : undefined,

@@ -295,6 +295,7 @@ export function HyderabadEvents({
             <Pressable
               key={item.id}
               accessibilityRole="button"
+              accessibilityLabel={`Choose ${item.title}`}
               accessibilityState={{ selected: on }}
               onPress={() => setFilter(on ? null : item.id)}
               style={({ pressed }) => ({

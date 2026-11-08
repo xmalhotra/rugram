@@ -58,6 +58,7 @@ export function CardComparisonTable({
               <Pressable
                 key={row.category}
                 accessibilityRole="button"
+                accessibilityLabel={`Choose ${row.category}`}
                 accessibilityState={{ selected }}
                 onPress={() =>
                   setCategory(current => (current === row.category ? null : row.category))
@@ -208,11 +209,12 @@ export function CardComparisonTable({
           ) : null}
           <Pressable
             accessibilityRole="button"
+            accessibilityLabel="Open source"
             onPress={() => onLink(pickedCell.benefit.sourceUrl)}
           >
             <Text style={{ color: C.lime, fontWeight: '600' }}>Source ›</Text>
           </Pressable>
-          <Pressable accessibilityRole="button" onPress={() => setPicked(null)}>
+          <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setPicked(null)}>
             <Text style={{ color: C.muted }}>Close</Text>
           </Pressable>
         </View>

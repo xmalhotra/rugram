@@ -37,9 +37,11 @@ test('invalid flags and database URLs fail with no credential leakage',()=>{
  }
 });
 test('Next startup hook fails before serving when configuration is missing or unsafe',()=>{
- const run=(extra:Record<string,string>)=>spawnSync(process.execPath,['--import','tsx','--input-type=module','-e',"const {register}=await import('./src/instrumentation.ts');register();"],{cwd:process.cwd(),encoding:'utf8',env:{...process.env,NODE_ENV:'development',APP_ENV:'local',VERCEL_ENV:'',DATABASE_URL:'',RUGRAM_DEMO_MODE:'',...extra}});
+ // Drop every demo-mode alias the shell or CI set, so each run sets only the flag it means.
+ const inherited=Object.fromEntries(Object.entries(process.env).filter(([name])=>!['QRAM_DEMO_MODE','BETTERHABITS_DEMO_MODE','RUGRAM_DEMO_MODE'].includes(name)));
+ const run=(extra:Record<string,string>)=>spawnSync(process.execPath,['--import','tsx','--input-type=module','-e',"const {register}=await import('./src/instrumentation.ts');register();"],{cwd:process.cwd(),encoding:'utf8',env:{...inherited,NODE_ENV:'development',APP_ENV:'local',VERCEL_ENV:'',DATABASE_URL:'',...extra}});
  const missing=run({});assert.notEqual(missing.status,0);assert.match(missing.stderr,/DATABASE_URL is required/);
- const staging=run({APP_ENV:'staging',RUGRAM_DEMO_MODE:'true'});assert.notEqual(staging.status,0);assert.match(staging.stderr,/Demo mode is forbidden/);
- assert.equal(run({RUGRAM_DEMO_MODE:'true'}).status,0);
- assert.equal(run({NODE_ENV:'production',RUGRAM_DEMO_MODE:'false',DATABASE_URL:database}).status,0);
+ const staging=run({APP_ENV:'staging',QRAM_DEMO_MODE:'true'});assert.notEqual(staging.status,0);assert.match(staging.stderr,/Demo mode is forbidden/);
+ assert.equal(run({QRAM_DEMO_MODE:'true'}).status,0);
+ assert.equal(run({NODE_ENV:'production',QRAM_DEMO_MODE:'false',DATABASE_URL:database}).status,0);
 });

@@ -403,7 +403,7 @@ export function EventComposer(
             <DateTimeField label="Start" value={startIso} onChange={setStartIso} />
             <DateTimeField label="End" value={endIso} onChange={setEndIso} />
             {endIso ? (
-              <Pressable accessibilityRole="button" onPress={() => setEndIso('')}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Clear end time" onPress={() => setEndIso('')}>
                 <Text style={{ color: C.lime, fontSize: 15, fontWeight: '600' }}>Clear end</Text>
               </Pressable>
             ) : (
@@ -470,6 +470,7 @@ export function EventComposer(
                 />
                 <Pressable
                   accessibilityRole="button"
+                  accessibilityLabel="Find on map"
                   onPress={() => void findOnMap()}
                   style={{
                     borderRadius: 12,
@@ -502,6 +503,7 @@ export function EventComposer(
                   <Pressable
                     key={place.placeId}
                     accessibilityRole="button"
+                    accessibilityLabel={`Choose ${place.name}`}
                     onPress={() => void selectPlace(place.placeId)}
                     style={{ paddingVertical: 6 }}
                   >
@@ -726,6 +728,7 @@ export function EventComposer(
                     {draft.options.length < questionLimits.options ? (
                       <Pressable
                         accessibilityRole="button"
+                        accessibilityLabel="Add option"
                         onPress={() =>
                           setDraft(current => ({ ...current, options: [...current.options, ''] }))
                         }
@@ -745,6 +748,7 @@ export function EventComposer(
                 <View style={{ flexDirection: 'row', gap: 16 }}>
                   <Pressable
                     accessibilityRole="button"
+                    accessibilityLabel="Add question"
                     disabled={!draftReady}
                     onPress={saveQuestion}
                   >
@@ -758,13 +762,13 @@ export function EventComposer(
                       Add
                     </Text>
                   </Pressable>
-                  <Pressable accessibilityRole="button" onPress={() => setEditorOpen(false)}>
+                  <Pressable accessibilityRole="button" accessibilityLabel="Cancel" onPress={() => setEditorOpen(false)}>
                     <Text style={{ color: C.muted, fontSize: 16 }}>Cancel</Text>
                   </Pressable>
                 </View>
               </View>
             ) : !questionLimitReached ? (
-              <Pressable accessibilityRole="button" onPress={openEditor}>
+              <Pressable accessibilityRole="button" accessibilityLabel="Write your own question" onPress={openEditor}>
                 <Text style={{ color: C.lime, fontSize: 16, fontWeight: '700' }}>
                   Write your own
                 </Text>
@@ -776,6 +780,7 @@ export function EventComposer(
 
           <Pressable
             accessibilityRole="button"
+            accessibilityLabel="Create event"
             accessibilityState={{ disabled: !ready }}
             disabled={!ready}
             onPress={submit}
@@ -821,6 +826,7 @@ function Pill({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityLabel={`Choose ${label}`}
       accessibilityState={{ selected, disabled: !!disabled }}
       disabled={disabled}
       onPress={onPress}

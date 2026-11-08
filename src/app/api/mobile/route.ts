@@ -289,7 +289,7 @@ export const POST = observed(async (request: Request) => {
     const message = error instanceof Error ? error.message : '';
     if (usernameClientError(message)) return apiError(message, 400);
     if (
-      !/^(Personal flow |Completion |Creator not found|Creator event|Card not available|Card benefit|Add the card|Only creators|Admin access|Creator access|Equipment not available|Exercise not available|Flow not found|Focus not available|Join the flow|Product not available|Listing not found|Event not available|This event|Content event|Content cancelled|Your saved history|Account )/.test(
+      !/^(Personal flow |Completion |Creator not found|Creator event|Card not available|Card benefit|Add the card|Only creators|Admin access|Creator access|Equipment not available|Exercise not available|Flow not found|Focus not available|Join the flow|Product not available|Listing not found|Event not available|This event|Content event|Content cancelled|Content rejection|Your saved history|Account )/.test(
         message,
       )
     )

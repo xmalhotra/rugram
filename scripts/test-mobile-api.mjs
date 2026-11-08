@@ -67,7 +67,7 @@ try {
   assert.equal(backed.status,200); assert.equal(backed.data.products.find(p => p.id === product.id).endorsements.length,1);
   assert.equal((await call('/api/mobile',user,{action:'save',id:product.id,enabled:true})).status,200);
   assert.equal((await call('/api/mobile',user,{action:'save',id:product.id,enabled:false})).status,200);
-  assert.equal((await call('/api/mobile',admin,{action:'review',id:product.id,status:'archived'})).status,200);
+  assert.equal((await call('/api/mobile',admin,{action:'review',id:product.id,status:'archived',reviewNote:'API test cleanup only.',reviewCode:'other'})).status,200);
   const result = await call('/api/mobile',creator,{action:'event',requestId:`smoke-event-${Date.now()}`,event:{title:'API event fixture',city:'Bengaluru',venue:'Local test venue',startsAt:new Date(Date.now()+86400000).toISOString(),capacity:1,price:0,description:'An isolated test event; not a public gathering.'}});
   assert.equal(result.status,403,'Legacy in-app event creation is disabled for creators.');
   const input={title:'API Hyderabad event fixture',topic:'Tech',city:'Hyderabad',country:'IN',venue:'Isolated test venue',startsAt:new Date(Date.now()+86400000).toISOString(),description:'Isolated test listing, not a public event.',registrationUrl:'https://luma.com/isolated-api-fixture',sourceUrls:['https://luma.com/isolated-api-fixture'],checkedAt:new Date().toISOString(),registrationClosesAt:null,entryFee:null,feeNote:'Price not verified.',registrationStatus:'Check provider',audience:'Local developers',outcomes:['Verify the app, not a real benefit.'],editorialPriority:{score:3,reason:'An isolated test score, not a recommendation.'}};
@@ -79,7 +79,7 @@ try {
     assert.equal(submitted.status,200,JSON.stringify(submitted.data));const pending=submitted.data.events.find(event=>event.title==='Creator API review fixture'&&event.status==='pending');assert.ok(pending);
     assert.ok(!(await call('/api/mobile',user)).data.events.some(event=>event.id===pending.id));
     assert.equal((await call('/api/mobile',admin,{action:'review',id:pending.id,status:'published'})).status,400);
-    await call('/api/mobile',admin,{action:'review',id:pending.id,status:'archived'});
+    await call('/api/mobile',admin,{action:'review',id:pending.id,status:'archived',reviewNote:'API test cleanup only.',reviewCode:'other'});
   }else assert.equal(submitted.status,429);
   const added=await call('/api/mobile',admin,{action:'event-link',requestId:`curated-${Date.now()}`,event:input});
   assert.equal(added.status,200,JSON.stringify(added.data));const event=added.data.events.find(event=>event.title===input.title);assert.ok(event);
@@ -92,7 +92,7 @@ try {
   assert.equal((await call('/api/mobile',admin,{action:'event-update',id:event.id,event:{...input,registrationClosesAt:new Date(Date.now()-60000).toISOString()}})).status,200);
   assert.equal((await call('/api/mobile',user,{action:'event-open',id:event.id})).status,400);
   await call('/api/mobile',user,{action:'save-event',id:event.id,enabled:false});
-  await call('/api/mobile',admin,{action:'review',id:event.id,status:'archived'});
+  await call('/api/mobile',admin,{action:'review',id:event.id,status:'archived',reviewNote:'API test cleanup only.',reviewCode:'other'});
   if (!originalFlows.includes('morning')) await call('/api/mobile',user,{action:'flow',id:'morning',enabled:false});
   const report = (await call('/api/mobile',admin)).data.analytics;
   assert.ok(report.actions > 0); assert.ok(report.saves > 0); assert.ok(report.byAction.event_saved > 0);

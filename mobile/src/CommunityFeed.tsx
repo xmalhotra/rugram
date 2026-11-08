@@ -527,7 +527,7 @@ function Curated({
       <Text numberOfLines={1} style={{ flex: 1, color: C.text, fontSize: 16, fontWeight: '600' }}>
         Curated for “{prompt}”
       </Text>
-      <Pressable accessibilityRole="button" onPress={onClear} hitSlop={12}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Clear curation" onPress={onClear} hitSlop={12}>
         <Text style={{ color: C.lime, fontSize: 15 }}>Clear</Text>
       </Pressable>
     </View>

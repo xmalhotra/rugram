@@ -104,6 +104,9 @@ export function EventCategoryPage({
         </Text>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={
+            subscribed ? `Unsubscribe from ${interest.title}` : `Subscribe to ${interest.title}`
+          }
           accessibilityState={{ selected: subscribed, disabled: !summary }}
           accessibilityHint="Get a notification when a new event in this category is published"
           disabled={!summary}
