@@ -168,9 +168,9 @@ const sessionInputs = [
     note: caution,
     status: 'live' as const,
     blocks: [
-      { id: 'warm-up', label: 'Warm up', sets: 1, scheme: 'straight', targets: { seconds: { min: 600, max: 600 } } },
-      { id: 'hard', label: 'Hard', sets: 4, restSeconds: 180, scheme: 'straight', targets: { seconds: { min: 240, max: 240 } } },
-      { id: 'cool-down', label: 'Cool down', sets: 1, scheme: 'straight', targets: { seconds: { min: 480, max: 600 } } },
+      { id: 'warm-up', label: 'Warm up', sets: 1, scheme: 'straight', intensity: 'easy' as const, targets: { seconds: { min: 600, max: 600 } } },
+      { id: 'hard', label: 'Hard', sets: 4, restSeconds: 180, scheme: 'straight', intensity: 'interval' as const, targets: { seconds: { min: 240, max: 240 } } },
+      { id: 'cool-down', label: 'Cool down', sets: 1, scheme: 'straight', intensity: 'easy' as const, targets: { seconds: { min: 480, max: 600 } } },
     ],
   },
   {
@@ -180,7 +180,7 @@ const sessionInputs = [
     goal: 'A conversational run you could repeat tomorrow.',
     level: 'All levels',
     status: 'live' as const,
-    blocks: [{ id: 'run', label: 'Easy run', sets: 1, targets: { seconds: { min: 1800, max: 2700 } } }],
+    blocks: [{ id: 'run', label: 'Easy run', sets: 1, intensity: 'easy' as const, targets: { seconds: { min: 1800, max: 2700 } } }],
   },
   {
     id: 'recovery-day',

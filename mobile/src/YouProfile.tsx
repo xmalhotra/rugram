@@ -23,7 +23,7 @@ import { useCommunityMember } from './community';
 import { ActivityDetailSheet, referencedCards } from './CommunityFeed';
 import { FlowIllustration } from './FlowIllustration';
 import { ProfileWorkouts } from './ProfileWorkouts';
-import { StrengthProfile } from './StrengthProfile';
+import { PersonaliseContent, PersonaliseRow } from './PersonaliseFlows';
 import { TrainingCalendar } from './TrainingCalendar';
 
 export function YouProfile({
@@ -66,7 +66,7 @@ export function YouProfile({
   });
   const joined = data.events.filter(event => data.profile.eventIds.includes(event.id));
   const picks = savedPicks(data).products;
-  const [view, setView] = useState<'main' | 'menu' | 'account'>('main');
+  const [view, setView] = useState<'main' | 'menu' | 'account' | 'personalise'>('main');
   const [finished, setFinished] = useState<{ count: number; at: string[] } | null>(null);
   const [opened, setOpened] = useState<CommunityActivity | null>(null);
   const member = useCommunityMember(data.user.id);
@@ -104,6 +104,22 @@ export function YouProfile({
   const posts = (member.value?.activities ?? []).filter(activity =>
     liveFlowIds.has(activity.personalFlowId),
   );
+
+  if (view === 'personalise') {
+    return (
+      <View style={{ gap: 16, paddingTop: 4 }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back to your profile"
+          onPress={() => setView('main')}
+          style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start', opacity: pressed ? 0.6 : 1 })}
+        >
+          <Text style={{ color: C.lime, fontSize: 16 }}>Back</Text>
+        </Pressable>
+        <PersonaliseContent />
+      </View>
+    );
+  }
 
   if (view === 'account') {
     return (
@@ -262,7 +278,7 @@ export function YouProfile({
           <Text style={{ color: C.muted, fontSize: 22 }}>›</Text>
         </Pressable>
         <TrainingCalendar finishedAt={finished?.at ?? null} />
-        <StrengthProfile />
+        <PersonaliseRow onOpen={() => setView('personalise')} />
         <ProfileWorkouts onResume={onResumeRun} />
         <View style={{ gap: 10 }}>
           <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>

@@ -5,6 +5,7 @@ import { flows } from './mobile';
 import { nextSetWeight, type LoggedSet } from './progression';
 import { planWithScheme } from './set-schemes';
 import { amountListLabel, schemeById, seededSchemes, spreadAmounts, type SchemeItem, type SetScheme } from './set-scheme-math';
+import { runIntensities, type RunIntensity } from './running-paces';
 
 export const inputKinds = ['number', 'duration', 'distance', 'rating', 'check'] as const;
 export type InputKind = (typeof inputKinds)[number];
@@ -40,6 +41,8 @@ export type SessionBlock = {
   targets?: Record<string, Target>;
   /** How reps and weight change across the sets. Missing means they stay put. */
   scheme?: string;
+  /** For running: how hard this block is meant to be, so the member sees their own pace for it. */
+  intensity?: RunIntensity;
 };
 
 export type TrainingSession = {
@@ -128,6 +131,7 @@ const blockSchema = z
     restSeconds: z.number().int().min(0).max(900).optional(),
     targets: z.record(z.string(), targetSchema).optional(),
     scheme: slug.optional(),
+    intensity: z.enum(runIntensities).optional(),
   })
   .strict();
 

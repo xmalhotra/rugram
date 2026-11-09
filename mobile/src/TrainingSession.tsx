@@ -5,6 +5,8 @@ import * as Haptics from 'expo-haptics';
 import { exercise } from '../../shared/exercises';
 import { estimateStart, loadStrength } from './strength';
 import { applyCustomflow } from '../../shared/customflows';
+import { intensityShare, paceText, type RunIntensity } from '../../shared/running-paces';
+import { runPace, usePersonalMetrics } from './personal-metrics';
 import { customflowFor, loadCustomflows } from './customflows';
 import { runFooterState } from '../../shared/run-footer';
 import {
@@ -601,6 +603,20 @@ function blockPattern(block: SessionBlock, detail: TrainingSessionDetail) {
   return schemeLine(scheme, planBlock(move, blockTargetItem(block), scheme, records));
 }
 
+/** The member's own pace for this block, from their recent run; an invitation to add one if not. */
+function RunPaceLine({ intensity }: { intensity: RunIntensity }) {
+  const { colors: C } = useTheme();
+  const metrics = usePersonalMetrics();
+  const pace = runPace(metrics, intensity);
+  return (
+    <Text style={{ color: pace ? C.lime : C.muted, fontSize: 14 }}>
+      {pace
+        ? `If you're running: ${intensityShare[intensity].title.toLowerCase()} pace ${paceText(pace)}`
+        : 'Add a recent run under Personalise to see your pace here.'}
+    </Text>
+  );
+}
+
 function BlockHeader({ block, type, schemes }: { block: SessionBlock; type: TrainingType; schemes?: SetScheme[] }) {
   const { colors: C } = useTheme();
   const [info, setInfo] = useState(false);
@@ -621,6 +637,7 @@ function BlockHeader({ block, type, schemes }: { block: SessionBlock; type: Trai
       ) : null}
       {info && move ? <ExerciseHowToSheet item={move} scheme={scheme} onClose={() => setInfo(false)} /> : null}
       <Text style={{ color: C.text, fontSize: 20, fontWeight: '700' }}>{block.label ?? move?.name ?? 'Block'}</Text>
+      {block.intensity ? <RunPaceLine intensity={block.intensity} /> : null}
       {block.label && move ? <Text style={{ color: C.muted, fontSize: 14 }}>{move.name}</Text> : null}
       {fields.map(field => {
         const label = targetLabel(field, block.targets?.[field.key], block.sets, block.scheme);

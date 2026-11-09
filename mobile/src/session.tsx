@@ -6,6 +6,7 @@ import { ApiError } from '../../shared/api-response';
 import { clearSearches } from './local-searches';
 import { resetStrength } from './strength';
 import { resetCustomflows } from './customflows';
+import { resetPersonalMetrics } from './personal-metrics';
 type Session = {
   data: MobilePayload | null;
   loading: boolean;
@@ -115,6 +116,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       // Strength numbers are per member: never show the last account's.
       resetStrength();
       resetCustomflows();
+      resetPersonalMetrics();
       const value = await api<MobilePayload>('/api/mobile');
       if (current === generation.current) {
         setData(value);
@@ -140,6 +142,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     // Strength numbers are per member: never show the last account's.
     resetStrength();
     resetCustomflows();
+    resetPersonalMetrics();
     void revoke;
   }
   return (

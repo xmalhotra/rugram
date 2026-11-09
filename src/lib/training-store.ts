@@ -217,8 +217,16 @@ function memory(): Memory {
   } else {
     const seed = trainingCatalog();
     for (const session of seed.sessions) {
-      if (!globalThis.qramTraining.sessions.some(item => item.id === session.id))
+      const existing = globalThis.qramTraining.sessions.find(item => item.id === session.id);
+      if (!existing) {
         globalThis.qramTraining.sessions.push(structuredClone(session));
+        continue;
+      }
+      // Seed fields added later (a block's running intensity) reach sessions already in memory.
+      for (const block of existing.blocks) {
+        const seeded = session.blocks.find(item => item.id === block.id);
+        if (seeded?.intensity && !block.intensity) block.intensity = seeded.intensity;
+      }
     }
     if (!globalThis.qramTraining.schemes) globalThis.qramTraining.schemes = seededSchemeRows();
     for (const scheme of globalThis.qramTraining.schemes) {

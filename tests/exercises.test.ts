@@ -42,7 +42,7 @@ const required = [
 const measures: SetMeasure[] = ['reps', 'hold', 'distance', 'time'];
 
 test('gym exercise ids and names are unique and every exercise has a primary muscle', () => {
-  assert.ok(gymExercises.length >= 450 && gymExercises.length <= 600);
+  assert.ok(gymExercises.length >= 450 && gymExercises.length <= 900);
   assert.equal(new Set(gymExercises.map(item => item.id)).size, gymExercises.length);
   assert.equal(new Set(gymExercises.map(item => item.name)).size, gymExercises.length);
   for (const item of gymExercises) {

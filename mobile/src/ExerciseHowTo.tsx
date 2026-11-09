@@ -8,6 +8,7 @@ import { Text } from './design/Text';
 import { Sheet } from './design/components';
 import { useTheme } from './design/theme';
 import { ExerciseInfo } from './ExerciseInfo';
+import { isEndFrame, loopOrder } from '../../shared/loop-order';
 import { ExerciseNumbers } from './ExerciseNumbers';
 import { ExerciseVisual } from './ExerciseVisual';
 import { howToFrames } from './how-to-frames';
@@ -16,6 +17,8 @@ import { exerciseHowTo } from './training-api';
 const emptyFrames: number[] = [];
 const holdMs = 900;
 const fadeMs = 200;
+// Frames between the start and the end pass quicker, so three or more frames read as one movement.
+const middleHoldMs = 350;
 
 type Loaded = { howTo: ExerciseHowTo | null; general: string | null; failed: boolean };
 
@@ -91,10 +94,13 @@ export function HowToLoop({ exerciseId, size }: { exerciseId: string; size: numb
     let current = 0;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let stopped = false;
+    const order = loopOrder(frames.length);
+    let step = 0;
     const advance = () => {
       timer = setTimeout(() => {
         if (stopped) return;
-        const next = (current + 1) % frames.length;
+        step = (step + 1) % order.length;
+        const next = order[step];
         Animated.parallel([
           Animated.timing(opacities[current], { toValue: 0, duration: fadeMs, useNativeDriver: true }),
           Animated.timing(opacities[next], { toValue: 1, duration: fadeMs, useNativeDriver: true }),
@@ -103,7 +109,7 @@ export function HowToLoop({ exerciseId, size }: { exerciseId: string; size: numb
           current = next;
           advance();
         });
-      }, holdMs);
+      }, isEndFrame(current, frames.length) ? holdMs : middleHoldMs);
     };
     advance();
     return () => {

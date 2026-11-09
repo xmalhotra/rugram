@@ -1,4 +1,4 @@
-# Strength estimates: where the numbers come from
+# Personal estimates: where the numbers come from
 
 Personalised weights (see `docs/customflows.md`, layer 2) are built from a member's lifts, body weight and
 logged sets. This page says which parts are measured and which are rules of thumb, so nobody mistakes a guess
@@ -15,6 +15,19 @@ for a fact. Sources are also recorded in code, in `shared/strength-evidence.ts`.
 | Seated dumbbell shoulder press | 0.52 of the standing barbell press, per hand | Saeterbakken & Fimland (2013), *J Strength Cond Res* 27(7): standing dumbbells 7% below the standing barbell, 10% below seated dumbbells |
 | Back squat to deadlift | 0.85 | OpenPowerlifting, 7 Nov 2026 export: median across 419,959 raw lifters (men 0.86, women 0.83; middle half 0.78–0.92) |
 | Bench press to deadlift | 0.53 | Same data: median 0.53 (men 0.57, women 0.455; middle half 0.47–0.60). The app doesn't know a member's sex, so it uses everyone's median |
+
+## Running and endurance
+
+| What | How | Source |
+|---|---|---|
+| Fitness from one run | VDOT from distance and time (oxygen cost of the pace ÷ share of VO2max holdable for that long) | Daniels & Gilbert (1979) equations, as used in *Daniels' Running Formula*. Checked in tests against the tables: a 19:57 5K is VDOT 50 |
+| Training paces | Easy 59–74%, marathon 75–84%, threshold 83–88%, interval 95–100%, repetition 105–110% of VDOT | *Daniels' Running Formula*. At VDOT 50 this gives threshold about 4:15/km and interval about 3:55/km, as the tables do |
+| Race predictions | T₂ = T₁ × (D₂ ÷ D₁)^1.06 | Riegel (1981), *American Scientist* 69(3); most reliable between nearby distances |
+| Swim pace | 400 m time ÷ 4 per 100 m | A stand-in for critical swim speed (Wakayoshi et al., 1992), which needs two timed swims |
+
+Personal metrics live in `shared/personal-metrics.ts` (one registry of questions per category) and the
+`personal_metrics` table (migration 044). Running sessions mark each block's intensity, so the session screen
+shows the member's own pace for it.
 
 ## Rules of thumb (not measured)
 
