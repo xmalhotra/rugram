@@ -33,6 +33,8 @@ import { gymExerciseId, gymFlowById, gymFlowItem, gymTargetLabel, resolveTarget,
 import { effortNote, formatKg, type LoggedSet } from '../../shared/progression';
 import { nextSetAfterTick, planWithScheme, schemeById, schemeLine, type SetScheme } from '../../shared/set-schemes';
 import { estimateLine, estimateStart, loadStrength } from './strength';
+import { applyCustomflow, type Customflow } from '../../shared/customflows';
+import { useCustomflow } from './customflows';
 import { buildSetDetail, setsForProgression, type SetDetail } from '../../shared/set-detail';
 import { useTrainingSchemes } from './training-api';
 import { communityLimits } from '../../shared/community-flows';
@@ -353,7 +355,7 @@ function parseLogged(row: SetDraft, load: LoadType, item: GymFlowItem) {
   return { weightKg, reps, durationSeconds: null as number | null };
 }
 
-function previewCards(data: MobilePayload, kind: 'flow' | 'personal', id: string): PreviewCard[] {
+function previewCards(data: MobilePayload, kind: 'flow' | 'personal', id: string, customflow?: Customflow): PreviewCard[] {
   if (kind === 'personal') {
     const flow = data.profile.personalFlows?.find(item => item.id === id);
     return (flow?.cards ?? []).map(reference => ({
@@ -363,7 +365,8 @@ function previewCards(data: MobilePayload, kind: 'flow' | 'personal', id: string
   }
   const flow = data.flows.find(item => item.id === id);
   if (!flow) return [];
-  return resolveVisualFlow(flow, data.flows).cards.map(card => ({
+  // Same order the server starts the run in: the member's Customflow, when they have one.
+  return applyCustomflow(resolveVisualFlow(flow, data.flows).cards, customflow, card => gymExerciseId(card.id) ?? card.id).map(card => ({
     cardId: card.id,
     sourceFlowId: flow.id,
     title: card.title,
@@ -443,6 +446,7 @@ function FlowStartScreen({
   onHistory: () => void;
   onStart: () => void;
 }) {
+  const customflow = useCustomflow('qram-flow', gym ? id : undefined);
   const { colors: C } = useTheme();
   const estimates = cards.map(card => benchmarkFor(id, card.cardId, level, card.card));
   const rest = restFor(id, level);
@@ -484,7 +488,7 @@ function FlowStartScreen({
         )}
         {gym ? null : <Text style={{ color: C.muted, fontSize: 15 }}>About {clock(estimateSeconds)} with rests</Text>}
         {gym
-          ? gym.items.map(item => {
+          ? applyCustomflow(gym.items, customflow, item => item.exerciseId).map(item => {
               const move = exercise(item.exerciseId);
               const lastWeight = sessions[item.exerciseId]?.sets.at(-1)?.weightKg;
               return (
@@ -606,7 +610,8 @@ export function FlowRun({
   const { colors: C } = useTheme();
   const animations = useAnimations();
   const { completed } = useFlowHabits(data.user.id);
-  const cards = useMemo(() => previewCards(data, kind, id), [data, kind, id]);
+  const customflow = useCustomflow('qram-flow', kind === 'flow' ? id : undefined);
+  const cards = useMemo(() => previewCards(data, kind, id, customflow), [data, kind, id, customflow]);
   const [metrics, setMetrics] = useState<UserMetrics | null | undefined>(undefined);
   const [existing, setExisting] = useState<FlowRunRecord | null | undefined>(undefined);
   const [live, setLive] = useState<FlowRunRecord | null>(null);

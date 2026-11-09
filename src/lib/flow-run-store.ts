@@ -7,6 +7,8 @@ import { resolveVisualFlow } from '../../shared/visual-flows';
 import { gymExerciseId, gymFlowById } from '../../shared/gym-flows';
 import type { HistoryRun, HistoryRunStatus } from '../../shared/flow-history';
 import { readRunSetLogs } from './exercise-log-store';
+import { readCustomflows } from './customflow-store';
+import { applyCustomflow, customflowKey, type Customflows } from '../../shared/customflows';
 import { effortRating } from '../../shared/set-detail';
 import {
   canPost,
@@ -265,9 +267,11 @@ async function resolveRunnable(
   // Trying a flow doesn't need it on the map; adding it is a separate choice.
   const source = library.find(item => item.id === id);
   if (!source) throw new FlowRunError('Flow not found.', 404);
-  const cards = resolveVisualFlow(source, library).cards;
-  if (!cards.length) throw new FlowRunError('This flow has no cards.');
   const gym = gymFlowById(source.id);
+  // A gym flow runs as the member's Customflow when they've customised it.
+  const customflow = gym ? (await readCustomflows(user).catch(() => ({}) as Customflows))[customflowKey('qram-flow', gym.id)] : undefined;
+  const cards = applyCustomflow(resolveVisualFlow(source, library).cards, customflow, card => gymExerciseId(card.id) ?? card.id);
+  if (!cards.length) throw new FlowRunError('This flow has no cards.');
   return {
     title: source.title.slice(0, 120),
     rest: gym?.items[0]?.restSeconds ?? restFor(source.id, level),

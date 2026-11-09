@@ -36,8 +36,14 @@ export const POST = observed(async (request: Request) => {
   if (!user) return unauthorized();
   if (!(await allowSharedRequest(`strength-write:${user.id}`, 30, 60000)))
     return apiError('Please slow down and try again.', 429);
-  const parsed = strengthActionSchema.safeParse(await readMobileJson(request));
-  if (!parsed.success) return apiError('Enter a weight up to 500 kg and 1 to 12 reps.');
+  const body = await readMobileJson(request);
+  const parsed = strengthActionSchema.safeParse(body);
+  if (!parsed.success)
+    return apiError(
+      (body as { action?: unknown } | null)?.action === 'body'
+        ? 'Enter a body weight from 20 to 300 kg and how active you are.'
+        : 'Enter a weight up to 500 kg and 1 to 12 reps.',
+    );
   try {
     return apiJson(await changeStrength(user, parsed.data));
   } catch (error) {

@@ -16,6 +16,10 @@ import { DayEditor } from './TrainingWeek';
 import { registerSchemes } from '../../shared/set-schemes';
 import { adoptTrainingPlan, setTrainingDay, trainingPlan, trainingPlans, trainingSession, trainingWeek, useTrainingSchemes, type TrainingPlanSummary, type WeekDay } from './training-api';
 import { useTrainingRoute, useTrainingSessionPane } from './training-route';
+import { applyCustomflow } from '../../shared/customflows';
+import { isCustomOrder } from '../../shared/item-order';
+import { DragList } from './DragList';
+import { resetCustomflow, saveCustomflowOrder, useCustomflow } from './customflows';
 
 export function WeeklyPlanSection({ onOpen, onBuild, heading = true }: { onOpen: (id: string) => void; onBuild: () => void; heading?: boolean }) {
   const { colors: C } = useTheme();
@@ -269,12 +273,29 @@ export function TrainingSessionPreview({ id, onBack }: { id: string; onBack: () 
   }
   const session = detail?.session;
   const type = detail?.type;
+  const customflow = useCustomflow('qram-session', session?.id);
+  const [dragging, setDragging] = useState(false);
+  const [orderError, setOrderError] = useState('');
+  // As the member's Customflow when they've customised this session; blocks they haven't placed keep the catalog order at the end.
+  const blocks = session ? applyCustomflow(session.blocks, customflow, block => block.id) : [];
+  const custom = Boolean(customflow);
+  function reorder(keys: string[] | null) {
+    if (!session) return;
+    setOrderError('');
+    const source = { kind: 'qram-session' as const, id: session.id, version: null };
+    // Dragging back to the original order clears it, rather than saving a copy of the original.
+    const save = keys && isCustomOrder(session.blocks.map(block => block.id), keys) ? saveCustomflowOrder(source, keys) : resetCustomflow(source);
+    void save.catch(() => setOrderError('Could not save the new order. Try again.'));
+  }
   const ids = session?.blocks.flatMap(block => (block.exerciseId ? [block.exerciseId] : [])) ?? [];
   const map = flowMuscleMap(ids);
   return (
     <View style={{ flex: 1, paddingTop: Math.max(0, inset - 12) }}>
       <CatalogBar title={session?.title ?? 'Session'} onBack={onBack} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 128, gap: 16 }}>
+      <ScrollView
+        scrollEnabled={!dragging}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 128, gap: 16 }}
+      >
         {session ? <Text style={{ color: C.text, fontSize: 16, lineHeight: 22 }}>{session.goal}</Text> : null}
         {map.main.length || map.helpers.length ? (
           <View style={{ alignItems: 'center' }}>
@@ -282,14 +303,20 @@ export function TrainingSessionPreview({ id, onBack }: { id: string; onBack: () 
           </View>
         ) : null}
         {session?.note ? <Text style={{ color: C.muted, fontSize: 14, lineHeight: 20 }}>{session.note}</Text> : null}
-        {session && type
-          ? session.blocks.map((block, index) => {
+        {session && type ? (
+          <DragList
+            items={blocks}
+            keyOf={block => block.id}
+            labelOf={block => block.label ?? (block.exerciseId ? exercise(block.exerciseId)?.name : undefined) ?? 'this block'}
+            onDragging={setDragging}
+            onReorder={next => reorder(next.map(block => block.id))}
+            renderItem={(block, index) => {
               const fields = blockFields(type, block);
               const move = block.exerciseId ? exercise(block.exerciseId) : undefined;
               const labels = fields.map(field => targetLabel(field, block.targets?.[field.key], block.sets, block.scheme)).filter(Boolean);
               const title = block.label ?? move?.name ?? `Block ${index + 1}`;
               return (
-                <View key={block.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 }}>
                   <View style={{ width: 56, height: 56, borderRadius: 10, overflow: 'hidden', backgroundColor: C.card }}>
                     <ExerciseVisual exerciseId={block.exerciseId} cover />
                   </View>
@@ -304,8 +331,27 @@ export function TrainingSessionPreview({ id, onBack }: { id: string; onBack: () 
                   </View>
                 </View>
               );
-            })
-          : null}
+            }}
+          />
+        ) : null}
+        {custom || orderError ? (
+          <View style={{ gap: 4 }}>
+            {orderError ? <Text style={{ color: C.danger, fontSize: 14 }}>{orderError}</Text> : null}
+            {custom ? (
+              <Text style={{ color: C.muted, fontSize: 14 }}>Customflow: you changed the order.</Text>
+            ) : null}
+            {custom ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Back to the original order"
+                onPress={() => reorder(null)}
+                style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}
+              >
+                <Text style={{ color: C.lime, fontSize: 15, fontWeight: '600' }}>Back to the original</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
         {session ? (
           <View style={{ gap: 12 }}>
             <Pressable

@@ -5,6 +5,7 @@ import type { OtpChallenge } from '../../shared/auth';
 import { ApiError } from '../../shared/api-response';
 import { clearSearches } from './local-searches';
 import { resetStrength } from './strength';
+import { resetCustomflows } from './customflows';
 type Session = {
   data: MobilePayload | null;
   loading: boolean;
@@ -113,6 +114,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       await setToken(result.token);
       // Strength numbers are per member: never show the last account's.
       resetStrength();
+      resetCustomflows();
       const value = await api<MobilePayload>('/api/mobile');
       if (current === generation.current) {
         setData(value);
@@ -137,6 +139,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     await setToken(null);
     // Strength numbers are per member: never show the last account's.
     resetStrength();
+    resetCustomflows();
     void revoke;
   }
   return (

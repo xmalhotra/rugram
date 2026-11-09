@@ -45,7 +45,7 @@ test('an anchor sets its pattern; the others are estimated from it', () => {
   assert.equal(hinge.source, 'you');
   const press = profile.patterns.find(item => item.pattern === 'press')!;
   assert.equal(press.source, 'related');
-  assert.equal(press.oneRepMaxKg, 72);
+  assert.equal(press.oneRepMaxKg, 63.6); // 120 × 0.53, the OpenPowerlifting median
   assert.equal(profile.patterns.length, strengthPatterns.length);
 });
 
@@ -84,7 +84,7 @@ test('start weight is lighter than the max allows and rounded down to the equipm
     now,
   });
   const dumbbell = startWeight('dumbbell-bench-press', 10, profile)!;
-  assert.equal(dumbbell.weightKg, 20);
+  assert.equal(dumbbell.weightKg, 22); // 80 × 0.41 per hand, 10 reps with 2 in reserve, down to 2 kg steps
   assert.equal(dumbbell.weightKg % 2, 0);
   const bench = startWeight('barbell-bench-press', 5, profile)!;
   assert.equal(bench.weightKg % 2.5, 0);
@@ -113,4 +113,26 @@ test('the set planner starts from the estimate only when there is no history', (
   assert.deepEqual(empty.sets.map(set => set.weightKg), [null, null, null]);
   const known = planWithScheme(move, item, flat, [{ weightKg: 70, reps: 6, setIndex: 1 }], 60);
   assert.equal(known.sets[0].weightKg, 70);
+});
+
+test('working weight: what a one-rep max allows for 8 reps, rounded down to 2.5 kg', async () => {
+  const { workingWeight } = await import('../shared/strength');
+  assert.equal(workingWeight(140), 110);
+  assert.equal(workingWeight(84), 65);
+  assert.equal(workingWeight(100, 1), 95);
+  assert.equal(workingWeight(140) % 2.5, 0);
+});
+
+test('every ratio with a study behind it is in the map, with the value the study gives', async () => {
+  const { ratioEvidence } = await import('../shared/strength-evidence');
+  for (const id of Object.keys(ratioEvidence)) assert.ok(strengthMap[id], id);
+  assert.equal(strengthMap['dumbbell-bench-press']?.ratio, 0.41);
+  assert.equal(strengthMap['smith-bench-press']?.ratio, 0.96);
+  assert.equal(strengthMap['seated-dumbbell-shoulder-press']?.ratio, 0.52);
+});
+
+test('squat and bench ratios match the competition medians they come from', async () => {
+  const { patternEvidence } = await import('../shared/strength-evidence');
+  for (const id of ['squat', 'press'] as const)
+    assert.equal(strengthPatterns.find(item => item.id === id)?.ofDeadlift, patternEvidence[id].median);
 });

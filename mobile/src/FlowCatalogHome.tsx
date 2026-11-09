@@ -17,6 +17,7 @@ import { CatalogCover, CatalogSectionCover } from './CatalogCover';
 import { CatalogBar, FlowCatalogTile } from './FlowCatalogTile';
 import { ExerciseCatalog, ExercisePage } from './ExerciseCatalog';
 import { RequestedFlows } from './RequestedFlows';
+import { PersonalisePage, PersonaliseRow } from './PersonaliseFlows';
 import { FlowIllustration } from './FlowIllustration';
 import { liveFlowId } from './catalog-live';
 import { routineCheckpoints, type RoutineCheckpoint } from '../../shared/routines';
@@ -33,6 +34,10 @@ import { ExerciseVisual } from './ExerciseVisual';
 import { flowInterestIds, unwantCatalogFlow, wantCatalogFlow } from './flow-interest';
 import { TrainingRoutes, TrainingSessionPreview, WeeklyPlanSection } from './TrainingPlans';
 import { useTrainingRoute } from './training-route';
+import { applyCustomflow } from '../../shared/customflows';
+import { isCustomOrder } from '../../shared/item-order';
+import { DragList } from './DragList';
+import { resetCustomflow, saveCustomflowOrder, useCustomflow } from './customflows';
 
 const gap = 10;
 /** The space App leaves under the glass top bar, part of the list inset. */
@@ -69,6 +74,7 @@ export function FlowCatalogHome({
   const [flowId, setFlowId] = usePaneState<string | null>('catalogFlow', null);
   const [catalogSessionId, setCatalogSessionId] = useState<string | null>(null);
   const [exercises, setExercises] = usePaneState('catalogExercises', false);
+  const [personalise, setPersonalise] = usePaneState('catalogPersonalise', false);
   const [route, setRoute] = usePaneState<RoutineRoute>('routineRoute', emptyRoutineRoute, 'account');
   const [training, setTrainingRoute] = useTrainingRoute();
   const seenSection = useRef(0);
@@ -121,6 +127,7 @@ export function FlowCatalogHome({
     return <RoutineDetailPage routineId={route.routineId} />;
   if (route.search) return <RoutineSearchPage />;
   if (route.checkpoint) return <RoutineCheckpointPage checkpoint={route.checkpoint} />;
+  if (personalise) return <PersonalisePage onBack={() => setPersonalise(false)} />;
   if (exercises)
     return <ExerciseCatalog library={library} onBack={() => setExercises(false)} onView={onView} />;
   const opened = flowId ? catalogFlow(flowId) : undefined;
@@ -168,6 +175,7 @@ export function FlowCatalogHome({
     <CatalogSections
       onOpen={sectionId => setTileId(tilesInSection(sectionId)[0]?.id ?? null)}
       onExercises={() => setExercises(true)}
+      onPersonalise={() => setPersonalise(true)}
       onFlow={id => setFlowId(id)}
       requestsKey={wanted.join(',')}
       onRoutine={checkpoint => {
@@ -237,6 +245,20 @@ export function CatalogFlowPage({
   const [exerciseId, setExerciseId] = useState<string | null>(null);
   const openedExercise = exerciseId ? exercise(exerciseId) : undefined;
   const gym = source ? gymFlowById(source.id) : undefined;
+  const customflow = useCustomflow('qram-flow', gym?.id);
+  const [dragging, setDragging] = useState(false);
+  const [orderError, setOrderError] = useState('');
+  // As the member's Customflow when they've customised this flow; the run starts the same way.
+  const items = gym ? applyCustomflow(gym.items, customflow, entry => entry.exerciseId) : [];
+  const customOrder = Boolean(customflow);
+  function reorder(keys: string[] | null) {
+    if (!gym) return;
+    setOrderError('');
+    const source = { kind: 'qram-flow' as const, id: gym.id, version: null };
+    // Dragging back to the original order clears it, rather than saving a copy of the original.
+    const save = keys && isCustomOrder(gym.items.map(entry => entry.exerciseId), keys) ? saveCustomflowOrder(source, keys) : resetCustomflow(source);
+    void save.catch(() => setOrderError('Could not save the new order. Try again.'));
+  }
   if (openedExercise) {
     const schemeId = gym?.items.find(entry => entry.exerciseId === openedExercise.id)?.scheme;
     return (
@@ -292,6 +314,7 @@ export function CatalogFlowPage({
       <CatalogBar title={catalogTile(tileId)?.title ?? ''} onBack={onBack} />
       <ScrollView
         style={{ flex: 1 }}
+        scrollEnabled={!dragging}
         contentContainerStyle={{
           paddingHorizontal: 16,
           paddingTop: 8,
@@ -348,13 +371,18 @@ export function CatalogFlowPage({
                   ? `${gym.items.length} ${gym.items.length === 1 ? 'exercise' : 'exercises'}`
                   : `${cards.length} ${cards.length === 1 ? 'card' : 'cards'}`}
               </Text>
-              {gym
-                ? gym.items.map((entry, index) => {
+              {gym ? (
+                <DragList
+                  items={items}
+                  keyOf={entry => entry.exerciseId}
+                  labelOf={entry => exercise(entry.exerciseId)?.name ?? entry.exerciseId}
+                  onDragging={setDragging}
+                  onReorder={next => reorder(next.map(entry => entry.exerciseId))}
+                  renderItem={(entry, index) => {
                     const move = exercise(entry.exerciseId);
                     const name = move?.name ?? entry.exerciseId;
                     return (
                       <Pressable
-                        key={entry.exerciseId}
                         accessibilityRole="button"
                         accessibilityLabel={`Open ${name}`}
                         onPress={() => move && setExerciseId(move.id)}
@@ -387,8 +415,10 @@ export function CatalogFlowPage({
                         </View>
                       </Pressable>
                     );
-                  })
-                : cards.map(card => (
+                  }}
+                />
+              ) : (
+                cards.map(card => (
                     <View
                       key={card.id}
                       style={{
@@ -418,7 +448,26 @@ export function CatalogFlowPage({
                         )}
                       </View>
                     </View>
-                  ))}
+                  ))
+              )}
+              {customOrder || orderError ? (
+                <View style={{ gap: 4, paddingTop: 6 }}>
+                  {orderError ? <Text style={{ color: C.danger, fontSize: 14 }}>{orderError}</Text> : null}
+                  {customOrder ? (
+                    <Text style={{ color: C.muted, fontSize: 14 }}>Customflow: you changed the order.</Text>
+                  ) : null}
+                  {customOrder ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Back to the original order"
+                      onPress={() => reorder(null)}
+                      style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}
+                    >
+                      <Text style={{ color: C.lime, fontSize: 15, fontWeight: '600' }}>Back to the original</Text>
+                    </Pressable>
+                  ) : null}
+                </View>
+              ) : null}
             </View>
           </>
         ) : (
@@ -447,6 +496,7 @@ export function CatalogFlowPage({
 function CatalogSections({
   onOpen,
   onExercises,
+  onPersonalise,
   onFlow,
   requestsKey,
   onRoutine,
@@ -456,6 +506,7 @@ function CatalogSections({
 }: {
   onOpen: (id: string) => void;
   onExercises: () => void;
+  onPersonalise: () => void;
   onFlow: (catalogFlowId: string) => void;
   /** Changes when the member requests a flow, so the leaderboard refreshes. */
   requestsKey: string;
@@ -499,6 +550,7 @@ function CatalogSections({
       }}
       contentContainerStyle={{ paddingHorizontal: 16, paddingTop: inset, paddingBottom: 128, gap: 24 }}
     >
+      <PersonaliseRow onOpen={onPersonalise} />
       {catalogRoots.map(root => (
         <View key={root.id} style={{ gap: 12 }}>
           <Text accessibilityRole="header" style={{ color: C.text, fontSize: 22, fontWeight: '700' }}>

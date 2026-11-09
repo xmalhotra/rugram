@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { AppState, Pressable, ScrollView, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AppState, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { SafeAreaProvider, initialWindowMetrics, useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { exercise } from '../../shared/exercises';
 import { estimateStart, loadStrength } from './strength';
+import { applyCustomflow } from '../../shared/customflows';
+import { customflowFor, loadCustomflows } from './customflows';
 import { runFooterState } from '../../shared/run-footer';
 import {
   blockFields,
@@ -196,10 +198,15 @@ export function TrainingSession({
 
   useEffect(() => {
     let live = true;
-    trainingSession(sessionId)
-      .then(result => {
-        if (result.schemes) registerSchemes(result.schemes);
+    // The member's Customflow of this session, when they have one. Sets are logged by block, so order is free to change.
+    Promise.all([trainingSession(sessionId), loadCustomflows()])
+      .then(([loaded]) => {
+        if (loaded.schemes) registerSchemes(loaded.schemes);
         if (!live) return;
+        const result = {
+          ...loaded,
+          session: { ...loaded.session, blocks: applyCustomflow(loaded.session.blocks, customflowFor('qram-session', loaded.session.id), block => block.id) },
+        };
         setDetail(result);
         setDrafts(draftsFrom(result));
       })
@@ -291,7 +298,14 @@ export function TrainingSession({
         return {
           ...item,
           sets: prepared.map((set, i) => {
-            if (i === setIndex) return { ...set, ticked: true, skipped: false, runningKey: null, runningSince: null, completedAt: set.completedAt ?? at };
+            if (i === setIndex) {
+              // A clock still running stops here, and the time it showed is what's logged.
+              const text =
+                set.runningKey != null && set.runningSince != null
+                  ? { ...set.text, [set.runningKey]: String(Math.round(set.runningBase + (at - set.runningSince) / 1000)) }
+                  : set.text;
+              return { ...set, text, ticked: true, skipped: false, runningKey: null, runningSince: null, clockRan: true, completedAt: set.completedAt ?? at };
+            }
             if (i !== targetIndex || set.touched || set.ticked) return set;
             const row = updated[i];
             return row ? writeOpen(set, fields, row) : set;
@@ -393,9 +407,9 @@ export function TrainingSession({
   );
   const ready = Boolean(draftSets) && footer.ready;
   return (
-    <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, zIndex: 40, backgroundColor: C.bg, paddingTop: inset.top }}>
+    <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: inset.top }}>
       <CatalogBar title={session?.title ?? 'Session'} onBack={onClose} right={<SoundToggle />} />
-      <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 260 + inset.bottom + 72 }}>
+      <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 260 + inset.bottom }}>
         {error ? (
           <Text accessibilityRole="alert" style={{ color: C.danger, fontSize: 15 }}>
             {error}
@@ -415,7 +429,7 @@ export function TrainingSession({
         ) : phase === 'fields' ? (
           <View style={{ gap: 12 }}>
             {type.sessionFields.map(field => (
-              <FieldInput key={field.key} field={field} text={sessionText[field.key] ?? ''} checked={false} onText={value => setSessionText(current => ({ ...current, [field.key]: value }))} onCheck={() => undefined} running={false} elapsed={0} onToggle={() => undefined} />
+              <FieldInput key={field.key} field={field} text={sessionText[field.key] ?? ''} checked={false} onText={value => setSessionText(current => ({ ...current, [field.key]: value }))} onCheck={() => undefined} running={false} done={false} elapsed={0} onToggle={() => undefined} />
             ))}
             <Action label={busy ? 'Saving…' : 'Finish'} onPress={() => void finish()} />
           </View>
@@ -447,17 +461,21 @@ export function TrainingSession({
                     })
                   }
                   onCheck={key => patchSet(setIndex, current => ({ ...current, checks: { ...current.checks, [key]: !current.checks[key] } }))}
-                  onToggle={key =>
+                  onToggle={key => {
+                    const open = drafts[index]?.sets[setIndex];
+                    // Stopping the clock is finishing the set: the time is logged and the rest begins.
+                    if (open && open.runningKey === key && open.runningSince != null) {
+                      tick(setIndex);
+                      return;
+                    }
+                    if (open?.ticked || open?.skipped) return;
                     patchSet(setIndex, current => {
-                      if (current.runningKey === key && current.runningSince != null) {
-                        const elapsed = Math.round(current.runningBase + (Date.now() - current.runningSince) / 1000);
-                        return { ...current, runningKey: null, runningSince: null, clockRan: true, typedSeconds: false, text: { ...current.text, [key]: String(elapsed) } };
-                      }
-                      const base = parseClock(current.text[key] ?? '') ?? 0;
+                      // The number shown before the clock first runs is the target, not time done: start from 0.
+                      const base = current.clockRan ? (parseClock(current.text[key] ?? '') ?? 0) : 0;
                       const at = Date.now();
                       return { ...openTrainingSet(current, fields, at), runningKey: key, runningSince: at, runningBase: base, startedAt: at, clockRan: true };
-                    })
-                  }
+                    });
+                  }}
                   onTick={() => tick(setIndex)}
                   onSkip={() => patchSet(setIndex, current => markTrainingSkipped(current, fields, Date.now()))}
                 />
@@ -542,7 +560,7 @@ export function TrainingSession({
             );
             advance(index + 1);
           }}
-          bottom={inset.bottom + 72}
+          bottom={inset.bottom + 8}
         />
       ) : null}
       {session && block && phase !== 'post' && phase !== 'fields' ? (
@@ -551,10 +569,21 @@ export function TrainingSession({
           name={block.label ?? (block.exerciseId ? exercise(block.exerciseId)?.name : undefined)}
           onDone={() => {
             const at = Date.now();
+            // After 3, 2, 1 the first set is under way: a timed set's clock starts, so there's no second Start.
+            const timer = fields.find(field => field.input === 'duration');
             setDrafts(current =>
               current.map((item, itemIndex) => {
                 if (itemIndex !== index || !item.sets[0]) return item;
-                return { ...item, sets: item.sets.map((set, setIndex) => (setIndex === 0 ? openTrainingSet(set, fields, at) : set)) };
+                return {
+                  ...item,
+                  sets: item.sets.map((set, setIndex) => {
+                    if (setIndex !== 0) return set;
+                    const opened = openTrainingSet(set, fields, at);
+                    return timer && set.runningKey == null && !set.ticked && !set.skipped
+                      ? { ...opened, runningKey: timer.key, runningSince: at, runningBase: 0, startedAt: at, clockRan: true }
+                      : opened;
+                  }),
+                };
               }),
             );
           }}
@@ -653,6 +682,7 @@ function SetRow({
             text={running ? formatClock(elapsed) : (set.text[field.key] ?? '')}
             checked={Boolean(set.checks[field.key])}
             running={running}
+            done={set.ticked || set.skipped}
             elapsed={elapsed}
             onText={value => onText(field.key, value)}
             onCheck={() => onCheck(field.key)}
@@ -677,6 +707,7 @@ function FieldInput({
   text,
   checked,
   running,
+  done,
   elapsed,
   onText,
   onCheck,
@@ -686,6 +717,8 @@ function FieldInput({
   text: string;
   checked: boolean;
   running: boolean;
+  /** The set is finished or skipped: its clock can't start again (the time can still be typed). */
+  done: boolean;
   elapsed: number;
   onText: (value: string) => void;
   onCheck: () => void;
@@ -726,9 +759,9 @@ function FieldInput({
           accessibilityLabel={field.label}
           style={{ flex: 1, minHeight: 44, color: C.text, fontSize: 18 }}
         />
-        {field.input === 'duration' ? (
-          <Pressable accessibilityRole="button" accessibilityLabel={running ? `Stop ${field.label}` : `Start ${field.label}`} onPress={onToggle} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 16, backgroundColor: C.lime }}>
-            <Text style={{ color: C.onAccent, fontWeight: '700' }}>{running ? 'Stop' : 'Start'}</Text>
+        {field.input === 'duration' && !done ? (
+          <Pressable accessibilityRole="button" accessibilityLabel={running ? `Finish the set, stopping ${field.label}` : `Start ${field.label}`} onPress={onToggle} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 16, backgroundColor: C.lime }}>
+            <Text style={{ color: C.onAccent, fontWeight: '700' }}>{running ? 'Done' : 'Start'}</Text>
           </Pressable>
         ) : null}
       </View>
@@ -749,5 +782,12 @@ export function TrainingSessionHost() {
   const [opened, setOpened] = useTrainingSessionPane();
   const [, setTick] = useTrainingTick();
   if (!opened) return null;
-  return <TrainingSession sessionId={opened.id} planDate={opened.date} onClose={() => setOpened(null)} onSaved={() => setTick(value => value + 1)} />;
+  // Full screen like a flow run, over the tab bar, so the footer sits on the screen's bottom edge.
+  return (
+    <Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setOpened(null)}>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+        <TrainingSession sessionId={opened.id} planDate={opened.date} onClose={() => setOpened(null)} onSaved={() => setTick(value => value + 1)} />
+      </SafeAreaProvider>
+    </Modal>
+  );
 }

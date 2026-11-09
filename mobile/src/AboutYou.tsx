@@ -5,7 +5,7 @@ import { Text } from './design/Text';
 import { useTheme } from './design/theme';
 import { saveFlowMetrics } from './flow-runs';
 
-const lifestyles: { id: Lifestyle; label: string }[] = [
+export const lifestyles: { id: Lifestyle; label: string }[] = [
   { id: 'sedentary', label: 'Mostly sitting' },
   { id: 'light', label: 'Lightly active' },
   { id: 'active', label: 'Active' },

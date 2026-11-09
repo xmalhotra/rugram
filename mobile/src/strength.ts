@@ -3,6 +3,7 @@ import { api } from './api';
 import { resolveTarget, type GymFlowItem } from '../../shared/gym-flows';
 import type { GymExercise } from '../../shared/exercises';
 import { formatKg } from '../../shared/progression';
+import type { Lifestyle } from '../../shared/flow-benchmarks';
 import {
   sourceLine,
   startWeight,
@@ -12,7 +13,12 @@ import {
   type StrengthProfile,
 } from '../../shared/strength';
 
-export type Strength = { anchors: StrengthAnchor[]; profile: StrengthProfile };
+export type Strength = {
+  anchors: StrengthAnchor[];
+  /** Body weight the estimate uses when no lift is known. */
+  body: { weightKg: number; lifestyle: Lifestyle } | null;
+  profile: StrengthProfile;
+};
 
 // The last answer, kept for the session so set rows can use it without waiting.
 let current: Strength | null = null;
@@ -62,6 +68,13 @@ export function useStrength() {
 
 export async function saveAnchor(pattern: StrengthPattern, weightKg: number, reps: number) {
   const value = await api<Strength>('/api/mobile/strength', { action: 'anchor', pattern, weightKg, reps });
+  publish(value);
+  return value;
+}
+
+/** Body weight and activity, for an estimate when no lift is known. */
+export async function saveBody(weightKg: number, lifestyle: Lifestyle) {
+  const value = await api<Strength>('/api/mobile/strength', { action: 'body', weightKg, lifestyle });
   publish(value);
   return value;
 }

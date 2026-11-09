@@ -4,10 +4,12 @@ import { exercise, station, type GymExercise } from './exercises';
 import type { Lifestyle } from './flow-benchmarks';
 import { strengthMap } from './strength-map';
 
+// ofDeadlift: squat and bench are medians from 419,959 raw lifters in OpenPowerlifting (public domain, see
+// shared/strength-evidence.ts); the rest are coaching rules of thumb.
 export const strengthPatterns = [
   { id: 'hinge', title: 'Deadlift', exerciseId: 'conventional-deadlift', ofDeadlift: 1 },
-  { id: 'squat', title: 'Back squat', exerciseId: 'barbell-back-squat', ofDeadlift: 0.8 },
-  { id: 'press', title: 'Bench press', exerciseId: 'barbell-bench-press', ofDeadlift: 0.6 },
+  { id: 'squat', title: 'Back squat', exerciseId: 'barbell-back-squat', ofDeadlift: 0.85 },
+  { id: 'press', title: 'Bench press', exerciseId: 'barbell-bench-press', ofDeadlift: 0.53 },
   { id: 'overhead', title: 'Overhead press', exerciseId: 'barbell-overhead-press', ofDeadlift: 0.4 },
   { id: 'row', title: 'Barbell row', exerciseId: 'barbell-bent-over-row', ofDeadlift: 0.5 },
   { id: 'pulldown', title: 'Lat pulldown', exerciseId: 'wide-grip-lat-pulldown', ofDeadlift: 0.5 },
@@ -174,6 +176,14 @@ export function startWeight(exerciseId: string, reps: number | null, profile: St
   const weightKg = Math.max(floorKg(move), rounded);
   if (!(weightKg > 0)) return null;
   return { weightKg, oneRepMaxKg: round1(oneRepMaxKg), pattern };
+}
+
+/** Reps people think in when they talk about a working weight. */
+export const workingReps = 8;
+
+/** A weight that one-rep max allows for `reps`, rounded down to 2.5 kg: how members think about a lift. */
+export function workingWeight(oneRepMaxKg: number, reps = workingReps) {
+  return Math.floor(weightForReps(oneRepMaxKg, reps) / 2.5) * 2.5;
 }
 
 /** Where a number came from, for the line under it. */
