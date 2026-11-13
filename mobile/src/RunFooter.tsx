@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, type LayoutChangeEvent } from 'react-native';
 import { Text } from './design/Text';
 import { Button, GlassSurface, ProgressSteps, TimerBar } from './design/parts';
-import { layout, space, useTheme } from './design/theme';
+import { layout, size, space, useTheme } from './design/theme';
 
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
@@ -52,6 +52,7 @@ export function RunFooter({
   onSkip,
   pauseLabel,
   onPause,
+  onEndEarly,
   bottom,
   onHeight,
 }: {
@@ -83,6 +84,11 @@ export function RunFooter({
   onSkip: () => void;
   pauseLabel?: string;
   onPause?: () => void;
+  /**
+   * Leave this exercise before every set is done. Shown, quietly, only while Next is hidden.
+   * Without it, the hint takes Next's place instead.
+   */
+  onEndEarly?: () => void;
   bottom: number;
   /** The bar's height, so the screen above can leave room for it. */
   onHeight?: (height: number) => void;
@@ -129,12 +135,14 @@ export function RunFooter({
     setHintOn(false);
     onNext();
   };
-  // Skip rest takes the left slot when Skip (the exercise) is not offered.
+  // Left slot, first that applies: Skip (nothing logged yet), Skip rest, then End exercise.
   const left = skipLabel
     ? { label: skipLabel, onPress: onSkip }
     : resting && onSkipRest
       ? { label: 'Skip rest', onPress: onSkipRest }
-      : null;
+      : !ready && onEndEarly
+        ? { label: 'End exercise', onPress: onEndEarly }
+        : null;
   return (
     <GlassSurface
       edge="top"
@@ -156,6 +164,7 @@ export function RunFooter({
           {resting && onEasier ? (
             <Button
               variant="secondary"
+              tone="neutral"
               size="regular"
               fit
               title="−30 s"
@@ -175,6 +184,7 @@ export function RunFooter({
           {resting && onHarder ? (
             <Button
               variant="secondary"
+              tone="neutral"
               size="regular"
               fit
               title="+30 s"
@@ -192,17 +202,19 @@ export function RunFooter({
       <View accessible accessibilityLabel={`${noun} ${index + 1} of ${total}`}>
         <ProgressSteps total={total} filled={index + 1} />
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
-        {left ? <Button variant="text" title={left.label} onPress={left.onPress} /> : null}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: size.button }}>
+        {left ? <Button variant="text" tone="neutral" title={left.label} onPress={left.onPress} /> : null}
         <View style={{ flex: 1 }}>
-          <Button
-            variant={ready && emphasis === 'primary' ? 'primary' : 'secondary'}
-            title={nextLabel}
-            accessibilityHint={ready ? undefined : hint}
-            onPress={pressNext}
-          />
+          {/* Next shows only when it can be used. Until then nothing pretends to be a button. */}
+          {ready ? (
+            <Button variant={emphasis === 'primary' ? 'primary' : 'secondary'} title={nextLabel} onPress={pressNext} />
+          ) : !onEndEarly && hint ? (
+            <Text variant="footnote" style={{ color: C.muted, textAlign: 'center' }}>
+              {hint}
+            </Text>
+          ) : null}
         </View>
-        {pauseLabel && onPause ? <Button variant="text" title={pauseLabel} onPress={onPause} /> : null}
+        {pauseLabel && onPause ? <Button variant="text" tone="neutral" title={pauseLabel} onPress={onPause} /> : null}
       </View>
     </GlassSurface>
   );

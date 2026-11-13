@@ -48,9 +48,11 @@ export const exerciseLogSchema = z
     action: z.literal('log'),
     runId: z.string().regex(/^run-[0-9a-f-]{36}$/i).optional(),
     exerciseId: z.string().min(1).max(80),
-    sets: z.array(setSchema).min(1).max(50),
+    // Empty only inside a run: undoing the last ticked set clears that exercise for the run.
+    sets: z.array(setSchema).max(50),
   })
-  .strict();
+  .strict()
+  .refine(value => value.sets.length > 0 || Boolean(value.runId), { message: 'Add a set first.', path: ['sets'] });
 
 export type ExerciseLogInput = z.infer<typeof exerciseLogSchema>;
 

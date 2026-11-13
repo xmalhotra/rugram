@@ -32,6 +32,11 @@ export type ButtonProps = {
   busy?: boolean;
   /** Size to the label instead of the full width. Text buttons always do. */
   fit?: boolean;
+  /**
+   * neutral: text colour and a line border instead of green. For utility actions (Pause, ±30 s)
+   * that sit beside the screen's one green action.
+   */
+  tone?: 'accent' | 'neutral';
   accessibilityLabel?: string;
   accessibilityHint?: string;
 };
@@ -47,17 +52,19 @@ export function Button({
   destructive = false,
   busy = false,
   fit = false,
+  tone = 'accent',
   accessibilityLabel,
   accessibilityHint,
 }: ButtonProps) {
   const { colors: C } = useTheme();
   const kind = variant ?? (secondary ? 'secondary' : 'primary');
-  const accent = destructive ? C.danger : C.lime;
+  const neutral = tone === 'neutral' && !destructive;
+  const accent = destructive ? C.danger : neutral ? C.text : C.lime;
   const onAccent = destructive ? C.onDanger : C.onAccent;
   const blocked = disabled || busy;
   const large = buttonSize === 'large';
   const height = kind === 'text' ? hit : large ? size.button : Math.max(hit, size.buttonRegular);
-  const labelColor = kind === 'primary' ? onAccent : accent;
+  const labelColor = kind === 'primary' && !neutral ? onAccent : accent;
   return (
     <Pressable
       accessibilityRole="button"
@@ -78,7 +85,7 @@ export function Button({
         justifyContent: 'center',
         backgroundColor: kind === 'primary' ? accent : 'transparent',
         borderWidth: kind === 'secondary' ? stroke.line : 0,
-        borderColor: accent,
+        borderColor: neutral ? C.line : accent,
         opacity: blocked ? opacity.disabled : pressed ? opacity.pressed : 1,
       })}
     >

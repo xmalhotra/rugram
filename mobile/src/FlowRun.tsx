@@ -872,7 +872,8 @@ export function FlowRun({
     setState(current => (current ? recipe(current) : current));
   }
 
-  function loggedSets(cardId: string, rows: SetDraft[]) {
+  /** `allowEmpty`: an undo can leave no sets, which clears this exercise for the run. */
+  function loggedSets(cardId: string, rows: SetDraft[], allowEmpty = false) {
     const exerciseId = gymExerciseId(cardId);
     const move = exerciseId ? exercise(exerciseId) : undefined;
     const entry = exerciseId ? plannedItem(exerciseId) : undefined;
@@ -908,7 +909,7 @@ export function FlowRun({
         },
       ];
     });
-    return sets.length ? { runId: live?.id, exerciseId, sets } : null;
+    return sets.length || (allowEmpty && live?.id) ? { runId: live?.id, exerciseId, sets } : null;
   }
 
   function openItems(): GymSetInput[] {
@@ -1009,8 +1010,8 @@ export function FlowRun({
     if (rows[setIndex]?.ticked) void persistCard(cardId, rows);
   }
 
-  async function persistCard(cardId: string, rows: SetDraft[]) {
-    const body = loggedSets(cardId, rows);
+  async function persistCard(cardId: string, rows: SetDraft[], allowEmpty = false) {
+    const body = loggedSets(cardId, rows, allowEmpty);
     if (!body) return;
     try {
       await logExerciseSets(body);
@@ -1369,6 +1370,21 @@ export function FlowRun({
               };
             });
           }}
+          plannedSets={manualItem?.sets ?? 0}
+          onUntickSet={setIndex => {
+            const rows = drafts[current.cardId] ?? [];
+            const row = rows[setIndex];
+            if (!row?.ticked) return;
+            // The set goes back to open with its numbers kept; the spare row added after it goes.
+            const next = rows
+              .slice(0, setIndex + 1)
+              .map((item, index) => (index === setIndex ? { ...item, ticked: false, completedAt: null } : item));
+            setRestUntil(null);
+            setRestReason('');
+            setRestCardId(null);
+            setDrafts(previous => ({ ...previous, [current.cardId]: next }));
+            void persistCard(current.cardId, next, true);
+          }}
           onStopHold={setIndex => {
             const entry = manualItem;
             const row = drafts[current.cardId]?.[setIndex];
@@ -1598,6 +1614,8 @@ function GymManualCard({
   onTickSet,
   onStartHold,
   onStopHold,
+  onUntickSet,
+  plannedSets,
   moving,
   onNext,
   onSkip,
@@ -1633,6 +1651,10 @@ function GymManualCard({
   onTickSet: (setIndex: number) => void;
   onStartHold: (setIndex: number) => void;
   onStopHold: (setIndex: number) => void;
+  /** Undo the most recent tick. */
+  onUntickSet: (setIndex: number) => void;
+  /** How many sets the flow plans, for "Set 2 of 3". */
+  plannedSets: number;
   moving: boolean;
   onNext: () => void;
   onSkip: () => void;
@@ -1657,7 +1679,19 @@ function GymManualCard({
       : null);
   const highlighted = active?.setIndex ?? openIndex;
   const anyTicked = list.some(row => row.ticked);
-  const allDone = list.length > 0 && openIndex < 0;
+  const lastTicked = list.reduce((found, row, rowIndex) => (row.ticked ? rowIndex : found), -1);
+  const setCount = Math.max(1, plannedSets);
+  // A tick moves the next set's tick under the same finger. A second tap this soon is a double tap, not a set.
+  const lastTap = useRef(0);
+  const tapTooSoon = () => {
+    const at = Date.now();
+    if (at - lastTap.current < 900) return true;
+    lastTap.current = at;
+    return false;
+  };
+  // Rows are added one at a time, so the plan is done once that many sets are logged or skipped.
+  const dealtWith = list.filter(row => row.ticked || row.skipped).length;
+  const allDone = list.length > 0 && (openIndex < 0 || (plannedSets > 0 && dealtWith >= plannedSets));
   const safeBottom = useSafeAreaInsets().bottom;
   // The footer floats over the list; the list leaves exactly its height free at the end.
   const [footerHeight, setFooterHeight] = useState(0);
@@ -1757,6 +1791,7 @@ function GymManualCard({
                 accessibilityRole="button"
                 accessibilityLabel={`Tick set ${setIndex + 1}`}
                 onPress={() => {
+                  if (tapTooSoon()) return;
                   setEditor(null);
                   onTickSet(setIndex);
                 }}
@@ -1766,18 +1801,45 @@ function GymManualCard({
                   borderRadius: radius.control,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: big ? C.lime : 'transparent',
-                  borderWidth: big ? 0 : stroke.line,
+                  // Once the plan is met, Next is the filled button; an extra set's tick is outlined.
+                  backgroundColor: big && !allDone ? C.lime : 'transparent',
+                  borderWidth: big && !allDone ? 0 : stroke.line,
                   borderColor: C.line,
                   opacity: pressed ? opacity.pressed : 1,
                 })}
               >
-                <Glyph name={{ ios: 'checkmark', android: 'check' }} fallback="✓" color={big ? C.onAccent : C.muted} size={space.lg} />
+                <Glyph name={{ ios: 'checkmark', android: 'check' }} fallback="✓" color={big && !allDone ? C.onAccent : C.muted} size={space.lg} />
               </Pressable>
             ) : (
-              <View accessible accessibilityLabel={`Set ${setIndex + 1} done`} style={{ minWidth: hit, alignItems: 'center' }}>
-                <Glyph name={{ ios: 'checkmark', android: 'check' }} fallback="✓" color={C.muted} size={space.md} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+                <View accessible accessibilityLabel={`Set ${setIndex + 1} done`} style={{ minWidth: hit, alignItems: 'center' }}>
+                  <Glyph name={{ ios: 'checkmark', android: 'check' }} fallback="✓" color={C.muted} size={space.md} />
+                </View>
+                {/* Only the latest tick can be undone, so earlier sets stay as they were logged. */}
+                {setIndex === lastTicked && !row.skipped ? (
+                  <Button
+                    variant="text"
+                    tone="neutral"
+                    size="regular"
+                    title="Undo"
+                    accessibilityLabel={`Undo set ${setIndex + 1}`}
+                    onPress={() => {
+                      if (tapTooSoon()) return;
+                      setEditor(null);
+                      onUntickSet(setIndex);
+                    }}
+                  />
+                ) : null}
               </View>
+            );
+            const setLabel = (
+              <Text variant="footnote" style={{ color: big ? C.text : C.muted, fontWeight: big ? '600' : '400', minWidth: space.xxl + space.md }}>
+                {setIndex >= setCount
+                  ? `Set ${setIndex + 1} · extra`
+                  : big
+                    ? `Set ${setIndex + 1} of ${setCount}`
+                    : `Set ${setIndex + 1}`}
+              </Text>
             );
             return (
               <View
@@ -1791,8 +1853,10 @@ function GymManualCard({
                   gap: space.sm,
                 }}
               >
+                {wheel ? setLabel : null}
                 {wheel ? null : (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+                  {setLabel}
                   {mode === 'hold' && row.holdRunning ? (
                     <>
                       <Text variant="display" numeric accessibilityLabel={`Set ${setIndex + 1} time`} style={{ flex: 1, color: C.text }}>
@@ -1866,10 +1930,12 @@ function GymManualCard({
         onSkipRest={onSkipRest}
         onHarder={onHarder}
         onEasier={onEasier}
-        ready={moving && !runningHold}
-        emphasis={allDone ? 'primary' : 'secondary'}
+        // Next appears once every planned set is dealt with; before that End exercise leaves early.
+        ready={moving && allDone && !runningHold}
+        emphasis="primary"
         hint={runningHold ? 'Stop the hold first' : ''}
         onNext={onNext}
+        onEndEarly={anyTicked && !runningHold ? onNext : undefined}
         skipLabel={anyTicked ? null : 'Skip'}
         onSkip={onSkip}
         pauseLabel={paused ? 'Resume' : 'Pause'}
