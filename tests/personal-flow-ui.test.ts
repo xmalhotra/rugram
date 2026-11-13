@@ -1,3 +1,4 @@
+import { designMock, designTokens } from './support/design-mocks';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -53,7 +54,7 @@ function mount(file: string, component: string, props: object) {
         };
       if (name === 'react-native')
         return { View: 'View', Pressable: 'Pressable', ScrollView: 'ScrollView', Image: 'Image', useWindowDimensions: () => ({ width: 390, height: 844 }) };
-      if (name === './design/theme') return { useTheme: () => ({ colors: {} }), space: { lg: 20 } };
+      if (name === './design/theme') return { ...designTokens, useTheme: () => ({ colors: {} }), space: { lg: 20 } };
       if (name === './pane-state')
         return {
           usePaneState: (_name: string, initial: unknown) => [

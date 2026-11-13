@@ -7,7 +7,7 @@ import {
   tag,
   tint,
 } from '@expo/ui/swift-ui/modifiers';
-import { useTheme } from './theme';
+import { hit, useTheme } from './theme';
 export function SegmentedControl({
   options,
   value,
@@ -24,7 +24,7 @@ export function SegmentedControl({
     <Host
       matchContents={{ vertical: true }}
       colorScheme={scheme}
-      style={{ minHeight: 48, width: '100%' }}
+      style={{ minHeight: hit, width: '100%' }}
     >
       <Picker
         selection={value}

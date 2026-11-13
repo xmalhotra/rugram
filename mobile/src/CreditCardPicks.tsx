@@ -12,8 +12,8 @@ import {
 } from '../../shared/credit-cards';
 import { cardCell, formatFee, spendCategories } from '../../shared/card-table';
 import { bestCardInCategory } from '../../shared/card-shelves';
-import { Badge, Button, Field, HabitToggle } from './design/components';
-import { useTheme } from './design/theme';
+import { Badge, Button, Field, HabitToggle, SectionHeader } from './design/components';
+import { hit, opacity, radius, space, useTheme } from './design/theme';
 
 export function CreditCardDetails({
   card,
@@ -61,14 +61,14 @@ export function CreditCardDetails({
     <ScrollView
       style={{ flex: 1 }}
       keyboardShouldPersistTaps="handled"
-      contentContainerStyle={{ paddingBottom: 48, gap: 16 }}
+      contentContainerStyle={{ paddingBottom: 48, gap: space.md }}
     >
       <View
         onLayout={event => setPictureWidth(event.nativeEvent.layout.width)}
         style={{
           width: '100%',
           aspectRatio: 1.586,
-          borderRadius: 10,
+          borderRadius: radius.small,
           overflow: 'hidden',
           backgroundColor: C.card,
         }}
@@ -82,48 +82,35 @@ export function CreditCardDetails({
               style={{ width: '100%', height: '100%' }}
             />
           ) : (
-            <View style={{ flex: 1, padding: 16, justifyContent: 'space-between' }}>
-              <Text style={{ color: C.muted, fontSize: 13 }}>{card.issuer}</Text>
-              <Text style={{ color: C.text, fontSize: 18, fontWeight: '600' }}>{card.name}</Text>
+            <View style={{ flex: 1, padding: space.md, justifyContent: 'space-between' }}>
+              <Text variant="footnote" style={{ color: C.muted }}>{card.issuer}</Text>
+              <Text variant="headline" style={{ color: C.text }}>{card.name}</Text>
             </View>
           ))}
       </View>
-      <View style={{ gap: 4 }}>
-        <Text accessibilityRole="header" style={{ color: C.text, fontSize: 26, fontWeight: '700' }}>
+      <View style={{ gap: space.xs }}>
+        <Text accessibilityRole="header" variant="title" style={{ color: C.text }}>
           {card.name}
         </Text>
-        <Text style={{ color: C.muted, fontSize: 15 }}>{card.issuer}</Text>
+        <Text variant="subhead" style={{ color: C.muted }}>{card.issuer}</Text>
       </View>
-      <Pressable
-        accessibilityRole="button"
+      <Button
+        title={ownedLabel}
         accessibilityLabel={ownedLabel}
-        accessibilityState={{ disabled: busy }}
         disabled={busy}
         onPress={() => void onChange({ action: 'card-owned', id: card.id, enabled: !wallet })}
-        style={({ pressed }) => ({
-          minHeight: 52,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: 26,
-          backgroundColor: C.lime,
-          opacity: busy ? 0.5 : pressed ? 0.75 : 1,
-        })}
-      >
-        <Text style={{ color: C.onAccent, fontSize: 16, fontWeight: '700' }}>{ownedLabel}</Text>
-      </Pressable>
-      <View style={{ gap: 10 }}>
-        <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>
-          At a glance
-        </Text>
+      />
+      <View style={{ gap: space.ms }}>
+        <SectionHeader title="At a glance" />
         {glance.map(row => (
-          <View key={row.label} style={{ gap: 2 }}>
-            <Text style={{ color: C.muted, fontSize: 13 }}>{row.label}</Text>
-            <Text style={{ color: C.text, fontSize: 15, lineHeight: 21 }}>{row.value}</Text>
+          <View key={row.label} style={{ gap: space.xxs }}>
+            <Text variant="footnote" style={{ color: C.muted }}>{row.label}</Text>
+            <Text variant="subhead" style={{ color: C.text }}>{row.value}</Text>
           </View>
         ))}
       </View>
       {wallet && (
-        <View style={{ gap: 8 }}>
+        <View style={{ gap: space.sm }}>
           <Field
             label="Your annual fee before tax (blank = standard; 0 = lifetime free)"
             value={fee}
@@ -144,44 +131,38 @@ export function CreditCardDetails({
               })
             }
           />
-          <Text style={{ color: C.muted, fontSize: 12, lineHeight: 18 }}>
+          <Text variant="caption" style={{ color: C.muted }}>
             User-entered terms, not verified with the issuer. Never enter card numbers, CVV, PIN or
             bank credentials.
           </Text>
         </View>
       )}
       {card.comparison?.bestFor ? (
-        <View style={{ gap: 4 }}>
-          <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>
-            Best for
-          </Text>
-          <Text style={{ color: C.text, fontSize: 15, lineHeight: 21 }}>{card.comparison.bestFor}</Text>
+        <View style={{ gap: space.xs }}>
+          <SectionHeader title="Best for" />
+          <Text variant="subhead" style={{ color: C.text }}>{card.comparison.bestFor}</Text>
         </View>
       ) : null}
       {card.comparison?.watchOut ? (
-        <View style={{ gap: 4 }}>
-          <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>
-            Watch out
-          </Text>
-          <Text style={{ color: C.text, fontSize: 15, lineHeight: 21 }}>{card.comparison.watchOut}</Text>
+        <View style={{ gap: space.xs }}>
+          <SectionHeader title="Watch out" />
+          <Text variant="subhead" style={{ color: C.text }}>{card.comparison.watchOut}</Text>
         </View>
       ) : null}
       {card.curation?.summary ? (
-        <Text style={{ color: C.text, fontSize: 15, lineHeight: 21 }}>{card.curation.summary}</Text>
+        <Text variant="subhead" style={{ color: C.text }}>{card.curation.summary}</Text>
       ) : null}
       {groups.length > 0 && (
-        <View style={{ gap: 14 }}>
-          <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>
-            Benefits
-          </Text>
+        <View style={{ gap: space.md }}>
+          <SectionHeader title="Benefits" />
           {groups.map(group => (
-            <View key={group.category} style={{ gap: 10 }}>
-              <Text style={{ color: C.muted, fontSize: 13 }}>{group.category}</Text>
+            <View key={group.category} style={{ gap: space.ms }}>
+              <Text variant="footnote" style={{ color: C.muted }}>{group.category}</Text>
               {group.benefits.map(benefit => (
-                <View key={benefit.id} style={{ gap: 4 }}>
-                  <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>{benefit.title}</Text>
-                  <Text style={{ color: C.text, fontSize: 15, lineHeight: 21 }}>{benefit.summary}</Text>
-                  <Text style={{ color: C.muted, fontSize: 13, lineHeight: 18 }}>{benefit.conditions}</Text>
+                <View key={benefit.id} style={{ gap: space.xs }}>
+                  <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>{benefit.title}</Text>
+                  <Text variant="subhead" style={{ color: C.text }}>{benefit.summary}</Text>
+                  <Text variant="footnote" style={{ color: C.muted }}>{benefit.conditions}</Text>
                   {wallet && benefit.tracker ? (
                     <BenefitTracker
                       key={`${card.id}:${benefit.id}:${benefitPeriod(benefit.tracker.period, new Date(), wallet.usage[benefit.id])?.start ?? 'unknown'}`}
@@ -199,45 +180,41 @@ export function CreditCardDetails({
         </View>
       )}
       {compared.length > 0 && (
-        <View style={{ gap: 10 }}>
-          <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>
-            Against similar cards
-          </Text>
+        <View style={{ gap: space.ms }}>
+          <SectionHeader title="Against similar cards" />
           {compared.map(other => (
             <Pressable
               key={other.category}
               accessibilityRole="button"
               accessibilityLabel={`${other.category}: ${other.card.name}`}
               onPress={() => onOpen(other.card)}
-              style={({ pressed }) => ({ gap: 2, opacity: pressed ? 0.7 : 1 })}
+              style={({ pressed }) => ({ gap: space.xxs, opacity: pressed ? opacity.pressed : 1 })}
             >
-              <Text style={{ color: C.text, fontSize: 15 }}>
+              <Text variant="subhead" style={{ color: C.text }}>
                 {other.category}: {other.card.name}
               </Text>
-              <Text style={{ color: C.muted, fontSize: 13 }}>{other.label}</Text>
+              <Text variant="footnote" style={{ color: C.muted }}>{other.label}</Text>
             </Pressable>
           ))}
         </View>
       )}
-      <Pressable
-        accessibilityRole="button"
+      <Button
+        variant="text"
+        title="Verify current issuer terms"
         accessibilityLabel="Verify current issuer terms"
         onPress={() => onLink(card.sourceUrl)}
-        style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}
-      >
-        <Text style={{ color: C.lime, fontSize: 15, fontWeight: '600' }}>Verify current issuer terms</Text>
-      </Pressable>
+      />
       {card.reviewNote ? (
-        <Text style={{ color: C.muted, fontSize: 13, lineHeight: 18 }}>{card.reviewNote}</Text>
+        <Text variant="footnote" style={{ color: C.muted }}>{card.reviewNote}</Text>
       ) : null}
       {onBack && (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Previous card"
           onPress={onBack}
-          style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}
+          style={({ pressed }) => ({ minHeight: hit, justifyContent: 'center', opacity: pressed ? opacity.pressed : 1 })}
         >
-          <Text style={{ color: C.muted, fontSize: 15 }}>Previous card</Text>
+          <Text variant="subhead" style={{ color: C.muted }}>Previous card</Text>
         </Pressable>
       )}
     </ScrollView>
@@ -280,8 +257,8 @@ function BenefitTracker({
     (tracker.unit !== 'uses' || Number.isInteger(Number(used)));
   const unit = tracker.unit === 'INR' ? 'rupees' : tracker.unit;
   return (
-    <View style={{ gap: 12 }}>
-      <Text style={{ color: C.lime, fontSize: 19, fontWeight: '600' }}>
+    <View style={{ gap: space.ms }}>
+      <Text variant="section" style={{ color: C.lime }}>
         {remaining === null
           ? 'Remaining unknown—check usage & eligibility'
           : `${remaining} ${unit} left according to your log`}

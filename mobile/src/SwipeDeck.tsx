@@ -8,7 +8,7 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { hit, radius, space, stroke, useTheme } from './design/theme';
 import { deckPage } from '../../shared/swipe-deck';
 
 export function SwipeDeck({
@@ -56,9 +56,9 @@ export function SwipeDeck({
         style={{
           flexDirection: 'row',
           justifyContent: 'center',
-          gap: 4,
+          gap: space.xs,
           alignItems: 'center',
-          paddingBottom: 8,
+          paddingBottom: space.sm,
         }}
       >
         {pages.map((_, position) => (
@@ -68,7 +68,7 @@ export function SwipeDeck({
             accessibilityLabel={`Page ${position + 1} of ${pages.length}`}
             accessibilityState={{ selected: index === position }}
             onPress={() => go(position)}
-            style={{ minWidth: 32, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
+            style={{ minWidth: 32, minHeight: hit, alignItems: 'center', justifyContent: 'center' }}
           >
             <View
               style={{
@@ -103,7 +103,7 @@ export function SwipeDeck({
             <View key={position} style={{ width, height: '100%' }}>
               <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 4, paddingBottom: 20 }}
+                contentContainerStyle={{ flexGrow: 1, paddingHorizontal: space.xs, paddingBottom: space.lg }}
               >
                 {page}
               </ScrollView>
@@ -112,16 +112,17 @@ export function SwipeDeck({
       </ScrollView>
       <View
         style={{
-          paddingTop: 10,
-          paddingBottom: 6,
-          gap: 4,
-          borderTopWidth: 1,
+          paddingTop: space.ms,
+          paddingBottom: space.sm,
+          gap: space.xs,
+          borderTopWidth: stroke.line,
           borderTopColor: C.line,
         }}
       >
         <Text
           accessibilityLiveRegion="polite"
-          style={{ textAlign: 'center', color: C.muted, fontSize: 11 }}
+          variant="caption"
+          style={{ textAlign: 'center', color: C.muted }}
         >
           {index + 1} / {pages.length}
           {index === 0 ? (controls ? ' · Drag the slider to explore' : ' · Swipe to explore') : ''}
@@ -147,13 +148,13 @@ export function DeckPage({
 }) {
   const { colors: C } = useTheme();
   return (
-    <View style={{ flex: 1, justifyContent: 'center', gap: 22, paddingVertical: 12 }}>
-      <View style={{ gap: 10 }}>
+    <View style={{ flex: 1, justifyContent: 'center', gap: space.xl, paddingVertical: space.ms }}>
+      <View style={{ gap: space.ms }}>
         <Text
+          variant="caption"
           style={{
             textAlign: 'center',
             color: C.lime,
-            fontSize: 11,
             fontWeight: '600',
             letterSpacing: 1.6,
           }}
@@ -162,12 +163,10 @@ export function DeckPage({
         </Text>
         <Text
           accessibilityRole="header"
+          variant="display"
           style={{
             textAlign: 'center',
             color: C.text,
-            fontSize: 32,
-            lineHeight: 39,
-            fontWeight: '400',
             letterSpacing: -0.8,
           }}
         >
@@ -180,7 +179,7 @@ export function DeckPage({
             minHeight: 180,
             alignItems: 'center',
             justifyContent: 'center',
-            paddingVertical: 22,
+            paddingVertical: space.xl,
           }}
         >
           {visual}
@@ -188,12 +187,11 @@ export function DeckPage({
       )}
       {caption && (
         <Text
+          variant="callout"
           style={{
             textAlign: 'center',
             color: C.muted,
-            fontSize: 16,
-            lineHeight: 24,
-            paddingHorizontal: 12,
+            paddingHorizontal: space.ms,
           }}
         >
           {caption}
@@ -210,8 +208,8 @@ export function DeckImage({ uri, label }: { uri?: string; label: string }) {
       style={{
         width: '85%',
         height: 230,
-        padding: 24,
-        borderRadius: 32,
+        padding: space.xl,
+        borderRadius: radius.pill,
         backgroundColor: C.photoMat,
       }}
     >
@@ -227,7 +225,7 @@ export function DeckImage({ uri, label }: { uri?: string; label: string }) {
       style={{
         width: 180,
         height: 180,
-        borderRadius: 40,
+        borderRadius: radius.pill,
         backgroundColor: C.card,
         alignItems: 'center',
         justifyContent: 'center',

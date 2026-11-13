@@ -2,9 +2,9 @@ import React from 'react';
 import { View } from 'react-native';
 import type { HabitFlow } from '../../shared/mobile';
 import { codingCard } from '../../shared/coding-flows';
-import { Button, Sheet } from './design/components';
+import { Button, SectionHeader, Sheet } from './design/components';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { space, stroke, useTheme } from './design/theme';
 
 export function CodingBenefits({
   flow,
@@ -20,14 +20,12 @@ export function CodingBenefits({
   if (!card) return null;
   return (
     <Sheet title="Benefits" navigation="back" onClose={onClose}>
-      <View style={{ gap: 20, paddingVertical: 12 }}>
-        <Text accessibilityRole="header" style={{ color: C.text, fontSize: 22, fontWeight: '600' }}>
-          {card.title}
-        </Text>
+      <View style={{ gap: space.lg, paddingVertical: space.ms }}>
+        <SectionHeader title={card.title} />
         {card.benefits.map(benefit => (
-          <View key={benefit.title} style={{ gap: 6 }}>
-            <Text style={{ color: C.text, fontSize: 17, fontWeight: '600' }}>{benefit.title}</Text>
-            <Text style={{ color: C.muted, fontSize: 16, lineHeight: 24 }}>
+          <View key={benefit.title} style={{ gap: space.sm }}>
+            <Text variant="headline" style={{ color: C.text }}>{benefit.title}</Text>
+            <Text variant="callout" style={{ color: C.muted }}>
               {benefit.description}
             </Text>
           </View>
@@ -35,8 +33,8 @@ export function CodingBenefits({
         {card.action && (
           <Button title={`${card.action.title} ↗`} onPress={() => onLink(card.action!.url)} />
         )}
-        <View style={{ gap: 10, borderTopWidth: 1, borderTopColor: C.line, paddingTop: 16 }}>
-          <Text style={{ color: C.muted, fontSize: 13, lineHeight: 20 }}>{card.sourceNote}</Text>
+        <View style={{ gap: space.ms, borderTopWidth: stroke.line, borderTopColor: C.line, paddingTop: space.md }}>
+          <Text variant="footnote" style={{ color: C.muted }}>{card.sourceNote}</Text>
           {card.sources.map(source => (
             <Button
               key={source.url}

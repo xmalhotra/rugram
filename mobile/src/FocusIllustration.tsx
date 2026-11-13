@@ -1,6 +1,6 @@
 import React from 'react';
 import {View} from 'react-native';
-import {useTheme} from './design/theme';
+import {radius as corners, useTheme} from './design/theme';
 
 // Small code-drawn scenes stay sharp offline and need no image downloads.
 export function FocusIllustration({focusId,selected=false}:{focusId:string;selected?:boolean}){
@@ -29,5 +29,5 @@ export function FocusIllustration({focusId,selected=false}:{focusId:string;selec
     case 'nutrition': scene=<>{box(14,39,44,13,accent,3)}{box(20,47,32,10,accent,8)}{box(29,55,14,3,C.text,2)}{dot(27,34,13,C.illustrationAccent)}{dot(40,33,14,accent)}{dot(48,37,10,C.illustrationAccent)}{line(33,23,38,16,C.text,2)}{box(38,12,13,7,accent,7)}{line(12,21,12,32,C.text,2)}{line(8,21,8,28,C.text,2)}{line(16,21,16,28,C.text,2)}{line(8,28,16,28,C.text,2)}</>;break;
     default: scene=<>{dot(36,35,35,C.illustrationAccent)}{dot(36,35,24,backdrop)}{dot(36,35,12,accent)}{line(36,35,54,17,C.text,2)}{line(46,17,54,17,C.text,2)}{line(54,17,54,25,C.text,2)}</>;
   }
-  return <View accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{width:72,height:72,flexShrink:0,borderRadius:18,backgroundColor:backdrop,overflow:'hidden'}}>{scene}</View>;
+  return <View accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{width:72,height:72,flexShrink:0,borderRadius:corners.card,backgroundColor:backdrop,overflow:'hidden'}}>{scene}</View>;
 }

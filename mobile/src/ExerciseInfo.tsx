@@ -3,7 +3,7 @@ import { station, type GymExercise } from '../../shared/exercises';
 import { riseLine } from '../../shared/progression';
 import type { SetScheme } from '../../shared/set-schemes';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { space, useTheme } from './design/theme';
 
 /** What the station is, how the next set's weight is chosen, and how the sets change. */
 export function ExerciseInfo({ item, scheme }: { item: GymExercise; scheme?: SetScheme | null }) {
@@ -11,34 +11,34 @@ export function ExerciseInfo({ item, scheme }: { item: GymExercise; scheme?: Set
   const place = station(item.station);
   const rise = riseLine(item);
   return (
-    <View style={{ gap: 8 }}>
-      <View style={{ gap: 6 }}>
-        <Text style={{ color: C.muted, fontSize: 13 }}>Equipment</Text>
-        <Text style={{ color: C.text, fontSize: 17, fontWeight: '700' }}>{place?.title}</Text>
+    <View style={{ gap: space.sm }}>
+      <View style={{ gap: space.sm }}>
+        <Text variant="footnote" style={{ color: C.muted }}>Equipment</Text>
+        <Text variant="headline" style={{ color: C.text }}>{place?.title}</Text>
         {place?.about ? (
-          <Text style={{ color: C.text, fontSize: 16, lineHeight: 22 }}>{place.about}</Text>
+          <Text variant="callout" style={{ color: C.text }}>{place.about}</Text>
         ) : null}
       </View>
       {rise ? (
-        <View style={{ gap: 6, marginTop: 8 }}>
-          <Text style={{ color: C.text, fontSize: 17, fontWeight: '700' }}>How the weight goes up</Text>
-          <Text style={{ color: C.text, fontSize: 16 }}>{rise}</Text>
+        <View style={{ gap: space.sm, marginTop: space.sm }}>
+          <Text variant="headline" style={{ color: C.text }}>How the weight goes up</Text>
+          <Text variant="callout" style={{ color: C.text }}>{rise}</Text>
           {place?.stepNote ? (
-            <Text style={{ color: C.muted, fontSize: 15, lineHeight: 21 }}>{place.stepNote}</Text>
+            <Text variant="subhead" style={{ color: C.muted }}>{place.stepNote}</Text>
           ) : null}
-          <Text style={{ color: C.text, fontSize: 15, lineHeight: 21 }}>
+          <Text variant="subhead" style={{ color: C.text }}>
             If your form slips or you miss your reps, stay at the same weight.
           </Text>
         </View>
       ) : null}
       {scheme ? (
-        <View style={{ gap: 6, marginTop: 8 }}>
-          <Text style={{ color: C.text, fontSize: 17, fontWeight: '700' }}>How your sets change</Text>
-          <Text style={{ color: C.text, fontSize: 16 }}>{scheme.title}</Text>
-          <Text style={{ color: C.text, fontSize: 15, lineHeight: 21 }}>{scheme.about}</Text>
+        <View style={{ gap: space.sm, marginTop: space.sm }}>
+          <Text variant="headline" style={{ color: C.text }}>How your sets change</Text>
+          <Text variant="callout" style={{ color: C.text }}>{scheme.title}</Text>
+          <Text variant="subhead" style={{ color: C.text }}>{scheme.about}</Text>
         </View>
       ) : null}
-      <Text style={{ color: C.muted, fontSize: 13, lineHeight: 18, marginTop: 8 }}>
+      <Text variant="footnote" style={{ color: C.muted, marginTop: space.sm }}>
         This is general gym guidance, not medical or personal coaching advice.
       </Text>
     </View>

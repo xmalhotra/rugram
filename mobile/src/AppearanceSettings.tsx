@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import { api } from './api';
 import { useSession } from './session';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { hit, radius, space, useTheme } from './design/theme';
 import type { MobilePayload } from '../../shared/mobile';
 
 const choices = [
@@ -17,9 +17,9 @@ export function AppearanceSettings() {
   const { colors: C } = useTheme();
   const current = data?.profile.appearance ?? 'system';
   return (
-    <View style={{ paddingVertical: 14, gap: 10 }}>
-      <Text style={{ color: C.muted, fontSize: 13 }}>Appearance</Text>
-      <View style={{ flexDirection: 'row', gap: 8 }}>
+    <View style={{ paddingVertical: space.md, gap: space.ms }}>
+      <Text variant="footnote" style={{ color: C.muted }}>Appearance</Text>
+      <View style={{ flexDirection: 'row', gap: space.sm }}>
         {choices.map(choice => {
           const selected = current === choice.id;
           return (
@@ -42,16 +42,16 @@ export function AppearanceSettings() {
               }}
               style={{
                 flex: 1,
-                minHeight: 44,
+                minHeight: hit,
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: 12,
+                borderRadius: radius.small,
                 borderWidth: 1,
                 borderColor: selected ? C.text : C.line,
                 backgroundColor: selected ? C.bg : 'transparent',
               }}
             >
-              <Text style={{ color: selected ? C.text : C.muted, fontSize: 15 }}>{choice.label}</Text>
+              <Text variant="subhead" style={{ color: selected ? C.text : C.muted }}>{choice.label}</Text>
             </Pressable>
           );
         })}

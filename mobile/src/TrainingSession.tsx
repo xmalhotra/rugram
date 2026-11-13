@@ -1,13 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
-import { AppState, Modal, Pressable, ScrollView, TextInput, View } from 'react-native';
-import { SafeAreaProvider, initialWindowMetrics, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, Pressable, ScrollView, TextInput, View, StyleSheet } from 'react-native';
+import { DetailSurface } from './design/DetailSurface';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { exercise } from '../../shared/exercises';
+import type { HabitFlow } from '../../shared/mobile';
 import { estimateStart, loadStrength } from './strength';
 import { applyCustomflow } from '../../shared/customflows';
 import { intensityShare, paceText, type RunIntensity } from '../../shared/running-paces';
 import { runPace, usePersonalMetrics } from './personal-metrics';
-import { customflowFor, loadCustomflows } from './customflows';
+import { customflowFor, loadCustomflows, saveCustomflowSwap, useCustomflow } from './customflows';
+import { SwapChooser } from './EquipmentCheck';
 import { runFooterState } from '../../shared/run-footer';
 import {
   blockFields,
@@ -21,12 +24,15 @@ import {
   type Field,
   type LogValue,
   type SessionBlock,
-  type TrainingType,
+  type TrainingType
 } from '../../shared/training';
 import { nextSetAfterTick, planBlock, registerSchemes, schemeById, schemeLine, type SetScheme } from '../../shared/set-schemes';
 import { buildSetDetail, setsForProgression, type SetDetail } from '../../shared/set-detail';
+import { Glyph } from './design/Glyph';
+import { Button, Skeleton } from './design/components';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { WheelEntry, WheelSheet, adjustLabel, fieldColumns, fieldUnit, isWheelField } from './design/NumberWheels';
+import { useTheme, space, radius, stroke, hit, opacity, textRoles } from './design/theme';
 import { CatalogBar } from './FlowCatalogTile';
 import { RunFooter } from './RunFooter';
 import { playRestEnd } from './run-sound';
@@ -66,10 +72,10 @@ const freshTiming = {
   completedAt: null as number | null,
   clockRan: false,
   typedSeconds: false,
-  edited: false,
+  edited: false
 };
 
-type DraftBlock = { id: string; skipped: boolean; sets: DraftSet[] };
+type DraftBlock = { id: string; exerciseId?: string; skipped: boolean; sets: DraftSet[] };
 
 function readValues(fields: Field[], set: DraftSet, now: number): Record<string, LogValue> {
   const values: Record<string, LogValue> = {};
@@ -106,7 +112,7 @@ function readOpen(fields: Field[], set: DraftSet, now: number) {
     reps: numberOf('reps'),
     seconds: numberOf('seconds'),
     ticked: set.ticked,
-    touched: set.touched,
+    touched: set.touched
   };
 }
 
@@ -132,7 +138,7 @@ function openTrainingSet(set: DraftSet, fields: Field[], at: number): DraftSet {
     plannedWeight: set.planFrozen ? set.plannedWeight : values.weightKg,
     plannedReps: set.planFrozen ? set.plannedReps : values.reps,
     plannedSeconds: set.planFrozen ? set.plannedSeconds : values.seconds,
-    startedAt: set.startedAt ?? at,
+    startedAt: set.startedAt ?? at
   };
 }
 
@@ -142,40 +148,41 @@ function markTrainingSkipped(set: DraftSet, fields: Field[], at: number): DraftS
   return { ...opened, skipped: true, ticked: false, runningKey: null, runningSince: null, completedAt: set.completedAt ?? at };
 }
 
-function draftsFrom(detail: TrainingSessionDetail): DraftBlock[] {
-  return detail.session.blocks.map(block => {
-    const fields = blockFields(detail.type, block);
-    const records = setsForProgression(detail.records.find(row => row.exerciseId === block.exerciseId)?.sets ?? null);
-    // Never done before: start from our estimate of the member's strength, when we have one.
-    const move = block.exerciseId ? exercise(block.exerciseId) : undefined;
-    const start = !records.length && move ? (estimateStart(move, blockTargetItem(block))?.weightKg ?? null) : null;
-    return {
-      id: block.id,
-      skipped: false,
-      sets: Array.from({ length: block.sets }, (_, index) => {
-        const last = detail.last?.sets.find(row => row.blockId === block.id && row.setIndex === index + 1)?.values ?? null;
-        const values = setPrefill(detail.type, block, index, records, last, detail.schemes, start);
-        const text: Record<string, string> = {};
-        const checks: Record<string, boolean> = {};
-        for (const field of fields) {
-          const value = values[field.key];
-          if (typeof value === 'boolean') checks[field.key] = value;
-          else if (typeof value === 'number') text[field.key] = String(value);
-        }
-        return { text, checks, skipped: false, ticked: false, touched: false, runningKey: null, runningSince: null, runningBase: 0, ...freshTiming };
-      }),
-    };
-  });
+function draftBlock(detail: TrainingSessionDetail, block: SessionBlock): DraftBlock {
+  const fields = blockFields(detail.type, block);
+  const records = setsForProgression(detail.records.find(row => row.exerciseId === block.exerciseId)?.sets ?? null);
+  // Never done before: start from our estimate of the member's strength, when we have one.
+  const move = block.exerciseId ? exercise(block.exerciseId) : undefined;
+  const start = !records.length && move ? (estimateStart(move, blockTargetItem(block))?.weightKg ?? null) : null;
+  return {
+    id: block.id,
+    exerciseId: block.exerciseId,
+    skipped: false,
+    sets: Array.from({ length: block.sets }, (_, index) => {
+      const last = detail.last?.sets.find(row => row.blockId === block.id && row.setIndex === index + 1)?.values ?? null;
+      const values = setPrefill(detail.type, block, index, records, last, detail.schemes, start);
+      const text: Record<string, string> = {};
+      const checks: Record<string, boolean> = {};
+      for (const field of fields) {
+        const value = values[field.key];
+        if (typeof value === 'boolean') checks[field.key] = value;
+        else if (typeof value === 'number') text[field.key] = String(value);
+      }
+      return { text, checks, skipped: false, ticked: false, touched: false, runningKey: null, runningSince: null, runningBase: 0, ...freshTiming };
+    })
+  };
 }
 
 export function TrainingSession({
   sessionId,
   planDate,
+  library,
   onClose,
-  onSaved,
+  onSaved
 }: {
   sessionId: string;
   planDate: string;
+  library: HabitFlow[];
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -184,6 +191,13 @@ export function TrainingSession({
   const inset = useSafeAreaInsets();
   const [detail, setDetail] = useState<TrainingSessionDetail | null>(null);
   const [drafts, setDrafts] = useState<DraftBlock[]>([]);
+  // The footer floats over the list; the list leaves its measured height free.
+  const [footerHeight, setFooterHeight] = useState(0);
+  const draftsRef = useRef(drafts);
+  draftsRef.current = drafts;
+  const customflow = useCustomflow('qram-session', sessionId);
+  const [swapOpen, setSwapOpen] = useState(false);
+  const [swapNote, setSwapNote] = useState('');
   const [sessionText, setSessionText] = useState<Record<string, string>>({});
   const [index, setIndex] = useState(0);
   const [phase, setPhase] = useState<'work' | 'fields' | 'post'>('work');
@@ -205,12 +219,9 @@ export function TrainingSession({
       .then(([loaded]) => {
         if (loaded.schemes) registerSchemes(loaded.schemes);
         if (!live) return;
-        const result = {
-          ...loaded,
-          session: { ...loaded.session, blocks: applyCustomflow(loaded.session.blocks, customflowFor('qram-session', loaded.session.id), block => block.id) },
-        };
-        setDetail(result);
-        setDrafts(draftsFrom(result));
+        const applied = applyCustomflow(loaded.session.blocks, customflowFor('qram-session', loaded.session.id), block => block.id);
+        setDetail(loaded);
+        setDrafts(applied.map(block => draftBlock(loaded, block)));
       })
       .catch(reason => {
         if (live) setError(reason instanceof Error ? reason.message : 'Try again.');
@@ -229,7 +240,35 @@ export function TrainingSession({
       sub.remove();
     };
   }, []);
-  const session = detail?.session;
+  const appliedBlocks = useMemo(
+    () => (detail ? applyCustomflow(detail.session.blocks, customflow, block => block.id) : []),
+    [detail, customflow],
+  );
+  useEffect(() => {
+    if (!detail) return;
+    const current = draftsRef.current;
+    let held = false;
+    const next = appliedBlocks.map(block => {
+      const existing = current.find(item => item.id === block.id);
+      const ticked = Boolean(existing?.sets.some(set => set.ticked));
+      // A set already ticked stays on the exercise it was started as.
+      if (existing && ticked && existing.exerciseId && existing.exerciseId !== block.exerciseId) {
+        held = true;
+        return existing;
+      }
+      if (existing && existing.exerciseId === block.exerciseId) return existing;
+      return draftBlock(detail, block);
+    });
+    const unchanged = next.length === current.length && next.every((item, index) => item === current[index]);
+    if (!unchanged) setDrafts(next);
+    if (held) setSwapNote('This set stays. The swap is used the next time you start.');
+  }, [detail, appliedBlocks]);
+  const blocks = appliedBlocks.map(block => {
+    const draft = drafts.find(item => item.id === block.id);
+    if (draft?.sets.some(set => set.ticked) && draft.exerciseId) return { ...block, exerciseId: draft.exerciseId };
+    return block;
+  });
+  const session = detail ? { ...detail.session, blocks } : undefined;
   const type = detail?.type;
   const block = session?.blocks[index];
   const fields = type && block ? blockFields(type, block) : [];
@@ -311,7 +350,7 @@ export function TrainingSession({
             if (i !== targetIndex || set.touched || set.ticked) return set;
             const row = updated[i];
             return row ? writeOpen(set, fields, row) : set;
-          }),
+          })
         };
       }),
     );
@@ -337,6 +376,7 @@ export function TrainingSession({
         const skippedBlock = !draft || draft.skipped;
         return {
           id: item.id,
+          ...(item.exerciseId ? { exerciseId: item.exerciseId } : {}),
           ...(skippedBlock ? { skipped: true } : {}),
           sets: rows.map((set, setIndex) => {
             const skipped = skippedBlock || set.skipped || !set.ticked;
@@ -354,15 +394,15 @@ export function TrainingSession({
               durationSeconds: skipped ? null : readOpen(itemFields, set, Date.now()).seconds,
               clockRan: set.clockRan,
               typedSeconds: set.typedSeconds,
-              edited: set.edited,
+              edited: set.edited
             });
             return {
               index: setIndex + 1,
               skipped,
               values: skipped ? {} : readValues(itemFields, set, Date.now()),
-              detail: detailRow,
+              detail: detailRow
             };
-          }),
+          })
         };
       });
       const sessionValues = readValues(type.sessionFields, { text: sessionText, checks: {}, skipped: false, ticked: false, touched: false, runningKey: null, runningSince: null, runningBase: 0, ...freshTiming }, Date.now());
@@ -396,7 +436,7 @@ export function TrainingSession({
     timedSet && timedSet.runningKey && timedSet.runningSince != null
       ? {
           seconds: Math.floor(timedSet.runningBase + (now - timedSet.runningSince) / 1000),
-          target: block?.targets?.[timedSet.runningKey]?.max ?? 0,
+          target: block?.targets?.[timedSet.runningKey]?.max ?? 0
         }
       : null;
   const draftSets = drafts[index]?.sets;
@@ -404,42 +444,65 @@ export function TrainingSession({
     (draftSets ?? []).map(set => ({
       ticked: set.ticked,
       skipped: set.skipped,
-      running: set.runningKey != null,
+      running: set.runningKey != null
     })),
   );
   const ready = Boolean(draftSets) && footer.ready;
+  const sourceExercise = detail?.session.blocks.find(item => item.id === block?.id)?.exerciseId;
+  const swappedFromName =
+    block?.exerciseId && sourceExercise && sourceExercise !== block.exerciseId ? (exercise(sourceExercise)?.name ?? sourceExercise) : null;
+  const blockUntouched = !(drafts[index]?.sets.some(set => set.ticked) ?? false);
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, paddingTop: inset.top }}>
       <CatalogBar title={session?.title ?? 'Session'} onBack={onClose} right={<SoundToggle />} />
-      <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: 16, gap: 16, paddingBottom: 260 + inset.bottom }}>
+      <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: space.md, gap: space.md, paddingBottom: (footerHeight || 260) + space.md }}>
         {error ? (
-          <Text accessibilityRole="alert" style={{ color: C.danger, fontSize: 15 }}>
+          <Text variant="subhead" accessibilityRole="alert" style={{ color: C.danger }}>
             {error}
           </Text>
         ) : null}
         {!session || !type || !block ? (
-          <Text style={{ color: C.muted }}>Loading…</Text>
+          <Skeleton shape="line" />
         ) : phase === 'post' ? (
-          <View style={{ gap: 12 }}>
-            <Text style={{ color: C.muted, fontSize: 15 }}>Post that you finished, if you want. The numbers stay private.</Text>
-            <TextInput value={note} onChangeText={setNote} placeholder="Note" placeholderTextColor={C.muted} accessibilityLabel="Note" style={{ minHeight: 44, color: C.text, fontSize: 16 }} />
+          <View style={{ gap: space.ms }}>
+            <Text variant="subhead" style={{ color: C.muted }}>Post that you finished, if you want. The numbers stay private.</Text>
+            <TextInput value={note} onChangeText={setNote} placeholder="Note" placeholderTextColor={C.muted} accessibilityLabel="Note" style={{ minHeight: hit, color: C.text, fontSize: textRoles.callout.fontSize}} />
             <Action label="Post" onPress={() => void post()} />
-            <Pressable accessibilityRole="button" accessibilityLabel="Not now" onPress={onClose} style={{ minHeight: 44, justifyContent: 'center' }}>
-              <Text style={{ color: C.muted, fontSize: 16 }}>Not now</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="Not now" onPress={onClose} style={{ minHeight: hit, justifyContent: 'center' }}>
+              <Text variant="callout" style={{ color: C.muted }}>Not now</Text>
             </Pressable>
           </View>
         ) : phase === 'fields' ? (
-          <View style={{ gap: 12 }}>
+          <View style={{ gap: space.ms }}>
             {type.sessionFields.map(field => (
               <FieldInput key={field.key} field={field} text={sessionText[field.key] ?? ''} checked={false} onText={value => setSessionText(current => ({ ...current, [field.key]: value }))} onCheck={() => undefined} running={false} done={false} elapsed={0} onToggle={() => undefined} />
             ))}
             <Action label={busy ? 'Saving…' : 'Finish'} onPress={() => void finish()} />
           </View>
         ) : (
-          <View style={{ gap: 12 }}>
-            <BlockHeader block={block} type={type} schemes={detail.schemes} />
-            {session.note ? <Text style={{ color: C.muted, fontSize: 14 }}>{session.note}</Text> : null}
-            {blockPattern(block, detail) ? <Text style={{ color: C.muted, fontSize: 13, lineHeight: 18 }}>{blockPattern(block, detail)}</Text> : null}
+          <View style={{ gap: space.ms }}>
+            {block.exerciseId && blockUntouched ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={customflow?.changes.swaps?.[block.id] ? 'Undo this swap' : 'Swap this exercise'}
+                onPress={() => {
+                  if (customflow?.changes.swaps?.[block.id]) {
+                    void saveCustomflowSwap({ kind: 'qram-session', id: sessionId, version: null }, block.id, null).catch(reason =>
+                      setError(reason instanceof Error ? reason.message : 'Try again.'),
+                    );
+                    return;
+                  }
+                  setSwapOpen(true);
+                }}
+                style={({ pressed }) => ({ alignSelf: 'flex-start', minHeight: hit, justifyContent: 'center', opacity: pressed ? opacity.pressed : 1 })}
+              >
+                <Text variant="subhead" style={{ color: C.muted }}>{customflow?.changes.swaps?.[block.id] ? 'Undo' : 'Swap'}</Text>
+              </Pressable>
+            ) : null}
+            {swapNote ? <Text variant="subhead" style={{ color: C.muted }}>{swapNote}</Text> : null}
+            <BlockHeader block={block} type={type} schemes={detail.schemes} swappedFrom={swappedFromName} />
+            {extraPattern(block, detail, type) ? <Text variant="subhead" style={{ color: C.muted }}>{extraPattern(block, detail, type)}</Text> : null}
+            {compactSets(fields) ? <SetHeader fields={fields} /> : null}
             {(
               drafts[index]?.sets.map((set, setIndex) => (
                 <SetRow
@@ -458,7 +521,7 @@ export function TrainingSession({
                         touched: true,
                         text: { ...current.text, [key]: value },
                         typedSeconds: duration?.key === key ? true : current.typedSeconds,
-                        edited: current.ticked ? true : current.edited,
+                        edited: current.ticked ? true : current.edited
                       };
                     })
                   }
@@ -484,6 +547,8 @@ export function TrainingSession({
               ))
             )}
             {block.exerciseId ? <FocusArea exerciseId={block.exerciseId} /> : null}
+            {/* The safety note is said once, on the first exercise, not on every one. */}
+            {session.note && index === 0 ? <Text variant="caption" style={{ color: C.muted }}>{session.note}</Text> : null}
           </View>
         )}
       </ScrollView>
@@ -527,7 +592,7 @@ export function TrainingSession({
               currentSets.map(set => ({
                 ticked: set.ticked,
                 skipped: set.skipped,
-                running: set.runningKey != null,
+                running: set.runningKey != null
               })),
             );
             if (nowFooter.skipLabel === 'Skip') {
@@ -538,7 +603,7 @@ export function TrainingSession({
                     ? {
                         ...item,
                         skipped: true,
-                        sets: item.sets.map(set => markTrainingSkipped({ ...set, runningKey: null, runningSince: null }, fields, at)),
+                        sets: item.sets.map(set => markTrainingSkipped({ ...set, runningKey: null, runningSince: null }, fields, at))
                       }
                     : item,
                 ),
@@ -556,13 +621,14 @@ export function TrainingSession({
                     const open = set.runningKey != null || (!set.ticked && !set.skipped);
                     if (!open) return set;
                     return markTrainingSkipped(set, fields, at);
-                  }),
+                  })
                 };
               }),
             );
             advance(index + 1);
           }}
           bottom={inset.bottom + 8}
+          onHeight={setFooterHeight}
         />
       ) : null}
       {session && block && phase !== 'post' && phase !== 'fields' ? (
@@ -584,11 +650,23 @@ export function TrainingSession({
                     return timer && set.runningKey == null && !set.ticked && !set.skipped
                       ? { ...opened, runningKey: timer.key, runningSince: at, runningBase: 0, startedAt: at, clockRan: true }
                       : opened;
-                  }),
+                  })
                 };
               }),
             );
           }}
+        />
+      ) : null}
+      {swapOpen && block?.exerciseId ? (
+        <SwapChooser
+          sourceId={block.exerciseId}
+          library={library}
+          onClose={() => setSwapOpen(false)}
+          onChoose={async exerciseId => {
+            await saveCustomflowSwap({ kind: 'qram-session', id: sessionId, version: null }, block.id, exerciseId);
+            setSwapOpen(false);
+          }}
+          onView={() => setSwapOpen(false)}
         />
       ) : null}
     </View>
@@ -603,13 +681,48 @@ function blockPattern(block: SessionBlock, detail: TrainingSessionDetail) {
   return schemeLine(scheme, planBlock(move, blockTargetItem(block), scheme, records));
 }
 
+/** The set scheme's line, only when it says something the target line above doesn't (e.g. not the same reps twice). */
+function extraPattern(block: SessionBlock, detail: TrainingSessionDetail, type: TrainingType) {
+  const pattern = blockPattern(block, detail);
+  if (!pattern) return null;
+  const numbers = (text: string) => text.slice(text.indexOf(':') + 1).trim();
+  const said = blockFields(type, block).map(field => targetLabel(field, block.targets?.[field.key], block.sets, block.scheme)).filter(Boolean) as string[];
+  return said.some(label => numbers(label) === numbers(pattern)) ? null : pattern;
+}
+
+/** Sets of only number fields (weight and reps, say) show as a table: one row per set. */
+function compactSets(fields: Field[]) {
+  return fields.length > 0 && fields.length <= 3 && fields.every(field => field.input === 'number' || field.input === 'distance');
+}
+
+function fieldTitle(field: Field) {
+  const unit = field.input === 'distance' ? 'm' : field.unit;
+  return unit && unit.toLowerCase() !== field.label.toLowerCase() ? `${field.label} (${unit})` : field.label;
+}
+
+function SetHeader({ fields }: { fields: Field[] }) {
+  const { colors: C } = useTheme();
+  const style = { color: C.muted, fontWeight: '600' as const, textTransform: 'uppercase' as const, letterSpacing: 0.5 };
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.ms, marginTop: space.xs }}>
+      <Text variant="caption" style={[style, { width: 32, textAlign: 'center' }]}>Set</Text>
+      {fields.map(field => (
+        <Text variant="caption" key={field.key} style={[style, { flex: 1, textAlign: 'center' }]}>
+          {fieldTitle(field)}
+        </Text>
+      ))}
+      <View style={{ width: 92 }} />
+    </View>
+  );
+}
+
 /** The member's own pace for this block, from their recent run; an invitation to add one if not. */
 function RunPaceLine({ intensity }: { intensity: RunIntensity }) {
   const { colors: C } = useTheme();
   const metrics = usePersonalMetrics();
   const pace = runPace(metrics, intensity);
   return (
-    <Text style={{ color: pace ? C.lime : C.muted, fontSize: 14 }}>
+    <Text variant="subhead" style={{ color: pace ? C.lime : C.muted }}>
       {pace
         ? `If you're running: ${intensityShare[intensity].title.toLowerCase()} pace ${paceText(pace)}`
         : 'Add a recent run under Personalise to see your pace here.'}
@@ -617,7 +730,17 @@ function RunPaceLine({ intensity }: { intensity: RunIntensity }) {
   );
 }
 
-function BlockHeader({ block, type, schemes }: { block: SessionBlock; type: TrainingType; schemes?: SetScheme[] }) {
+function BlockHeader({
+  block,
+  type,
+  schemes,
+  swappedFrom
+}: {
+  block: SessionBlock;
+  type: TrainingType;
+  schemes?: SetScheme[];
+  swappedFrom?: string | null;
+}) {
   const { colors: C } = useTheme();
   const [info, setInfo] = useState(false);
   const move = block.exerciseId ? exercise(block.exerciseId) : undefined;
@@ -625,7 +748,7 @@ function BlockHeader({ block, type, schemes }: { block: SessionBlock; type: Trai
   const scheme = block.scheme ? schemeById(block.scheme, schemes) : null;
   const pictureName = move?.name ?? block.label ?? 'this exercise';
   return (
-    <View style={{ gap: 8 }}>
+    <View style={{ gap: space.sm }}>
       {block.exerciseId ? (
         <ExercisePicture
           exerciseId={block.exerciseId}
@@ -636,13 +759,14 @@ function BlockHeader({ block, type, schemes }: { block: SessionBlock; type: Trai
         />
       ) : null}
       {info && move ? <ExerciseHowToSheet item={move} scheme={scheme} onClose={() => setInfo(false)} /> : null}
-      <Text style={{ color: C.text, fontSize: 20, fontWeight: '700' }}>{block.label ?? move?.name ?? 'Block'}</Text>
+      <Text variant="section" style={{ color: C.text }}>{block.label ?? move?.name ?? 'Block'}</Text>
+      {swappedFrom ? <Text variant="subhead" style={{ color: C.muted }}>Swapped from {swappedFrom}</Text> : null}
       {block.intensity ? <RunPaceLine intensity={block.intensity} /> : null}
-      {block.label && move ? <Text style={{ color: C.muted, fontSize: 14 }}>{move.name}</Text> : null}
+      {block.label && move ? <Text variant="subhead" style={{ color: C.muted }}>{move.name}</Text> : null}
       {fields.map(field => {
         const label = targetLabel(field, block.targets?.[field.key], block.sets, block.scheme);
         return label ? (
-          <Text key={field.key} style={{ color: C.muted, fontSize: 14 }}>
+          <Text variant="subhead" key={field.key} style={{ color: C.muted }}>
             {label}
           </Text>
         ) : null;
@@ -662,7 +786,7 @@ function SetRow({
   onCheck,
   onToggle,
   onTick,
-  onSkip,
+  onSkip
 }: {
   set: DraftSet;
   setIndex: number;
@@ -677,6 +801,23 @@ function SetRow({
   onSkip: () => void;
 }) {
   const { colors: C } = useTheme();
+  const [editor, setEditor] = useState<{ key: string; typing: boolean } | null>(null);
+  const endTyping = () => setEditor(current => (current?.typing ? null : current));
+  const equipment = block.exerciseId ? exercise(block.exerciseId)?.equipment : undefined;
+  const sheet = editor && !editor.typing ? (
+    <WheelSheet
+      title={`Set ${setIndex + 1}`}
+      columns={fieldColumns(
+        fields.filter(field => !(set.runningKey === field.key && field.input === 'duration')),
+        set.text,
+        onText,
+        equipment,
+      )}
+      onDone={() => setEditor(null)}
+      onClose={() => setEditor(null)}
+      onType={() => setEditor(current => (current ? { key: current.key, typing: true } : current))}
+    />
+  ) : null;
   const lastLogged = detail?.last?.sets.find(row => row.blockId === block.id && row.setIndex === setIndex + 1)?.values ?? null;
   const record = detail?.records.find(row => row.exerciseId === block.exerciseId)?.sets[setIndex];
   const remembered: Record<string, LogValue> = { ...(lastLogged ?? {}) };
@@ -685,10 +826,77 @@ function SetRow({
   if (weight && record?.weightKg != null && remembered[weight.key] == null) remembered[weight.key] = record.weightKg;
   if (reps && record?.reps != null && remembered[reps.key] == null) remembered[reps.key] = record.reps;
   const line = lastTimeLine(fields, remembered);
+  const finished = set.ticked || set.skipped;
+  const tickButton = (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={set.ticked ? `Set ${setIndex + 1} done` : `Finish set ${setIndex + 1}`}
+      onPress={onTick}
+      style={{ width: hit, height: hit, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: set.ticked ? C.lime : 'transparent', borderWidth: set.ticked ? 0 : stroke.line, borderColor: C.line }}
+    >
+      <Glyph name={{ ios: 'checkmark', android: 'check' }} fallback="✓" color={set.ticked ? C.onAccent : C.muted} size={20} />
+    </Pressable>
+  );
+  const skipButton = (
+    <Pressable accessibilityRole="button" accessibilityLabel={set.skipped ? `Set ${setIndex + 1} skipped` : `Skip set ${setIndex + 1}`} onPress={onSkip} disabled={finished} style={{ width: 40, minHeight: hit, alignItems: 'center', justifyContent: 'center' }}>
+      <Text variant="footnote" style={{ color: C.muted }}>{set.skipped ? 'Skipped' : finished ? '' : 'Skip'}</Text>
+    </Pressable>
+  );
+  if (compactSets(fields)) {
+    return (
+      <View style={{ gap: space.xxs, opacity: set.skipped ? 0.45 : 1 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.ms }}>
+          <View style={{ width: 32, height: 32, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', backgroundColor: C.card }}>
+            <Text variant="subhead" style={{ color: C.text, fontWeight: '600'}}>{setIndex + 1}</Text>
+          </View>
+          {fields.map(field => {
+            const value = set.text[field.key] ?? '';
+            if (!isWheelField(field)) {
+              return (
+                <TextInput
+                  key={field.key}
+                  value={value}
+                  onChangeText={next => onText(field.key, next)}
+                  keyboardType="decimal-pad"
+                  selectTextOnFocus
+                  accessibilityLabel={`Set ${setIndex + 1} ${fieldTitle(field)}`}
+                  style={{ flex: 1, height: 44, borderRadius: radius.small, backgroundColor: C.card, color: set.ticked ? C.muted : C.text, fontSize: textRoles.headline.fontSize, fontWeight: '600', textAlign: 'center' }}
+                />
+              );
+            }
+            return (
+              <WheelEntry
+                key={field.key}
+                value={value}
+                focused={editor?.key === field.key}
+                typing={editor?.key === field.key && editor.typing}
+                onPress={() => setEditor({ key: field.key, typing: false })}
+                onChangeText={next => onText(field.key, next)}
+                onTypingEnd={endTyping}
+                accessibilityLabel={adjustLabel(setIndex + 1, field.label.toLowerCase(), value, fieldUnit(field))}
+                keyboardType="decimal-pad"
+                selectTextOnFocus
+                placeholderTextColor={C.muted}
+                style={{ flex: 1, height: 44, borderRadius: radius.small, backgroundColor: C.card, color: set.ticked ? C.muted : C.text, fontSize: textRoles.headline.fontSize, fontWeight: '600', textAlign: 'center' }}
+              />
+            );
+          })}
+          {tickButton}
+          {skipButton}
+        </View>
+        {line ? <Text variant="caption" style={{ color: C.muted, marginLeft: 42 }}>{line}</Text> : null}
+        {sheet}
+      </View>
+    );
+  }
   return (
-    <View style={{ gap: 8, paddingVertical: 8, borderTopWidth: 0.5, borderColor: C.line }}>
-      <Text style={{ color: C.text, fontWeight: '600' }}>Set {setIndex + 1}</Text>
-      {line ? <Text style={{ color: C.muted, fontSize: 13 }}>{line}</Text> : null}
+    <View style={{ gap: space.ms, paddingVertical: space.ms, borderTopWidth: StyleSheet.hairlineWidth, borderColor: C.line, opacity: set.skipped ? 0.45 : 1 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.ms }}>
+        <Text variant="callout" style={{ flex: 1, color: C.text, fontWeight: '600'}}>Set {setIndex + 1}</Text>
+        {tickButton}
+        {skipButton}
+      </View>
+      {line ? <Text variant="caption" style={{ color: C.muted }}>{line}</Text> : null}
       {fields.map(field => {
         const running = set.runningKey === field.key && set.runningSince != null;
         const elapsed = running && set.runningSince != null ? set.runningBase + (now - set.runningSince) / 1000 : parseClock(set.text[field.key] ?? '') ?? 0;
@@ -701,20 +909,19 @@ function SetRow({
             running={running}
             done={set.ticked || set.skipped}
             elapsed={elapsed}
+            equipment={equipment}
+            setIndex={setIndex}
+            focused={editor?.key === field.key}
+            typing={editor?.key === field.key && editor.typing}
+            onOpen={isWheelField(field) ? () => setEditor({ key: field.key, typing: false }) : undefined}
+            onTypingEnd={endTyping}
             onText={value => onText(field.key, value)}
             onCheck={() => onCheck(field.key)}
             onToggle={() => onToggle(field.key)}
           />
         );
       })}
-      <View style={{ flexDirection: 'row', gap: 16 }}>
-        <Pressable accessibilityRole="button" accessibilityLabel={`Finish set ${setIndex + 1}`} onPress={onTick} style={{ minHeight: 44, justifyContent: 'center' }}>
-          <Text style={{ color: set.ticked ? C.lime : C.text, fontWeight: '700' }}>{set.ticked ? '✓' : 'Tick'}</Text>
-        </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel={`Skip set ${setIndex + 1}`} onPress={onSkip} style={{ minHeight: 44, justifyContent: 'center' }}>
-          <Text style={{ color: C.muted }}>{set.skipped ? 'Skipped' : 'Skip set'}</Text>
-        </Pressable>
-      </View>
+      {sheet}
     </View>
   );
 }
@@ -726,9 +933,15 @@ function FieldInput({
   running,
   done,
   elapsed,
+  equipment,
+  setIndex,
+  focused,
+  typing,
+  onOpen,
+  onTypingEnd,
   onText,
   onCheck,
-  onToggle,
+  onToggle
 }: {
   field: Field;
   text: string;
@@ -737,25 +950,48 @@ function FieldInput({
   /** The set is finished or skipped: its clock can't start again (the time can still be typed). */
   done: boolean;
   elapsed: number;
+  equipment?: string;
+  setIndex?: number;
+  focused?: boolean;
+  typing?: boolean;
+  /** When set, the set row owns the wheel sheet for every field. */
+  onOpen?: () => void;
+  onTypingEnd?: () => void;
   onText: (value: string) => void;
   onCheck: () => void;
   onToggle: () => void;
 }) {
   const { colors: C } = useTheme();
+  const [ownedOpen, setOwnedOpen] = useState(false);
+  const [ownedTyping, setOwnedTyping] = useState(false);
+  const wheelable = isWheelField(field);
+  const controlled = onOpen != null;
+  const showTyping = controlled ? Boolean(typing) : ownedTyping;
+  const showFocus = controlled ? Boolean(focused) : ownedOpen || ownedTyping;
+  const boxStyle = { flex: 1, height: 48, paddingHorizontal: space.md, borderRadius: radius.small, backgroundColor: C.card, color: C.text, fontSize: textRoles.section.fontSize, fontWeight: '600' as const };
+  const clockButton = field.input === 'duration' && !done ? (
+    <Button
+      title={running ? 'Done' : 'Start'}
+      fit
+      size="regular"
+      accessibilityLabel={running ? `Finish the set, stopping ${field.label}` : `Start ${field.label}`}
+      onPress={onToggle}
+    />
+  ) : null;
   if (field.input === 'check') {
     return (
-      <Pressable accessibilityRole="button" accessibilityLabel={field.label} onPress={onCheck} style={{ minHeight: 44, justifyContent: 'center' }}>
+      <Pressable accessibilityRole="button" accessibilityLabel={field.label} onPress={onCheck} style={{ minHeight: hit, justifyContent: 'center' }}>
         <Text style={{ color: C.text }}>{checked ? '✓ ' : ''}{field.label}</Text>
       </Pressable>
     );
   }
   if (field.input === 'rating') {
     return (
-      <View style={{ gap: 4 }}>
+      <View style={{ gap: space.xs }}>
         <Text style={{ color: C.muted }}>{field.label}</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
           {Array.from({ length: 10 }, (_, index) => (
-            <Pressable key={index} accessibilityRole="button" accessibilityLabel={`${field.label} ${index + 1}`} onPress={() => onText(String(index + 1))} style={{ minWidth: 32, minHeight: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: text === String(index + 1) ? C.lime : C.card }}>
+            <Pressable key={index} accessibilityRole="button" accessibilityLabel={`${field.label} ${index + 1}`} onPress={() => onText(String(index + 1))} style={{ minWidth: 32, minHeight: hit, alignItems: 'center', justifyContent: 'center', borderRadius: radius.small, backgroundColor: text === String(index + 1) ? C.lime : C.card }}>
               <Text style={{ color: text === String(index + 1) ? C.onAccent : C.text }}>{index + 1}</Text>
             </Pressable>
           ))}
@@ -763,48 +999,101 @@ function FieldInput({
       </View>
     );
   }
-  const unit = field.input === 'duration' ? formatClock(elapsed || parseClock(text) || 0) : field.input === 'distance' ? (Number(text) >= 1000 ? `${Math.round((Number(text) / 1000) * 10) / 10} km` : 'm') : (field.unit ?? '');
-  return (
-    <View style={{ gap: 4 }}>
-      <Text style={{ color: C.muted }}>{field.label}{unit ? ` · ${unit}` : ''}</Text>
-      <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-        <TextInput
-          value={field.input === 'duration' && running ? formatClock(elapsed) : text}
-          onChangeText={onText}
-          keyboardType="decimal-pad"
-          editable={!running}
-          accessibilityLabel={field.label}
-          style={{ flex: 1, minHeight: 44, color: C.text, fontSize: 18 }}
-        />
-        {field.input === 'duration' && !done ? (
-          <Pressable accessibilityRole="button" accessibilityLabel={running ? `Finish the set, stopping ${field.label}` : `Start ${field.label}`} onPress={onToggle} style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 16, backgroundColor: C.lime }}>
-            <Text style={{ color: C.onAccent, fontWeight: '700' }}>{running ? 'Done' : 'Start'}</Text>
-          </Pressable>
-        ) : null}
+  const caption = field.input === 'duration' ? field.label : fieldTitle(field);
+  if (field.input === 'duration' && running) {
+    return (
+      <View style={{ gap: space.sm }}>
+        <Text variant="footnote" style={{ color: C.muted }}>{caption}</Text>
+        <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'center' }}>
+          <View accessible accessibilityLabel={field.label} style={{ flex: 1, height: 48, paddingHorizontal: space.md, borderRadius: radius.small, backgroundColor: C.card, justifyContent: 'center' }}>
+            <Text variant="section" numeric style={{ color: C.text }}>{formatClock(elapsed)}</Text>
+          </View>
+          {clockButton}
+        </View>
       </View>
+    );
+  }
+  if (!wheelable) {
+    return (
+      <View style={{ gap: space.sm }}>
+        <Text variant="footnote" style={{ color: C.muted }}>{caption}</Text>
+        <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'center' }}>
+          <TextInput value={text} onChangeText={onText} keyboardType="decimal-pad" selectTextOnFocus accessibilityLabel={field.label} style={boxStyle} />
+          {clockButton}
+        </View>
+      </View>
+    );
+  }
+  const unit = fieldUnit(field);
+  const name = field.label.toLowerCase();
+  const shown = text.trim();
+  const detail = !shown || !unit || shown.includes(':') || unit.toLowerCase() === name ? shown : `${shown} ${unit}`;
+  const label = setIndex == null
+    ? (detail ? `${field.label}, ${detail}, adjust` : `${field.label}, adjust`)
+    : adjustLabel(setIndex + 1, name, text, unit);
+  return (
+    <View style={{ gap: space.sm }}>
+      <Text variant="footnote" style={{ color: C.muted }}>{caption}</Text>
+      <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'center' }}>
+        <WheelEntry
+          value={text}
+          focused={showFocus}
+          typing={showTyping}
+          onPress={() => {
+            if (controlled) onOpen?.();
+            else {
+              setOwnedTyping(false);
+              setOwnedOpen(true);
+            }
+          }}
+          onChangeText={onText}
+          onTypingEnd={() => {
+            setOwnedTyping(false);
+            setOwnedOpen(false);
+            onTypingEnd?.();
+          }}
+          accessibilityLabel={label}
+          keyboardType="decimal-pad"
+          selectTextOnFocus
+          placeholderTextColor={C.muted}
+          style={boxStyle}
+        />
+        {clockButton}
+      </View>
+      {!controlled && ownedOpen && !ownedTyping ? (
+        <WheelSheet
+          title={setIndex == null ? field.label : `Set ${setIndex + 1}`}
+          columns={fieldColumns([field], { [field.key]: text }, (_key, value) => onText(value), equipment)}
+          onDone={() => setOwnedOpen(false)}
+          onClose={() => setOwnedOpen(false)}
+          onType={() => {
+            setOwnedOpen(false);
+            setOwnedTyping(true);
+          }}
+        />
+      ) : null}
     </View>
   );
 }
 
 function Action({ label, onPress }: { label: string; onPress: () => void }) {
-  const { colors: C } = useTheme();
-  return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, backgroundColor: C.lime }}>
-      <Text style={{ color: C.onAccent, fontSize: 17, fontWeight: '700' }}>{label}</Text>
-    </Pressable>
-  );
+  return <Button title={label} onPress={onPress} />;
 }
 
-export function TrainingSessionHost() {
+export function TrainingSessionHost({ library }: { library: HabitFlow[] }) {
   const [opened, setOpened] = useTrainingSessionPane();
   const [, setTick] = useTrainingTick();
   if (!opened) return null;
   // Full screen like a flow run, over the tab bar, so the footer sits on the screen's bottom edge.
   return (
-    <Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setOpened(null)}>
-      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-        <TrainingSession sessionId={opened.id} planDate={opened.date} onClose={() => setOpened(null)} onSaved={() => setTick(value => value + 1)} />
-      </SafeAreaProvider>
-    </Modal>
+    <DetailSurface presentation="modal" fullScreen safeArea={false} onClose={() => setOpened(null)}>
+        <TrainingSession
+          sessionId={opened.id}
+          planDate={opened.date}
+          library={library}
+          onClose={() => setOpened(null)}
+          onSaved={() => setTick(value => value + 1)}
+        />
+    </DetailSurface>
   );
 }

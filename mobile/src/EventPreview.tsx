@@ -5,7 +5,7 @@ import type { CityEvent } from '../../shared/mobile';
 import { eventCost } from '../../shared/flow-connections';
 import { FocusIllustration } from './FocusIllustration';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { opacity, radius, space, stroke, useTheme } from './design/theme';
 import {ReasonLine} from './design/states';
 import {eventReason} from '../../shared/reasons';
 export function EventPreview({ event, onPress }: { event: CityEvent; onPress: () => void }) {
@@ -18,19 +18,19 @@ export function EventPreview({ event, onPress }: { event: CityEvent; onPress: ()
       onPress={onPress}
       style={({ pressed }) => ({
         width: 168,
-        padding: 12,
-        borderRadius: 20,
-        borderWidth: 1,
+        padding: space.ms,
+        borderRadius: radius.card,
+        borderWidth: stroke.line,
         borderColor: C.line,
         backgroundColor: C.card,
-        gap: 10,
-        opacity: pressed ? 0.7 : 1,
+        gap: space.ms,
+        opacity: pressed ? opacity.pressed : 1,
       })}
     >
       <View
         style={{
           height: 112,
-          borderRadius: 14,
+          borderRadius: radius.control,
           backgroundColor: C.bg,
           alignItems: 'center',
           justifyContent: 'center',
@@ -48,24 +48,25 @@ export function EventPreview({ event, onPress }: { event: CityEvent; onPress: ()
           }
         />
       </View>
-      <Text style={{ color: C.lime, fontSize: 12, fontWeight: '600' }}>
+      <Text variant="caption" style={{ color: C.lime, fontWeight: '600' }}>
         {formatDate(date, { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short' })}
         {event.simulation ? ' · Demo' : ''}
       </Text>
       <Text
         numberOfLines={3}
-        style={{ color: C.text, fontSize: 16, lineHeight: 22, fontWeight: '600' }}
+        variant="callout"
+        style={{ color: C.text, fontWeight: '600' }}
       >
         {event.title}
       </Text>
-      <Text numberOfLines={1} style={{ color: C.muted, fontSize: 12 }}>
+      <Text numberOfLines={1} variant="caption" style={{ color: C.muted }}>
         {event.venue}
       </Text>
-      <Text numberOfLines={1} style={{ color: C.text, fontSize: 13 }}>
+      <Text numberOfLines={1} variant="footnote" style={{ color: C.text }}>
         {eventCost(event)}
       </Text>
       <ReasonLine>{eventReason(event)}</ReasonLine>
-      <Text style={{ color: C.lime, fontSize: 12, fontWeight: '600' }}>View event →</Text>
+      <Text variant="caption" style={{ color: C.lime, fontWeight: '600' }}>View event →</Text>
     </Pressable>
   );
 }

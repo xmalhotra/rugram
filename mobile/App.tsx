@@ -1,3 +1,4 @@
+import { Glyph } from './src/design/Glyph';
 import { habitDay } from '../shared/format';
 import { FlowHeartAction } from './src/FlowHeartAction';
 import { AddToFlowHeaderButton, AddToFlowProvider } from './src/AddToFlowHeader';
@@ -26,7 +27,7 @@ import {
   Pressable,
   Share,
   StyleSheet,
-  View,
+  View
 } from 'react-native';
 import { shareFlow, sharePick, shareEvent, type SharedKind } from '../shared/sharing';
 import { AddToCalendar } from './src/AddToCalendar';
@@ -36,8 +37,11 @@ import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
 import { PicksBrowser } from './src/PicksBrowser';
 import { NotificationCentre, ScreenOverlay } from './src/NotificationCentre';
+import { BodyFlowHeaderButton } from './src/BodyFlow';
 import { currentActiveRun } from './src/active-run';
 import { RunPip } from './src/RunPip';
+import { savedPicks } from '../shared/saved-picks';
+import { useFloatingInsets } from './src/floating-insets';
 import { YouProfile } from './src/YouProfile';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from './src/api';
@@ -52,7 +56,7 @@ const showCatalogueSearch = false;
 export type Tab = 'Flows' | 'Discover' | 'Picks' | 'Events' | 'Studio' | 'You';
 const today = () => habitDay(new Date(), Intl.DateTimeFormat().resolvedOptions().timeZone);
 import { Button, Field, Badge, Sheet } from './src/design/components';
-import { useTheme, type Colors } from './src/design/theme';
+import { useTheme, type Colors, space, radius, hit, size } from './src/design/theme';
 import { useSession } from './src/session';
 import { CatalogFlowPage, CommunityComingSoon, FlowCatalogHome } from './src/FlowCatalogHome';
 import { catalogFlows } from '../shared/flow-catalog';
@@ -63,12 +67,12 @@ import {
   HyderabadEvents,
   CuratedEventDetails,
   EventCategoryOverlay,
-  type EventsSection,
+  type EventsSection
 } from './src/HyderabadEvents';
 import { useFlowHabits } from './src/flow-habits';
 import { EventLinkFields } from './src/EventLinkFields';
 import { FlowDetails } from './src/FlowDetails';
-import { HomeFeed, YoursSwitch, useYoursMode } from './src/HomeFeed';
+import { HomeFeed } from './src/HomeFeed';
 import { CommunityFeed, CommunityFlowSheet, CommunityMemberSheet } from './src/CommunityFeed';
 import { FlowRun } from './src/FlowRun';
 import { TrainingSessionHost } from './src/TrainingSession';
@@ -91,7 +95,7 @@ import {
   buildStoryGroups,
   resolveStoryTarget,
   type StoryGroup,
-  type StoryTarget,
+  type StoryTarget
 } from '../shared/home-feed';
 
 /** Covers the tab with a quick fade, so a page's first layout isn't seen as a jump. */
@@ -107,7 +111,7 @@ export function QramScreen({
   tab = 'Flows',
   initialTarget,
   memberLink,
-  pushed = false,
+  pushed = false
 }: {
   tab?: Tab;
   initialTarget?: { kind: SharedKind; id: string };
@@ -178,7 +182,7 @@ function QramPane({
   pushed,
   onProfile,
   onBack,
-  openRunRequest = 0,
+  openRunRequest = 0
 }: {
   tab: Tab;
   initialTarget?: { kind: SharedKind; id: string };
@@ -206,16 +210,17 @@ function QramPane({
     setBusy,
     setError,
     refresh,
-    logout: sessionLogout,
+    logout: sessionLogout
   } = useSession();
   const [selectedFlow, setSelectedFlow] = usePaneState<HabitFlow | null>('flow', null);
   const [gymFlowId, setGymFlowId] = usePaneState<string | null>('gymFlow', null);
   const [personalFlowId, setPersonalFlowId] = usePaneState<string | null>('personalFlow', null);
-  const [homeTab, setHomeTab] = usePaneState<HomeTab>('homeTab', 'for-you', 'account');
-  const [, setYoursMode] = useYoursMode();
+  const [storedHomeTab, setHomeTab] = usePaneState<HomeTab>('homeTab', 'yours', 'account');
+  // Following was merged into For you; an old saved choice opens For you.
+  const homeTab: HomeTab = storedHomeTab === 'yours' ? 'yours' : 'for-you';
   const [flowsTab, setFlowsTab] = usePaneState<'qram' | 'community'>('flowsTab', 'qram', 'account');
   // Which way the feed slides in: from the right when moving to a tab further right.
-  const homeTabOrder: HomeTab[] = ['for-you', 'following', 'yours'];
+  const homeTabOrder: HomeTab[] = ['yours', 'for-you'];
   const previousHomeTab = useRef(homeTab);
   const homeTabDirection =
     homeTabOrder.indexOf(homeTab) - homeTabOrder.indexOf(previousHomeTab.current);
@@ -225,6 +230,7 @@ function QramPane({
   // Home's header hides while scrolling down and returns on any scroll up.
   const [headerHeight, setHeaderHeight] = useState(0);
   const statusBar = useSafeAreaInsets().top;
+  const floating = useFloatingInsets();
   const [curateOpen, setCurateOpen] = useState(false);
   const [curatePrompt, setCuratePrompt] = usePaneState('curatePrompt', '');
   const scrollY = useRef(new Animated.Value(0)).current;
@@ -235,11 +241,11 @@ function QramPane({
     const offset = scrollY.interpolate({
       inputRange: [0, 1],
       outputRange: [0, 1],
-      extrapolateLeft: 'clamp',
+      extrapolateLeft: 'clamp'
     });
     return Animated.diffClamp(offset, 0, height).interpolate({
       inputRange: [0, height],
-      outputRange: [0, -height],
+      outputRange: [0, -height]
     });
   }, [scrollY, headerHeight, statusBar]);
   const [communityFlowId, setCommunityFlowId] = usePaneState<string | null>('communityFlow', null);
@@ -250,19 +256,30 @@ function QramPane({
     const run = currentActiveRun();
     if (run) setRunQueue([{ kind: run.kind, id: run.id, title: run.title, resume: true }]);
   }, [openRunRequest]);
-  const [runQueue, setRunQueue] = useState<{ kind: 'flow' | 'personal'; id: string; title: string; resume?: boolean }[] | null>(
-    null,
-  );
+  const [runQueue, setRunQueue] = useState<
+    { kind: 'flow' | 'personal'; id: string; title: string; resume?: boolean; version?: number }[] | null
+  >(null);
   // Set by the Events category rail; its page covers the tab like other details.
   const [eventInterestId] = usePaneState<string | null>('eventInterest', null);
   // Account scope so a supplement flow on any tab can open this section.
+  // Yours is the member's own part of a tab and always comes first. When it is empty, the tab
+  // opens on its shared side instead (docs/design-consistency.md, section 2.5).
   const [picksTab, setPicksTab] = usePaneState<'yours' | 'products' | 'supplements'>(
     'picksTab',
-    'yours',
+    () =>
+      data && (savedPicks(data).count > 0 || Object.values(data.profile.cardWallet ?? {}).some(Boolean))
+        ? 'yours'
+        : 'supplements',
     'account',
   );
   const [, setSupplementTopic] = usePaneState<string | null>('supplementTopic', null, 'account');
-  const [eventsTab, setEventsTab] = usePaneState<EventsSection>('eventsTab', 'upcoming');
+  const [eventsTab, setEventsTab] = usePaneState<EventsSection>('eventsTab', () =>
+    data &&
+    ((data.registrations ?? []).some(item => item.status === 'approved' || item.status === 'pending') ||
+      (data.profile.savedEventIds ?? []).length > 0)
+      ? 'yours'
+      : 'upcoming',
+  );
   const { opened } = useFlowHabits(data?.user.id);
   const openFlow = useCallback(
     (flow: HabitFlow) => {
@@ -329,7 +346,7 @@ function QramPane({
     } catch (cause) {
       toast({
         kind: 'error',
-        message: cause instanceof Error ? cause.message : 'Could not open sharing.',
+        message: cause instanceof Error ? cause.message : 'Could not open sharing.'
       });
     }
   }
@@ -408,7 +425,7 @@ function QramPane({
           kind: 'success',
           undo: () => {
             void change({ ...input, requestId: undefined, enabled: !input.enabled });
-          },
+          }
         });
       return true;
     } catch (e) {
@@ -420,7 +437,7 @@ function QramPane({
         );
       toast({
         message: e instanceof Error ? e.message : 'Could not save. Try again.',
-        kind: 'error',
+        kind: 'error'
       });
       return false;
     } finally {
@@ -440,7 +457,7 @@ function QramPane({
     } catch (e) {
       toast({
         message: e instanceof Error ? e.message : 'Could not send the code.',
-        kind: 'error',
+        kind: 'error'
       });
       return null;
     } finally {
@@ -463,14 +480,14 @@ function QramPane({
               ],
               events: [
                 ...new Map([...previous.events, ...page.events].map(e => [e.id, e])).values(),
-              ],
+              ]
             }
           : page,
       );
     } catch (e) {
       toast({
         message: e instanceof Error ? e.message : 'Could not load more. Try again.',
-        kind: 'error',
+        kind: 'error'
       });
     } finally {
       setBusy(false);
@@ -485,8 +502,8 @@ function QramPane({
           ...previous,
           profile: {
             ...previous.profile,
-            storyReads: [...(previous.profile.storyReads ?? []), key].slice(-1000),
-          },
+            storyReads: [...(previous.profile.storyReads ?? []), key].slice(-1000)
+          }
         };
       });
       try {
@@ -494,7 +511,7 @@ function QramPane({
           action: 'story-seen',
           flowId: storyFlowId,
           cardId: card.id,
-          key,
+          key
         });
       } catch {
         /* A later refresh reconciles server history. */
@@ -513,12 +530,12 @@ function QramPane({
             {
               text: 'Keep card',
               style: 'cancel',
-              onPress: () => resolve(false),
+              onPress: () => resolve(false)
             },
             {
               text: 'Remove',
               style: 'destructive',
-              onPress: () => void change(input).then(resolve),
+              onPress: () => void change(input).then(resolve)
             },
           ],
         ),
@@ -531,7 +548,7 @@ function QramPane({
     } catch (e) {
       toast({
         message: e instanceof Error ? e.message : 'Could not log out. Try again.',
-        kind: 'error',
+        kind: 'error'
       });
     }
   }
@@ -555,7 +572,7 @@ function QramPane({
                 setGymFlowId(current => (current === flow.id ? null : current));
                 setFlowReturn(current => (current?.id === flow.id ? null : current));
               }
-            }),
+            })
         },
       ],
     );
@@ -570,13 +587,13 @@ function QramPane({
     submit,
     startEventEditor,
     startEditor,
-    editSubmission,
+    editSubmission
   } = useCreatorSubmit({
     data,
     change,
     closePick,
     selectedProduct,
-    setSelectedEvent,
+    setSelectedEvent
   });
   async function openEvent(event: CityEvent) {
     if (!canOpenRegistration(event) || !event.registrationUrl) return;
@@ -589,7 +606,7 @@ function QramPane({
     if (!resolved) {
       toast({
         message: 'This item is no longer available. Refresh Home for current suggestions.',
-        kind: 'info',
+        kind: 'info'
       });
       return;
     }
@@ -615,7 +632,7 @@ function QramPane({
   if (tab === 'Studio' && data.user.role !== 'creator')
     return (
       <SafeAreaView style={s.safe}>
-        <Text style={s.copy}>This area is not available for your account.</Text>
+        <Text variant="body" style={s.copy}>This area is not available for your account.</Text>
       </SafeAreaView>
     );
   const flowPickTopic = selectedFlow
@@ -662,7 +679,7 @@ function QramPane({
               { id: 'community', label: 'Community' },
             ],
             tab: flowsTab,
-            onTab: id => setFlowsTab(id as 'qram' | 'community'),
+            onTab: id => setFlowsTab(id as 'qram' | 'community')
           }
       : tab === 'Picks'
           ? {
@@ -672,17 +689,17 @@ function QramPane({
                 { id: 'supplements', label: 'Supplements' },
               ],
               tab: picksTab,
-              onTab: id => setPicksTab(id as 'yours' | 'products' | 'supplements'),
+              onTab: id => setPicksTab(id as 'yours' | 'products' | 'supplements')
             }
           : tab === 'Events'
             ? {
                 tabs: [
-                  { id: 'upcoming', label: 'Upcoming' },
                   { id: 'yours', label: 'Yours' },
+                  { id: 'upcoming', label: 'Upcoming' },
                   { id: 'hosting', label: 'Hosting' },
                 ],
                 tab: eventsTab,
-                onTab: id => setEventsTab(id as EventsSection),
+                onTab: id => setEventsTab(id as EventsSection)
               }
             : undefined;
   const selectTab = (next: string) => {
@@ -710,6 +727,18 @@ function QramPane({
         router.push(`/${target.kind}/${encodeURIComponent(target.id)}`);
       }}
     />
+  );
+  // Body flow has its own spot in the header, beside the bell.
+  const headerActions = (
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <BodyFlowHeaderButton
+        library={data.flows}
+        focusId={data.profile.focusId}
+        onStartFlow={(id, title) => setRunQueue([{ kind: 'flow', id, title }])}
+        onOpenFlow={openFlow}
+      />
+      {notificationCentre}
+    </View>
   );
   return (
     <AddToFlowProvider>
@@ -739,7 +768,7 @@ function QramPane({
                 setCurateOpen(false);
               }}
               onProfile={() => (onProfile ? onProfile() : router.push('/profile'))}
-              right={notificationCentre}
+              right={headerActions}
               translateY={headerShift}
               statusBar={statusBar}
               baseHeight={headerHeight}
@@ -755,9 +784,9 @@ function QramPane({
                     accessibilityLabel="Go back"
                     onPress={() => (onBack ? onBack() : router.back())}
                     hitSlop={8}
-                    style={{ minWidth: 40, minHeight: 48, justifyContent: 'center' }}
+                    style={{ minWidth: hit, minHeight: hit, justifyContent: 'center' }}
                   >
-                    <Text style={{ color: C.lime, fontSize: 28 }}>←</Text>
+                    <Glyph name={{ ios: 'chevron.left', android: 'arrow_back' }} fallback="←" color={C.text} />
                   </Pressable>
                 )}
           </View>
@@ -769,24 +798,24 @@ function QramPane({
             accessibilityLabel="Search Qram"
             onPress={() => setSearchOpen(true)}
                   style={{
-                    minWidth: 48,
-                    minHeight: 48,
+                    minWidth: hit,
+                    minHeight: hit,
                     alignItems: 'center',
-                    justifyContent: 'center',
+                    justifyContent: 'center'
                   }}
           >
             {Platform.OS === 'ios' ? (
               <SymbolView
                 name="magnifyingglass"
-                tintColor={C.lime}
+                tintColor={C.text}
                 style={{ width: 24, height: 24 }}
               />
             ) : (
-              <Text style={{ color: C.lime, fontSize: 26 }}>⌕</Text>
+              <Text variant="title" style={{ color: C.text }}>⌕</Text>
             )}
           </Pressable>
           )}
-              {notificationCentre}
+              {headerActions}
           </View>
         </View>
           )}
@@ -797,7 +826,7 @@ function QramPane({
           inset={glassBar || onBack ? 'never' : 'automatic'}
             topInset={glassBar ? statusBar + headerHeight + 12 : 0}
             scrollY={glassBar ? scrollY : undefined}
-          contentContainerStyle={onBack ? [s.page, { paddingBottom: 128 }] : s.page}
+          contentContainerStyle={[s.page, { paddingBottom: floating.bottom }]}
           refreshing={busy}
           onRefresh={() => void refresh()}
           updatedAt={tab === 'Discover' || (tab === 'Picks' && picksTab === 'products') ? null : updatedAt}
@@ -814,6 +843,7 @@ function QramPane({
             <FlowCatalogHome
               ownedIds={data.profile.flowIds}
               library={data.flows}
+              focusId={data.profile.focusId}
               onStart={flow => setRunQueue([{ kind: 'flow', id: flow.id, title: flow.title }])}
               onView={openFlow}
               onAdd={flowId => {
@@ -823,7 +853,7 @@ function QramPane({
             />
           )}
           {tab === 'Flows' && (
-            <View style={{ gap: 16 }}>
+            <View style={{ gap: space.md }}>
               <TabSlide key={homeTab} direction={homeTabDirection}>
               {homeTab === 'yours' ? (
                 <HomeFeed
@@ -832,6 +862,7 @@ function QramPane({
                   onFlow={openFlow}
                   onPersonalFlow={flow => setPersonalFlowId(flow.id)}
                   onStart={target => setRunQueue([target])}
+                  onSavePurpose={id => change({ action: 'purpose', id })}
                 />
               ) : (
                 <CommunityFeed
@@ -891,10 +922,9 @@ function QramPane({
               onEvent={setSelectedEvent}
               onPick={setSelectedProduct}
               onFlowMap={() => {
-                // The profile covers the tab it was opened from, so close it to show the map.
+                // The profile covers the tab it was opened from, so close it to show the Map flow shelf.
                 onBack?.();
                 setHomeTab('yours');
-                setYoursMode('map');
                 router.navigate('/(tabs)');
               }}
               onResumeRun={run => setRunQueue([{ kind: run.kind, id: run.flowId, title: run.title, resume: true }])}
@@ -903,6 +933,8 @@ function QramPane({
                 setFlowsTab('qram');
                 router.navigate('/(tabs)/flows');
               }}
+              onStartFlow={(id, title) => setRunQueue([{ kind: 'flow', id, title }])}
+              onOpenFlow={openFlow}
               onLogout={() => void logout()}
               onSaveName={name => change({ action: 'profile-name', name }, 'Name saved')}
               onSaveUsername={username =>
@@ -923,7 +955,6 @@ function QramPane({
             />
           )}
         </RootList>
-        {homeScreen && homeTab === 'yours' && !inlineDetailOpen && <YoursSwitch />}
           {homeScreen && curateOpen && (
             <Pressable
               accessibilityRole="button"
@@ -995,7 +1026,7 @@ function QramPane({
           categories={(data.library?.settings.eventInterests ?? eventInterests).map(item => ({
             id: item.id,
             title: item.title,
-            topic: item.topics[0],
+            topic: item.topics[0]
           }))}
           isAdmin={data.user.role === 'admin'}
           busy={busy}
@@ -1005,7 +1036,7 @@ function QramPane({
               {
                 action: 'event-link',
                 requestId: `compose-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
-                event,
+                event
               },
               'Event submitted for review',
             ).then(done => done && setComposingEvent(false))
@@ -1023,7 +1054,7 @@ function QramPane({
         <Sheet
           presentation={editor || workoutBuilder ? 'modal' : 'inline'}
           headerAction={
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs }}>
               <AddToFlowHeaderButton />
               {selectedFlow ? (
               <FlowHeartAction
@@ -1033,7 +1064,7 @@ function QramPane({
                   void change({
                     action: 'flow',
                     id: selectedFlow.id,
-                    enabled: !data.profile.flowIds.includes(selectedFlow.id),
+                    enabled: !data.profile.flowIds.includes(selectedFlow.id)
                   })
                 }
               />
@@ -1168,26 +1199,18 @@ function QramPane({
             <View style={{ flex: 1, minHeight: 0 }}>
             {data.profile.flowIds.includes(selectedFlow.id) && (
               <View
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingBottom: 8 }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: space.ms, paddingBottom: space.sm }}
               >
-                <Text style={{ flex: 1, color: C.muted, fontSize: 12 }}>On your flow map</Text>
-                <Pressable
-                  accessibilityRole="button"
+                <Text variant="caption" style={{ flex: 1, color: C.muted }}>On your flow map</Text>
+                <Button
+                  title="Start"
+                  fit
+                  size="regular"
                   accessibilityLabel="Start this flow"
                   onPress={() =>
                     setRunQueue([{ kind: 'flow', id: selectedFlow.id, title: selectedFlow.title }])
                   }
-                  style={({ pressed }) => ({
-                    minHeight: 36,
-                    paddingHorizontal: 14,
-                    borderRadius: 18,
-                    justifyContent: 'center',
-                    backgroundColor: C.lime,
-                    opacity: pressed ? 0.7 : 1,
-                  })}
-                >
-                  <Text style={{ color: C.onAccent, fontWeight: '700', fontSize: 14 }}>Start</Text>
-                </Pressable>
+                />
               </View>
             )}
             <FlowDetails
@@ -1199,7 +1222,7 @@ function QramPane({
                   setAddingCard({
                     sourceFlowId: selectedFlow.id,
                     cardId: card.id,
-                    title: card.title,
+                    title: card.title
                   })
               }
               onIndexChange={index => opened(selectedFlow.id, index)}
@@ -1208,7 +1231,7 @@ function QramPane({
                   action: 'complete',
                   id,
                   enabled,
-                  timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                  timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
                 })
               }
               onHome={() => {
@@ -1266,7 +1289,7 @@ function QramPane({
                   { action: 'save', id: selectedProduct.id },
                   data.profile.savedProductIds.includes(selectedProduct.id)
                     ? undefined
-                    : 'Saved to Picks → Saved. You can also find it in your profile.',
+                    : 'Saved to Picks → Yours. You can also find it in your profile.',
                 ).then(ok => {
                   if (ok) closePick();
                 })
@@ -1297,7 +1320,7 @@ function QramPane({
                   void change({
                     action: 'save-event',
                     id: selectedEvent.id,
-                    enabled,
+                    enabled
                   })
                 }
                 onRegister={() => void openEvent(selectedEvent)}
@@ -1306,7 +1329,7 @@ function QramPane({
               />
             ) : (
               <>
-                <Text style={s.copy}>Previously joined in-app event · {selectedEvent.title}</Text>
+                <Text variant="body" style={s.copy}>Previously joined in-app event · {selectedEvent.title}</Text>
                 {data.profile.eventIds.includes(selectedEvent.id) && (
                   <Button
                     title="Cancel previous RSVP"
@@ -1315,7 +1338,7 @@ function QramPane({
                       void change({
                         action: 'rsvp',
                         id: selectedEvent.id,
-                        enabled: false,
+                        enabled: false
                       }).then(ok => {
                         if (ok) setSelectedEvent(null);
                       })
@@ -1327,7 +1350,7 @@ function QramPane({
           {editor && (
             <>
               {editor !== 'event' && (
-                <Text style={s.copy}>
+                <Text variant="body" style={s.copy}>
                   {editor === 'endorse'
                     ? 'Link a public reference and explain any sponsorship or affiliate relationship.'
                     : data.user.role === 'admin'
@@ -1429,10 +1452,11 @@ function QramPane({
         )}
         {runQueue?.[0] && (
           <FlowRun
-            key={`${runQueue[0].kind}:${runQueue[0].id}`}
+            key={`${runQueue[0].kind}:${runQueue[0].id}:${runQueue[0].version ?? ''}`}
             kind={runQueue[0].kind}
             id={runQueue[0].id}
             title={runQueue[0].title}
+            version={runQueue[0].version}
             resumeOnOpen={runQueue[0].resume === true}
             data={data}
             nextTitle={runQueue[1]?.title}
@@ -1469,7 +1493,7 @@ function QramPane({
           }}
         />
       )}
-      <TrainingSessionHost />
+      <TrainingSessionHost library={data.flows} />
       {addingCard && (
         <AddToFlowSheet
           key={`${addingCard.sourceFlowId}:${addingCard.cardId}`}
@@ -1492,93 +1516,86 @@ function createStyles(C: Colors) {
       flex: 1,
       alignItems: 'center',
       justifyContent: 'center',
-      gap: 24,
+      gap: space.xl
     },
-    page: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 80, gap: 16 },
-    login: { padding: 24, paddingTop: 32 },
+    page: { paddingHorizontal: space.md, paddingTop: space.sm, gap: space.md },
+    login: { padding: space.xl, paddingTop: space.xxl },
     mark: {
       width: 60,
       height: 60,
       backgroundColor: C.lime,
-      borderRadius: 16,
+      borderRadius: radius.control,
       alignItems: 'center',
       justifyContent: 'center',
-      marginBottom: 24,
+      marginBottom: space.xl
     },
-    markText: { fontSize: 32, color: C.onAccent, fontWeight: '700' },
+    markText: { color: C.onAccent },
     topbar: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      gap: 8,
-      paddingHorizontal: 16,
+      gap: space.sm,
+      paddingHorizontal: space.md,
       // Same height and logo size as the main header, so nothing shifts between them.
-      minHeight: 52,
-      borderBottomWidth: 0.5,
-      borderColor: C.line,
+      minHeight: size.button,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderColor: C.line
     },
     h2: {
       color: C.text,
-      fontSize: 22,
-      fontWeight: '600',
-      lineHeight: 29,
-      marginVertical: 4,
+      marginVertical: space.xs
     },
-    copy: { color: C.muted, fontSize: 17, lineHeight: 25, marginVertical: 4 },
-    caption: { color: C.muted, fontSize: 13, lineHeight: 19 },
+    copy: { color: C.muted, marginVertical: space.xs },
+    caption: { color: C.muted },
     muted: { color: C.muted },
-    section: { color: C.text, fontSize: 20, fontWeight: '600', marginTop: 16 },
+    section: { color: C.text, marginTop: space.md },
     row: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      gap: 16,
+      gap: space.md
     },
     wrap: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 8,
-      paddingVertical: 4,
+      gap: space.sm,
+      paddingVertical: space.xs
     },
     error: {
       color: C.danger,
-      lineHeight: 22,
-      fontSize: 15,
-      marginVertical: 12,
+      marginVertical: space.ms
     },
-    divider: { height: 0.5, backgroundColor: C.line, marginVertical: 24 },
+    divider: { height: 0.5, backgroundColor: C.line, marginVertical: space.xl },
     stat: {
       color: C.lime,
-      fontSize: 34,
-      fontWeight: '600',
-      letterSpacing: -0.7,
+      letterSpacing: -0.7
     },
-    price: { color: C.lime, fontWeight: '600', fontSize: 17 },
-    link: { color: C.lime, fontSize: 16, fontWeight: '500' },
+    price: { color: C.lime },
+    link: { color: C.lime },
     heroGlyph: { fontSize: 44, color: C.lime },
     progress: {
       height: 6,
       borderRadius: 4,
       backgroundColor: C.line,
       overflow: 'hidden',
-      marginVertical: 8,
+      marginVertical: space.sm
     },
     progressFill: { height: 6, backgroundColor: C.lime, borderRadius: 4 },
     step: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 16,
-      borderTopWidth: 0.5,
+      gap: space.md,
+      borderTopWidth: StyleSheet.hairlineWidth,
       borderColor: C.line,
-      paddingVertical: 16,
+      paddingVertical: space.md
     },
-    check: { color: C.muted, fontSize: 22, width: 30 },
-    metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+    check: { color: C.muted, width: 30 },
+    metrics: { flexDirection: 'row', flexWrap: 'wrap', gap: space.ms },
     metric: {
       width: '47%',
       backgroundColor: C.card,
-      borderRadius: 16,
-      padding: 16,
-    },
+      borderRadius: radius.control,
+      padding: space.md
+    }
   });
 }

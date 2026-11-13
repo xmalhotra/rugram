@@ -10,8 +10,8 @@ import { DetailSurface } from './design/DetailSurface';
 import { ScreenBackground } from './design/ScreenBackground';
 import { PageBar } from './design/PageBar';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
-import { useToast } from './design/components';
+import { hit, opacity, radius, space, stroke, textRoles, useTheme } from './design/theme';
+import { Button, SectionHeader, Skeleton, useToast } from './design/components';
 
 type RegistrationAction = {
   action: 'request' | 'cancel' | 'approve' | 'decline';
@@ -121,21 +121,21 @@ export function EventPage(props: {
             accessibilityLabel="Share"
             onPress={onShare}
             hitSlop={8}
-            style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}
+            style={{ width: hit, height: hit, alignItems: 'center', justifyContent: 'center' }}
           >
-            <Text style={{ color: C.text, fontSize: 20, fontWeight: '700' }}>···</Text>
+            <Text variant="section" style={{ color: C.text }}>···</Text>
           </Pressable>
         }
       />
       <ScrollView
         style={{ flex: 1 }}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 140 }}
+        contentContainerStyle={{ paddingHorizontal: space.lg, paddingBottom: 140 }}
       >
         <View
           style={{
             height: 200,
-            borderRadius: 20,
+            borderRadius: radius.card,
             backgroundColor: C.card,
             overflow: 'hidden',
           }}
@@ -145,7 +145,7 @@ export function EventPage(props: {
               position: 'absolute',
               width: 240,
               height: 240,
-              borderRadius: 120,
+              borderRadius: radius.pill,
               backgroundColor: C.lime,
               opacity: 0.18,
               top: -70,
@@ -154,12 +154,12 @@ export function EventPage(props: {
           />
           {event.topic ? (
             <Text
+              variant="footnote"
               style={{
                 position: 'absolute',
-                top: 14,
-                left: 16,
+                top: space.md,
+                left: space.md,
                 color: C.lime,
-                fontSize: 13,
                 fontWeight: '600',
               }}
             >
@@ -171,51 +171,52 @@ export function EventPage(props: {
         <Text
           accessibilityRole="header"
           accessibilityLabel={isHost ? `${event.title}. You manage this event.` : event.title}
-          style={{ color: C.text, fontSize: 28, fontWeight: '700', marginTop: 18 }}
+          variant="title"
+          style={{ color: C.text, marginTop: space.md }}
         >
           {event.title}
         </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.ms, marginTop: space.ms }}>
           <View
             style={{
               width: 36,
               height: 36,
-              borderRadius: 18,
+              borderRadius: radius.pill,
               backgroundColor: C.card,
-              borderWidth: 1,
+              borderWidth: stroke.line,
               borderColor: C.line,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Text style={{ color: C.text, fontWeight: '700' }}>
+            <Text style={{ color: C.text, fontWeight: '600' }}>
               {hostName.trim().charAt(0).toUpperCase() || 'Q'}
             </Text>
           </View>
-          <Text style={{ color: C.muted, fontSize: 15, flex: 1 }}>Hosted by {hostName}</Text>
+          <Text variant="subhead" style={{ color: C.muted, flex: 1 }}>Hosted by {hostName}</Text>
         </View>
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.ms, marginTop: space.lg }}>
           <View
             style={{
               width: 44,
               height: 44,
-              borderRadius: 12,
+              borderRadius: radius.small,
               backgroundColor: C.card,
-              borderWidth: 1,
+              borderWidth: stroke.line,
               borderColor: C.line,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Text style={{ color: C.lime, fontSize: 11, fontWeight: '700' }}>{month}</Text>
-            <Text style={{ color: C.text, fontSize: 18, fontWeight: '700', lineHeight: 20 }}>
+            <Text variant="caption" style={{ color: C.lime, fontWeight: '600' }}>{month}</Text>
+            <Text variant="headline" style={{ color: C.text }}>
               {day}
             </Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>{when}</Text>
-            <Text style={{ color: C.muted, fontSize: 14, marginTop: 2 }}>
+            <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>{when}</Text>
+            <Text variant="subhead" style={{ color: C.muted, marginTop: space.xxs }}>
               {endTime ? `${startTime} – ${endTime}` : startTime}
             </Text>
           </View>
@@ -231,30 +232,30 @@ export function EventPage(props: {
           style={({ pressed }) => ({
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 12,
-            marginTop: 16,
-            opacity: pressed ? 0.7 : 1,
+            gap: space.ms,
+            marginTop: space.md,
+            opacity: pressed ? opacity.pressed : 1,
           })}
         >
           <View
             style={{
               width: 44,
               height: 44,
-              borderRadius: 12,
+              borderRadius: radius.small,
               backgroundColor: C.card,
-              borderWidth: 1,
+              borderWidth: stroke.line,
               borderColor: C.line,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Text style={{ color: C.text, fontSize: 20 }}>⌖</Text>
+            <Text variant="section" style={{ color: C.text }}>⌖</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }} numberOfLines={1}>
+            <Text variant="callout" style={{ color: C.text, fontWeight: '600' }} numberOfLines={1}>
               {event.location?.name ?? event.venue}
             </Text>
-            <Text style={{ color: C.muted, fontSize: 14, marginTop: 2 }} numberOfLines={2}>
+            <Text variant="subhead" style={{ color: C.muted, marginTop: space.xxs }} numberOfLines={2}>
               {event.location?.address ?? event.city}
             </Text>
           </View>
@@ -264,7 +265,7 @@ export function EventPage(props: {
             accessibilityRole="button"
             accessibilityLabel="Open the location in Maps"
             onPress={() => mapsUrl && onLink(mapsUrl)}
-            style={{ height: 160, borderRadius: 16, overflow: 'hidden', marginTop: 12 }}
+            style={{ height: 160, borderRadius: radius.control, overflow: 'hidden', marginTop: space.ms }}
           >
             <MapView
               key={`${lat},${lng}`}
@@ -291,14 +292,12 @@ export function EventPage(props: {
           <View
             style={{
               backgroundColor: C.card,
-              borderRadius: 18,
-              padding: 16,
-              marginTop: 22,
+              borderRadius: radius.card,
+              padding: space.md,
+              marginTop: space.xl,
             }}
           >
-            {loading && !view ? (
-              <Text style={{ color: C.muted, fontSize: 14 }}>Loading registration…</Text>
-            ) : null}
+            {loading && !view ? <Skeleton shape="line" /> : null}
             {view ? (
               <RegistrationCard
                 event={event}
@@ -316,40 +315,37 @@ export function EventPage(props: {
         ) : null}
 
         {view && view.guests.length > 0 ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 22 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: space.xl }}>
             {view.guests.slice(0, 8).map((guest, index) => (
               <View
                 key={guest.id}
                 style={{
                   width: 32,
                   height: 32,
-                  borderRadius: 16,
-                  marginLeft: index === 0 ? 0 : -10,
+                  borderRadius: radius.pill,
+                  marginLeft: index === 0 ? 0 : -space.ms,
                   backgroundColor: C.line,
-                  borderWidth: 2,
+                  borderWidth: stroke.active,
                   borderColor: C.bg,
                   alignItems: 'center',
                   justifyContent: 'center',
                 }}
               >
-                <Text style={{ color: C.text, fontSize: 13, fontWeight: '700' }}>
+                <Text variant="footnote" style={{ color: C.text, fontWeight: '600' }}>
                   {guest.name.trim().charAt(0).toUpperCase() || '?'}
                 </Text>
               </View>
             ))}
-            <Text style={{ color: C.muted, fontSize: 15, marginLeft: 12 }}>
+            <Text variant="subhead" style={{ color: C.muted, marginLeft: space.ms }}>
               {view.approvedCount ?? view.guests.length} going
             </Text>
           </View>
         ) : null}
 
-        <Text
-          accessibilityRole="header"
-          style={{ color: C.text, fontSize: 20, fontWeight: '700', marginTop: 28 }}
-        >
-          About event
-        </Text>
-        <Text style={{ color: C.muted, fontSize: 16, lineHeight: 24, marginTop: 8 }}>
+        <View style={{ marginTop: space.xl }}>
+          <SectionHeader title="About event" />
+        </View>
+        <Text variant="callout" style={{ color: C.muted, marginTop: space.sm }}>
           {event.description}
         </Text>
 
@@ -357,25 +353,20 @@ export function EventPage(props: {
           <View
             style={{
               backgroundColor: C.card,
-              borderRadius: 18,
-              padding: 16,
-              marginTop: 22,
-              gap: 14,
+              borderRadius: radius.card,
+              padding: space.md,
+              marginTop: space.xl,
+              gap: space.md,
             }}
           >
-            <Text
-              accessibilityRole="header"
-              style={{ color: C.text, fontSize: 18, fontWeight: '700' }}
-            >
-              Manage
-            </Text>
+            <SectionHeader title="Manage" />
             {view.answerTally?.map(tally => (
-              <View key={tally.questionId} style={{ gap: 4 }}>
-                <Text style={{ color: C.text, fontSize: 15, fontWeight: '600' }}>
+              <View key={tally.questionId} style={{ gap: space.xs }}>
+                <Text variant="subhead" style={{ color: C.text, fontWeight: '600' }}>
                   {tally.label}
                 </Text>
                 {Object.entries(tally.counts).map(([option, count]) => (
-                  <Text key={option} style={{ color: C.muted, fontSize: 14 }}>
+                  <Text key={option} variant="subhead" style={{ color: C.muted }}>
                     {option} · {count}
                   </Text>
                 ))}
@@ -384,9 +375,9 @@ export function EventPage(props: {
             {view.requests.map(guest => (
               <View
                 key={guest.id}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' }}
               >
-                <Text style={{ color: C.text, fontSize: 15, flexGrow: 1 }} numberOfLines={1}>
+                <Text variant="subhead" style={{ color: C.text, flexGrow: 1 }} numberOfLines={1}>
                   {guest.name}
                 </Text>
                 <StatusPill status={guest.status} />
@@ -461,8 +452,8 @@ function RegistrationCard({
   }`;
 
   return (
-    <View style={{ gap: 12 }}>
-      <Text style={{ color: C.text, fontSize: 16, fontWeight: '700' }}>{headline}</Text>
+    <View style={{ gap: space.ms }}>
+      <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>{headline}</Text>
       {view.mode === 'external' ? (
         <LimeButton
           label="Register on organiser site ↗"
@@ -472,33 +463,33 @@ function RegistrationCard({
           }}
         />
       ) : view.ownStatus === 'approved' ? (
-        <View style={{ gap: 10 }}>
-          <Text style={{ color: C.lime, fontSize: 16, fontWeight: '700' }}>
+        <View style={{ gap: space.ms }}>
+          <Text variant="callout" style={{ color: C.lime, fontWeight: '600' }}>
             ✓ You&apos;re going
           </Text>
           <SecondaryButton label="Cancel registration" disabled={busy} onPress={onCancel} />
         </View>
       ) : view.ownStatus === 'waitlisted' ? (
-        <View style={{ gap: 8 }}>
-          <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>
+        <View style={{ gap: space.sm }}>
+          <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>
             You&apos;re #{view.waitlistPosition ?? 1} on the waitlist
           </Text>
-          <Text style={{ color: C.muted, fontSize: 14 }}>
+          <Text variant="subhead" style={{ color: C.muted }}>
             We&apos;ll notify you if a seat opens
           </Text>
           <SecondaryButton label="Leave waitlist" disabled={busy} onPress={onLeave} />
         </View>
       ) : view.ownStatus === 'pending' ? (
-        <View style={{ gap: 10 }}>
-          <Text style={{ color: C.info, fontSize: 16, fontWeight: '600' }}>
+        <View style={{ gap: space.ms }}>
+          <Text variant="callout" style={{ color: C.info, fontWeight: '600' }}>
             Request sent · waiting for the host
           </Text>
           <SecondaryButton label="Withdraw request" disabled={busy} onPress={onLeave} />
         </View>
       ) : (
-        <View style={{ gap: 12 }}>
+        <View style={{ gap: space.ms }}>
           {view.ownStatus === 'declined' ? (
-            <Text style={{ color: C.danger, fontSize: 14 }}>The host declined your request</Text>
+            <Text variant="subhead" style={{ color: C.danger }}>The host declined your request</Text>
           ) : null}
           {(event.questions ?? []).map(question => (
             <QuestionField
@@ -538,10 +529,10 @@ function QuestionField({
 }) {
   const { colors: C } = useTheme();
   return (
-    <View style={{ gap: 8 }}>
-      <Text style={{ color: C.text, fontSize: 14, fontWeight: '600' }}>{question.label}</Text>
+    <View style={{ gap: space.sm }}>
+      <Text variant="subhead" style={{ color: C.text, fontWeight: '600' }}>{question.label}</Text>
       {question.kind === 'choice' ? (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
           {(question.options ?? []).map(option => {
             const selected = value === option;
             return (
@@ -552,18 +543,18 @@ function QuestionField({
                 accessibilityState={{ selected }}
                 onPress={() => onChange(option)}
                 style={{
-                  paddingHorizontal: 12,
-                  paddingVertical: 8,
-                  borderRadius: 16,
-                  borderWidth: 1,
+                  paddingHorizontal: space.ms,
+                  paddingVertical: space.sm,
+                  borderRadius: radius.control,
+                  borderWidth: stroke.line,
                   borderColor: selected ? C.lime : C.line,
                   backgroundColor: selected ? C.lime : 'transparent',
                 }}
               >
                 <Text
+                  variant="subhead"
                   style={{
                     color: selected ? C.onAccent : C.text,
-                    fontSize: 14,
                     fontWeight: '600',
                   }}
                 >
@@ -584,13 +575,13 @@ function QuestionField({
           accessibilityLabel={question.label}
           style={{
             color: C.text,
-            borderWidth: 1,
+            borderWidth: stroke.line,
             borderColor: C.line,
-            borderRadius: 12,
-            paddingHorizontal: 12,
-            paddingVertical: 10,
-            minHeight: 44,
-            fontSize: 16,
+            borderRadius: radius.small,
+            paddingHorizontal: space.ms,
+            paddingVertical: space.ms,
+            minHeight: hit,
+            fontSize: textRoles.callout.fontSize,
           }}
         />
       )}
@@ -607,24 +598,13 @@ function LimeButton({
   onPress: () => void;
   disabled?: boolean;
 }) {
-  const { colors: C } = useTheme();
   return (
-    <Pressable
-      accessibilityRole="button"
+    <Button
+      title={label}
       accessibilityLabel={label}
-      accessibilityState={{ disabled: Boolean(disabled) }}
       disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => ({
-        backgroundColor: C.lime,
-        borderRadius: 14,
-        paddingVertical: 14,
-        alignItems: 'center',
-        opacity: disabled ? 0.45 : pressed ? 0.8 : 1,
-      })}
-    >
-      <Text style={{ color: C.onAccent, fontSize: 16, fontWeight: '700' }}>{label}</Text>
-    </Pressable>
+    />
   );
 }
 
@@ -646,15 +626,15 @@ function SecondaryButton({
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => ({
-        borderRadius: 14,
-        borderWidth: 1,
+        borderRadius: radius.control,
+        borderWidth: stroke.line,
         borderColor: C.line,
-        paddingVertical: 12,
+        paddingVertical: space.ms,
         alignItems: 'center',
-        opacity: disabled ? 0.5 : pressed ? 0.75 : 1,
+        opacity: disabled ? 0.5 : pressed ? opacity.pressed : 1,
       })}
     >
-      <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>{label}</Text>
+      <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>{label}</Text>
     </Pressable>
   );
 }
@@ -672,14 +652,14 @@ function StatusPill({ status }: { status: string }) {
   return (
     <View
       style={{
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        borderRadius: 8,
-        borderWidth: 1,
+        paddingHorizontal: space.sm,
+        paddingVertical: space.xs,
+        borderRadius: radius.small,
+        borderWidth: stroke.line,
         borderColor: color,
       }}
     >
-      <Text style={{ color, fontSize: 12, fontWeight: '600' }}>{status}</Text>
+      <Text variant="caption" style={{ color, fontWeight: '600' }}>{status}</Text>
     </View>
   );
 }
@@ -695,17 +675,16 @@ function MiniAction({
   onPress: () => void;
   disabled?: boolean;
 }) {
+  const { colors: C } = useTheme();
   return (
-    <Pressable
-      accessibilityRole="button"
+    <Button
+      variant="text"
+      size="regular"
+      title={label}
       accessibilityLabel={label}
-      accessibilityState={{ disabled: Boolean(disabled) }}
+      destructive={color === C.danger}
       disabled={disabled}
       onPress={onPress}
-      hitSlop={6}
-      style={{ opacity: disabled ? 0.45 : 1 }}
-    >
-      <Text style={{ color, fontSize: 13, fontWeight: '700' }}>{label}</Text>
-    </Pressable>
+    />
   );
 }

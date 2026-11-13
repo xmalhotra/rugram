@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Polyline } from 'react-native-svg';
 import type { GymExercise } from '../../shared/exercises';
 import { progressValue, type ProgressPoint } from '../../shared/exercise-progress';
@@ -7,7 +7,7 @@ import { formatKg } from '../../shared/progression';
 import { loadIncrementKg, sourceLine, startWeight, strengthLink, weightForReps } from '../../shared/strength';
 import { api } from './api';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { radius, space, stroke, useTheme } from './design/theme';
 import { useStrength } from './strength';
 
 const chartWidth = 280;
@@ -42,7 +42,7 @@ function Trend({ points }: { points: ProgressPoint[] }) {
     <View
       accessible
       accessibilityLabel={`${values.length} sessions. ${change >= 0 ? 'Up' : 'Down'} ${Math.abs(change)} percent since the first.`}
-      style={{ gap: 4 }}
+      style={{ gap: space.xs }}
     >
       <Svg width={chartWidth} height={chartHeight}>
         <Polyline
@@ -56,7 +56,7 @@ function Trend({ points }: { points: ProgressPoint[] }) {
           <Circle key={index} cx={point.x} cy={point.y} r={index === coords.length - 1 ? 3.5 : 2} fill={C.lime} />
         ))}
       </Svg>
-      <Text style={{ color: C.muted, fontSize: 13 }}>
+      <Text variant="footnote" style={{ color: C.muted }}>
         {`${values.length} sessions · ${change >= 0 ? '+' : ''}${change}% since ${shortDate(points[0].loggedAt)}`}
       </Text>
     </View>
@@ -107,9 +107,9 @@ export function ExerciseNumbers({ item }: { item: GymExercise }) {
   const guess = !points.length && strength ? startWeight(item.id, 10, strength.profile) : null;
   if (!points.length && !guess && !loads.length) {
     return (
-      <View style={{ gap: 6 }}>
-        <Text style={{ color: C.text, fontSize: 17, fontWeight: '700' }}>Your numbers</Text>
-        <Text style={{ color: C.muted, fontSize: 15, lineHeight: 21 }}>
+      <View style={{ gap: space.sm }}>
+        <Text variant="headline" style={{ color: C.text }}>Your numbers</Text>
+        <Text variant="subhead" style={{ color: C.muted }}>
           {item.load === 'weight' && link
             ? 'Add a lift under Your strength on your profile, and we’ll suggest a starting weight.'
             : 'Do it once in a flow and your sets will show here.'}
@@ -118,40 +118,40 @@ export function ExerciseNumbers({ item }: { item: GymExercise }) {
     );
   }
   const row = (label: string, value: string) => (
-    <View key={label} style={{ flexDirection: 'row', gap: 12, paddingVertical: 6, borderBottomWidth: 0.5, borderColor: C.line }}>
-      <Text style={{ width: 96, color: C.muted, fontSize: 15 }}>{label}</Text>
-      <Text style={{ flex: 1, color: C.text, fontSize: 15 }}>{value}</Text>
+    <View key={label} style={{ flexDirection: 'row', gap: space.ms, paddingVertical: space.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: C.line }}>
+      <Text variant="subhead" style={{ width: 96, color: C.muted }}>{label}</Text>
+      <Text variant="subhead" style={{ flex: 1, color: C.text }}>{value}</Text>
     </View>
   );
   return (
-    <View style={{ gap: 8 }}>
-      <Text style={{ color: C.text, fontSize: 17, fontWeight: '700' }}>Your numbers</Text>
+    <View style={{ gap: space.sm }}>
+      <Text variant="headline" style={{ color: C.text }}>Your numbers</Text>
       {points.length ? (
         <View>
           {best ? row('Best', `${setLine(best)}${best.oneRepMaxKg != null ? ` · ~${formatKg(best.oneRepMaxKg)} kg max` : ''}`) : null}
           {last ? row('Last time', `${setLine(last)} · ${last.sets} set${last.sets === 1 ? '' : 's'} · ${shortDate(last.loggedAt)}`) : null}
         </View>
       ) : guess ? (
-        <Text style={{ color: C.text, fontSize: 15, lineHeight: 21 }}>
+        <Text variant="subhead" style={{ color: C.text }}>
           {`We’d start you at ${formatKg(guess.weightKg)} kg for 10 reps. ${sourceLine(guess.pattern)}.`}
         </Text>
       ) : null}
       <Trend points={points} />
       {loads.length ? (
-        <View style={{ gap: 2 }}>
-          <Text style={{ color: C.muted, fontSize: 13 }}>
+        <View style={{ gap: space.xxs }}>
+          <Text variant="footnote" style={{ color: C.muted }}>
             {ownMax != null ? 'From your recent sets, roughly' : 'Our estimate, roughly'}
           </Text>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flexDirection: 'row', gap: space.sm }}>
             {loads.map(load => (
               <View
                 key={load.reps}
                 accessible
                 accessibilityLabel={`${load.reps} reps: about ${formatKg(load.weightKg)} kilograms`}
-                style={{ flex: 1, padding: 10, borderRadius: 12, borderWidth: 1, borderColor: C.line, gap: 2 }}
+                style={{ flex: 1, padding: space.ms, borderRadius: radius.small, borderWidth: stroke.line, borderColor: C.line, gap: space.xxs }}
               >
-                <Text style={{ color: C.muted, fontSize: 12 }}>{`${load.reps} reps`}</Text>
-                <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>{`${formatKg(load.weightKg)} kg`}</Text>
+                <Text variant="caption" style={{ color: C.muted }}>{`${load.reps} reps`}</Text>
+                <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>{`${formatKg(load.weightKg)} kg`}</Text>
               </View>
             ))}
           </View>

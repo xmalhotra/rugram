@@ -18,10 +18,11 @@ Parts 5 and 6 come with the run screen. Parts 1–4 and 7 are per exercise and a
 ## Run screen order (top to bottom)
 
 1. The loop in a square, with ⓘ at its top right and ▶ below it.
-2. The target line: "3 sets: 8, 7, 7".
-3. The set rows, with Rest m:ss and − / + under each row.
-4. Focus area: the body map, "Main: …" and "Helps: …".
-5. The fixed glass footer: timer row, "Exercise n of total", Skip, Next, Pause.
+2. One quiet line for the plan, such as "3 planned". Sets already done, then exactly one next row. No empty rows for sets not done.
+3. Tap a number and that row is highlighted. A wheel opens inline under the row. The rest of the screen stays visible.
+4. After a set is logged, a small rest count sits on the next row, with its reason. "harder" adds 30 seconds and "easier" takes 30 seconds off. The count never blocks the next row.
+5. Focus area: the body map, "Main: …" and "Helps: …".
+6. The fixed glass footer: the workout timer, "Exercise n of total", Skip only when nothing is ticked, Next, Pause. Next is available after any number of sets.
 
 ## Checking it
 

@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Pressable, Share, View } from 'react-native';
-import type { CityEvent, MobilePayload, Product } from '../../shared/mobile';
+import type { CityEvent, HabitFlow, MobilePayload, Product } from '../../shared/mobile';
 import { formatEventTime } from '../../shared/format';
 import { savedPicks } from '../../shared/saved-picks';
 import { shareProfile } from '../../shared/sharing';
 import { Text } from './design/Text';
+import { Button, SectionHeader } from './design/components';
+import { Glyph } from './design/Glyph';
 import { useToast } from './design/states';
-import { useTheme } from './design/theme';
+import { hit, opacity, radius, size, space, useTheme } from './design/theme';
 import { AppearanceSettings } from './AppearanceSettings';
 import { AnimationSettings } from './motion';
 import { AccountPrivacy } from './AccountPrivacy';
@@ -20,6 +22,7 @@ import type { CommunityActivity } from '../../shared/community-flows';
 import { countBySection, dayStreak } from '../../shared/profile-stats';
 import { liveFlowId, liveFlowIds } from './catalog-live';
 import { useCommunityMember } from './community';
+import { BodyFlowRow, BodyFlowSheet } from './BodyFlow';
 import { ActivityDetailSheet, referencedCards } from './CommunityFeed';
 import { FlowIllustration } from './FlowIllustration';
 import { ProfileWorkouts } from './ProfileWorkouts';
@@ -33,7 +36,8 @@ export function YouProfile({
   onPick,
   onFlowMap,
   onResumeRun,
-  onExplore,
+  onStartFlow,
+  onOpenFlow,
   onLogout,
   onSaveName,
   onSaveUsername,
@@ -44,12 +48,16 @@ export function YouProfile({
   busy: boolean;
   onEvent: (event: CityEvent) => void;
   onPick: (product: Product) => void;
-  /** Opens the full map in Yours. */
+  /** Opens the Map flow shelf on Yours. */
   onFlowMap: () => void;
   /** Carries on with a workout that's in progress. */
   onResumeRun: (run: { kind: 'flow' | 'personal'; flowId: string; title: string }) => void;
-  /** Opens the catalog to start a map. */
+  /** Opens the catalogue. The Map flow row no longer uses it. */
   onExplore: () => void;
+  /** Starts a flow from Body flow, once that sheet has closed. */
+  onStartFlow: (id: string, title: string) => void;
+  /** Opens a flow's page from an exercise's Found in. */
+  onOpenFlow: (flow: HabitFlow) => void;
   onLogout: () => void;
   onSaveName: (name: string) => Promise<boolean>;
   onSaveUsername: (username: string) => Promise<boolean>;
@@ -71,6 +79,7 @@ export function YouProfile({
   const [opened, setOpened] = useState<CommunityActivity | null>(null);
   const member = useCommunityMember(data.user.id);
   const [about, setAbout] = useState(false);
+  const [bodyFlow, setBodyFlow] = useState(false);
   const [metrics, setMetrics] = useState<UserMetrics | null>(null);
   useEffect(() => {
     let cancel = false;
@@ -107,15 +116,13 @@ export function YouProfile({
 
   if (view === 'personalise') {
     return (
-      <View style={{ gap: 16, paddingTop: 4 }}>
-        <Pressable
-          accessibilityRole="button"
+      <View style={{ gap: space.md, paddingTop: space.xs }}>
+        <Button
+          title="Back"
+          variant="text"
           accessibilityLabel="Back to your profile"
           onPress={() => setView('main')}
-          style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start', opacity: pressed ? 0.6 : 1 })}
-        >
-          <Text style={{ color: C.lime, fontSize: 16 }}>Back</Text>
-        </Pressable>
+        />
         <PersonaliseContent />
       </View>
     );
@@ -123,21 +130,14 @@ export function YouProfile({
 
   if (view === 'account') {
     return (
-      <View style={{ gap: 20, paddingTop: 4 }}>
-        <Pressable
-          accessibilityRole="button"
+      <View style={{ gap: space.lg, paddingTop: space.xs }}>
+        <Button
+          title="Back"
+          variant="text"
           accessibilityLabel="Back to menu"
           onPress={() => setView('menu')}
-          style={({ pressed }) => ({
-            minHeight: 44,
-            justifyContent: 'center',
-            alignSelf: 'flex-start',
-            opacity: pressed ? 0.6 : 1,
-          })}
-        >
-          <Text style={{ color: C.lime, fontSize: 16 }}>Back</Text>
-        </Pressable>
-        <Text accessibilityRole="header" style={{ color: C.text, fontSize: 28, fontWeight: '600' }}>
+        />
+        <Text accessibilityRole="header" variant="title" style={{ color: C.text }}>
           Account settings
         </Text>
         <AccountDetails
@@ -150,11 +150,11 @@ export function YouProfile({
         />
         <View
           style={{
-            borderRadius: 16,
+            borderRadius: radius.control,
             borderWidth: 1,
             borderColor: C.line,
             backgroundColor: C.card,
-            paddingHorizontal: 16,
+            paddingHorizontal: space.md,
           }}
         >
           <AccountPrivacy />
@@ -165,12 +165,12 @@ export function YouProfile({
             disabled={busy}
             onPress={onLogout}
             style={({ pressed }) => ({
-              minHeight: 48,
+              minHeight: hit,
               justifyContent: 'center',
-              opacity: busy ? 0.5 : pressed ? 0.6 : 1,
+              opacity: busy ? 0.5 : pressed ? opacity.pressed : 1,
             })}
           >
-            <Text style={{ color: C.text, fontSize: 16 }}>Log out</Text>
+            <Text variant="callout" style={{ color: C.text }}>Log out</Text>
           </Pressable>
         </View>
       </View>
@@ -191,55 +191,55 @@ export function YouProfile({
         onPress={onPress}
         style={({ pressed }) => ({
           flex: 1,
-          minHeight: 44,
+          minHeight: hit,
           alignItems: 'center',
           justifyContent: 'center',
-          borderRadius: 12,
+          borderRadius: radius.small,
           borderWidth: 1,
           borderColor: C.line,
           backgroundColor: C.card,
-          opacity: pressed ? 0.7 : 1,
+          opacity: pressed ? opacity.pressed : 1,
         })}
       >
-        <Text style={{ color: C.text, fontSize: 15, fontWeight: '600' }}>{label}</Text>
+        <Text variant="subhead" style={{ color: C.text, fontWeight: '600' }}>{label}</Text>
       </Pressable>
     );
     return (
-      <View style={{ gap: 20, paddingTop: 4 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <View style={{ gap: space.lg, paddingTop: space.xs }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.ms }}>
           <ProfileAvatar name={data.user.name} avatarUrl={data.user.avatarUrl} />
           <View style={{ flex: 1, minWidth: 0, flexDirection: 'row' }}>
             {stats.map(([label, value]) => (
-              <View key={label} style={{ flex: 1, alignItems: 'center', gap: 2 }}>
-                <Text style={{ color: C.text, fontSize: 20, fontWeight: '700' }}>{value ?? '–'}</Text>
-                <Text style={{ color: C.muted, fontSize: 11, textAlign: 'center' }}>{label}</Text>
+              <View key={label} style={{ flex: 1, alignItems: 'center', gap: space.xxs }}>
+                <Text variant="section" style={{ color: C.text }}>{value ?? '–'}</Text>
+                <Text variant="caption" style={{ color: C.muted, textAlign: 'center' }}>{label}</Text>
               </View>
             ))}
           </View>
         </View>
-        <View style={{ flexDirection: 'row', gap: 12 }}>
-          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-            <Text accessibilityRole="header" style={{ color: C.text, fontSize: 22, fontWeight: '700' }}>
+        <View style={{ flexDirection: 'row', gap: space.ms }}>
+          <View style={{ flex: 1, minWidth: 0, gap: space.xxs }}>
+            <Text accessibilityRole="header" variant="heading" style={{ color: C.text }}>
               {data.user.name}
             </Text>
-            <Text numberOfLines={1} style={{ color: C.muted, fontSize: 15 }}>
+            <Text numberOfLines={1} variant="subhead" style={{ color: C.muted }}>
               @{data.user.handle}
             </Text>
-            {!!line && <Text style={{ color: C.muted, fontSize: 15 }}>{line}</Text>}
+            {!!line && <Text variant="subhead" style={{ color: C.muted }}>{line}</Text>}
           </View>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Menu and settings"
             onPress={() => setView('menu')}
             hitSlop={6}
-            style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', gap: 5 }}
+            style={{ width: hit, height: hit, alignItems: 'center', justifyContent: 'center', gap: space.xs }}
           >
             {[0, 1, 2].map(bar => (
               <View key={bar} style={{ width: 22, height: 2, borderRadius: 1, backgroundColor: C.text }} />
             ))}
           </Pressable>
         </View>
-        <View style={{ flexDirection: 'row', gap: 10 }}>
+        <View style={{ flexDirection: 'row', gap: space.ms }}>
           {action('Edit profile', () => setView('account'))}
           {action('Share profile', () => {
             void Share.share(shareProfile(data.user)).catch(cause => {
@@ -252,40 +252,37 @@ export function YouProfile({
         </View>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={mapSections.length ? 'Open your flow map' : 'Start your flow map'}
-          onPress={mapSections.length ? onFlowMap : onExplore}
+          accessibilityLabel="Open your Map flows"
+          onPress={onFlowMap}
           style={({ pressed }) => ({
             minHeight: 64,
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 12,
-            padding: 14,
-            borderRadius: 16,
+            gap: space.ms,
+            padding: space.md,
+            borderRadius: radius.control,
             borderWidth: 1,
             borderColor: C.line,
             backgroundColor: C.card,
-            opacity: pressed ? 0.7 : 1,
+            opacity: pressed ? opacity.pressed : 1,
           })}
         >
-          <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-            <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>Flow map</Text>
-            <Text numberOfLines={1} style={{ color: C.muted, fontSize: 14 }}>
-              {mapSections.length
-                ? mapSections.map(section => `${section.title} ${section.count}`).join(' · ')
-                : 'Start your map from the Flows tab'}
+          <View style={{ flex: 1, minWidth: 0, gap: space.xxs }}>
+            <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>Map flow</Text>
+            <Text numberOfLines={1} variant="subhead" style={{ color: C.muted }}>
+              The regimes you follow. One at a time.
             </Text>
           </View>
-          <Text style={{ color: C.muted, fontSize: 22 }}>›</Text>
+          <Glyph name={{ ios: 'chevron.right', android: 'chevron_right' }} fallback="›" color={C.muted} size={space.md} />
         </Pressable>
         <TrainingCalendar finishedAt={finished?.at ?? null} />
+        <BodyFlowRow onOpen={() => setBodyFlow(true)} />
         <PersonaliseRow onOpen={() => setView('personalise')} />
         <ProfileWorkouts onResume={onResumeRun} />
-        <View style={{ gap: 10 }}>
-          <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>
-            Timeline
-          </Text>
+        <View style={{ gap: space.ms }}>
+          <SectionHeader title="Timeline" />
           {posts.length ? (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.xs }}>
               {posts.map(post => {
                 const cover = referencedCards(post.cards.slice(0, 1), data.flows)[0];
                 return (
@@ -297,7 +294,7 @@ export function YouProfile({
                     style={{
                       width: '32.6%',
                       aspectRatio: 1,
-                      borderRadius: 8,
+                      borderRadius: radius.small,
                       overflow: 'hidden',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -307,7 +304,7 @@ export function YouProfile({
                     {cover ? (
                       <FlowIllustration flow={cover} cover />
                     ) : (
-                      <Text numberOfLines={3} style={{ color: C.text, fontSize: 13, textAlign: 'center', padding: 6 }}>
+                      <Text numberOfLines={3} variant="footnote" style={{ color: C.text, textAlign: 'center', padding: space.sm }}>
                         {post.title}
                       </Text>
                     )}
@@ -316,7 +313,7 @@ export function YouProfile({
               })}
             </View>
           ) : (
-            <Text style={{ color: C.muted, fontSize: 15, lineHeight: 21 }}>
+            <Text variant="subhead" style={{ color: C.muted }}>
               Finish a flow and post it, and it shows up here.
             </Text>
           )}
@@ -329,25 +326,27 @@ export function YouProfile({
             onOpen={() => setOpened(null)}
           />
         )}
+        {bodyFlow ? (
+          <BodyFlowSheet
+            library={data.flows}
+            focusId={data.profile.focusId}
+            onClose={() => setBodyFlow(false)}
+            onStartFlow={onStartFlow}
+            onOpenFlow={onOpenFlow}
+          />
+        ) : null}
       </View>
     );
   }
 
   return (
-    <View style={{ gap: 28, paddingTop: 4 }}>
-      <Pressable
-        accessibilityRole="button"
+    <View style={{ gap: space.xl, paddingTop: space.xs }}>
+      <Button
+        title="Back"
+        variant="text"
         accessibilityLabel="Back to profile"
         onPress={() => setView('main')}
-        style={({ pressed }) => ({
-          minHeight: 44,
-          justifyContent: 'center',
-          alignSelf: 'flex-start',
-          opacity: pressed ? 0.6 : 1,
-        })}
-      >
-        <Text style={{ color: C.lime, fontSize: 16 }}>Back</Text>
-      </Pressable>
+      />
       <Section title="Saved events">
         {savedEvents.map(event => (
           <Row
@@ -392,15 +391,15 @@ export function YouProfile({
         ))}
       </Section>
 
-      <View style={{ gap: 8 }}>
-        <Text style={{ color: C.muted, fontSize: 13, fontWeight: '600' }}>Settings</Text>
+      <View style={{ gap: space.sm }}>
+        <Text variant="footnote" style={{ color: C.muted, fontWeight: '600' }}>Settings</Text>
         <View
           style={{
-            borderRadius: 16,
+            borderRadius: radius.control,
             borderWidth: 1,
             borderColor: C.line,
             backgroundColor: C.card,
-            paddingHorizontal: 16,
+            paddingHorizontal: space.md,
           }}
         >
           <AppearanceSettings />
@@ -425,12 +424,12 @@ export function YouProfile({
                   .catch(() => undefined);
               }}
               style={({ pressed }) => ({
-                minHeight: 48,
+                minHeight: hit,
                 justifyContent: 'center',
-                opacity: pressed ? 0.6 : 1,
+                opacity: pressed ? opacity.pressed : 1,
               })}
             >
-              <Text style={{ color: C.danger, fontSize: 16 }}>Delete my details</Text>
+              <Text variant="callout" style={{ color: C.danger }}>Delete my details</Text>
             </Pressable>
           ) : null}
           <View style={{ height: 1, backgroundColor: C.line }} />
@@ -455,17 +454,17 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   const { colors: C } = useTheme();
   if (!items.length) return null;
   return (
-    <View style={{ gap: 8 }}>
-      <Text accessibilityRole="header" style={{ color: C.muted, fontSize: 13, fontWeight: '600' }}>
+    <View style={{ gap: space.sm }}>
+      <Text accessibilityRole="header" variant="footnote" style={{ color: C.muted, fontWeight: '600' }}>
         {title}
       </Text>
       <View
         style={{
-          borderRadius: 16,
+          borderRadius: radius.control,
           borderWidth: 1,
           borderColor: C.line,
           backgroundColor: C.card,
-          paddingHorizontal: 16,
+          paddingHorizontal: space.md,
         }}
       >
         {items.map((child, index) => (
@@ -500,18 +499,18 @@ function Row({
         style={({ pressed }) => ({
           flex: 1,
           minWidth: 0,
-          minHeight: 56,
-          paddingVertical: 12,
+          minHeight: size.button,
+          paddingVertical: space.ms,
           justifyContent: 'center',
-          gap: 2,
-          opacity: pressed ? 0.6 : 1,
+          gap: space.xxs,
+          opacity: pressed ? opacity.pressed : 1,
         })}
       >
-        <Text numberOfLines={2} style={{ color: C.text, fontSize: 16, fontWeight: '500' }}>
+        <Text numberOfLines={2} variant="callout" style={{ color: C.text }}>
           {title}
         </Text>
         {detail ? (
-          <Text numberOfLines={1} style={{ color: C.muted, fontSize: 13 }}>
+          <Text numberOfLines={1} variant="footnote" style={{ color: C.muted }}>
             {detail}
           </Text>
         ) : null}

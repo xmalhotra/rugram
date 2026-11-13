@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Image, Pressable, ScrollView, View } from 'react-native';
 import { Text } from './design/Text';
 import { FocusIllustration } from './FocusIllustration';
-import { useTheme } from './design/theme';
+import { hit, opacity, radius, space, useTheme } from './design/theme';
 import { CategoryRailOutline } from './CategoryRailOutline';
 export type RailCategory = { id: string; title: string; illustration: string; imageUrl?: string };
 export function CategoryRail({
@@ -30,7 +30,7 @@ export function CategoryRail({
   useEffect(() => {
     if (pills) return;
     if (selectedIndex < 0 || width <= 0) return;
-    const end = 14 + selectedIndex * (itemWidth + 8) + itemWidth;
+    const end = space.md + selectedIndex * (itemWidth + space.sm) + itemWidth;
     ref.current?.scrollTo({ x: Math.max(0, end + 12 - width), animated: true });
   }, [pills, selectedIndex, itemWidth, width]);
   useEffect(() => {
@@ -54,7 +54,7 @@ export function CategoryRail({
           showsHorizontalScrollIndicator={false}
           accessibilityRole="tablist"
           accessibilityLabel={label}
-          contentContainerStyle={{ gap: 8, alignItems: 'center' }}
+          contentContainerStyle={{ gap: space.sm, alignItems: 'center' }}
         >
           {items.map(item => (
             <Pressable
@@ -74,16 +74,16 @@ export function CategoryRail({
               }}
               style={{
                 height: 34,
-                paddingHorizontal: 16,
-                borderRadius: 17,
+                paddingHorizontal: space.md,
+                borderRadius: radius.pill,
                 justifyContent: 'center',
                 backgroundColor: selected === item.id ? C.lime : C.card,
               }}
             >
               <Text
+                variant="subhead"
                 style={{
                   color: selected === item.id ? C.onAccent : C.text,
-                  fontSize: 14,
                   fontWeight: '600',
                 }}
               >
@@ -106,13 +106,13 @@ export function CategoryRail({
         accessibilityRole="tablist"
         accessibilityLabel={label}
         onContentSizeChange={(_, nextHeight) =>
-          setHeight(Math.max(compact ? 44 : 80, nextHeight - 4))
+          setHeight(Math.max(compact ? 44 : 80, nextHeight - space.xs))
         }
         contentContainerStyle={{
-          gap: 8,
-          paddingTop: 4,
+          gap: space.sm,
+          paddingTop: space.xs,
           paddingBottom: 0,
-          paddingHorizontal: 14,
+          paddingHorizontal: space.md,
           minWidth: '100%',
           backgroundColor: C.card,
         }}
@@ -136,16 +136,16 @@ export function CategoryRail({
             onPress={() => onSelect(item.id)}
             style={({ pressed }) => ({
               width: itemWidth,
-              minHeight: compact ? 48 : 80,
-              paddingHorizontal: 6,
-              paddingTop: 4,
-              paddingBottom: 8,
-              gap: 4,
+              minHeight: compact ? hit : 80,
+              paddingHorizontal: space.sm,
+              paddingTop: space.xs,
+              paddingBottom: space.sm,
+              gap: space.xs,
               borderWidth: 0,
               backgroundColor: 'transparent',
               alignItems: 'center',
               justifyContent: compact ? 'center' : 'flex-start',
-              opacity: pressed ? 0.7 : 1,
+              opacity: pressed ? opacity.pressed : 1,
             })}
           >
             {!compact &&
@@ -153,7 +153,7 @@ export function CategoryRail({
                 <Image
                   source={{ uri: item.imageUrl }}
                   resizeMode="contain"
-                  style={{ width: 32, height: 32, borderRadius: 8, backgroundColor: C.photoMat }}
+                  style={{ width: 32, height: 32, borderRadius: radius.small, backgroundColor: C.photoMat }}
                 />
               ) : (
                 <View
@@ -169,12 +169,11 @@ export function CategoryRail({
               ))}
             <Text
               numberOfLines={2}
+              variant="caption"
               style={{
                 alignSelf: 'stretch',
                 width: '100%',
                 color: selected === item.id ? C.text : C.muted,
-                fontSize: 12,
-                lineHeight: 15,
                 fontWeight: selected === item.id ? '600' : '400',
                 textAlign: 'center',
               }}

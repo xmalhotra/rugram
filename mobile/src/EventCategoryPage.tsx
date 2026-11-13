@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import type { CityEvent } from '../../shared/mobile';
 import type { EventInterest } from '../../shared/event-interests';
 import { groupEventsByDay } from '../../shared/event-timeline';
@@ -7,7 +7,7 @@ import { DetailSurface } from './design/DetailSurface';
 import { ScreenBackground } from './design/ScreenBackground';
 import { PageBar } from './design/PageBar';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { opacity, radius, space, stroke, useTheme } from './design/theme';
 import { Card, useToast } from './design/components';
 import { FocusIllustration } from './FocusIllustration';
 import { EventDayGroup, type EventMark } from './EventRows';
@@ -24,8 +24,8 @@ const blurbs: Record<string, string> = {
 function Stat({ value, label }: { value: number; label: string }) {
   const { colors: C } = useTheme();
   return (
-    <Text style={{ color: C.muted, fontSize: 16 }}>
-      <Text style={{ color: C.text, fontWeight: '700' }}>{value}</Text> {label}
+    <Text variant="callout" style={{ color: C.muted }}>
+      <Text style={{ color: C.text, fontWeight: '600' }}>{value}</Text> {label}
     </Text>
   );
 }
@@ -68,14 +68,14 @@ export function EventCategoryPage({
     <DetailSurface onClose={onClose} fullScreen presentation="inline">
       <ScreenBackground />
       <PageBar title="" onBack={onClose} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 120 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: space.lg, paddingBottom: 120 }}>
         <View
           style={{
             width: 88,
             height: 88,
-            borderRadius: 44,
+            borderRadius: radius.pill,
             backgroundColor: C.card,
-            borderWidth: 1,
+            borderWidth: stroke.line,
             borderColor: C.line,
             alignItems: 'center',
             justifyContent: 'center',
@@ -86,11 +86,12 @@ export function EventCategoryPage({
         </View>
         <Text
           accessibilityRole="header"
-          style={{ color: C.text, fontSize: 36, lineHeight: 44, fontWeight: '700', paddingTop: 16 }}
+          variant="display"
+          style={{ color: C.text, paddingTop: space.md }}
         >
           {interest.title}
         </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 18, paddingTop: 6 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: space.md, paddingTop: space.sm }}>
           <Stat value={events.length} label={events.length === 1 ? 'Event' : 'Events'} />
           {summary && (
             <Stat
@@ -99,7 +100,7 @@ export function EventCategoryPage({
             />
           )}
         </View>
-        <Text style={{ color: C.muted, fontSize: 16, lineHeight: 23, paddingTop: 12 }}>
+        <Text variant="callout" style={{ color: C.muted, paddingTop: space.ms }}>
           {blurbs[interest.id] ?? `Upcoming ${interest.title} events${city ? ` in ${city}` : ''}.`}
         </Text>
         <Pressable
@@ -113,33 +114,34 @@ export function EventCategoryPage({
           onPress={() => void toggle()}
           style={({ pressed }) => ({
             alignSelf: 'flex-start',
-            marginTop: 18,
-            paddingHorizontal: 22,
-            paddingVertical: 11,
-            borderRadius: 22,
-            borderWidth: 1,
+            marginTop: space.md,
+            paddingHorizontal: space.xl,
+            paddingVertical: space.ms,
+            borderRadius: radius.card,
+            borderWidth: stroke.line,
             borderColor: subscribed ? C.line : C.lime,
             backgroundColor: subscribed ? 'transparent' : C.lime,
-            opacity: !summary ? 0.5 : pressed ? 0.75 : 1,
+            opacity: !summary ? 0.5 : pressed ? opacity.pressed : 1,
           })}
         >
           <Text
-            style={{ color: subscribed ? C.text : C.onAccent, fontSize: 16, fontWeight: '700' }}
+            variant="callout"
+            style={{ color: subscribed ? C.text : C.onAccent, fontWeight: '600' }}
           >
             {subscribed ? 'Subscribed ✓' : 'Subscribe'}
           </Text>
         </Pressable>
-        <View style={{ height: 0.5, backgroundColor: C.line, marginVertical: 22, marginHorizontal: -20 }} />
-        <Text accessibilityRole="header" style={{ color: C.text, fontSize: 24, fontWeight: '700' }}>
+        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: C.line, marginVertical: space.xl, marginHorizontal: -space.lg }} />
+        <Text accessibilityRole="header" variant="heading" style={{ color: C.text }}>
           Upcoming{city ? ` in ${city}` : ''}
         </Text>
-        <View style={{ gap: 18, paddingTop: 12 }}>
+        <View style={{ gap: space.md, paddingTop: space.ms }}>
           {groupEventsByDay(events).map(day => (
             <EventDayGroup key={day.key} day={day} markFor={markFor} onSelect={onSelect} />
           ))}
           {events.length === 0 && (
             <Card>
-              <Text style={{ color: C.muted, fontSize: 16, lineHeight: 24 }}>
+              <Text variant="callout" style={{ color: C.muted }}>
                 Nothing coming up yet. Subscribe and we&apos;ll tell you when one is published.
               </Text>
             </Card>

@@ -8,9 +8,10 @@ import {
   type PersonalFlow,
   type PersonalFlowAction,
 } from '../../shared/personal-flows';
-import { Button, Field, Sheet } from './design/components';
+import { Button, Field, SectionHeader, Sheet } from './design/components';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { Glyph } from './design/Glyph';
+import { hit, opacity, radius, space, stroke, useTheme } from './design/theme';
 
 export function AddToFlowSheet({
   card,
@@ -67,9 +68,11 @@ export function AddToFlowSheet({
       }}
       presentation="modal"
     >
-      <View style={{ gap: 16, paddingVertical: 8 }}>
-        <Text style={{ color: C.text, fontSize: 21, fontWeight: '600' }}>{card.title}</Text>
-        <Text style={{ color: C.muted, fontSize: 14, lineHeight: 20 }}>
+      <View style={{ gap: space.md, paddingVertical: space.sm }}>
+        <Text variant="section" style={{ color: C.text }}>
+          {card.title}
+        </Text>
+        <Text variant="subhead" style={{ color: C.muted }}>
           Mix cards from any collection. Your flows live on Home.
         </Text>
         {!creating && flows.length > 6 && (
@@ -90,28 +93,33 @@ export function AddToFlowSheet({
                   onPress={() => void submit(flow.id)}
                   style={({ pressed }) => ({
                     minHeight: 72,
-                    borderRadius: 16,
-                    padding: 16,
+                    borderRadius: radius.control,
+                    padding: space.md,
                     backgroundColor: C.card,
-                    borderWidth: 1,
+                    borderWidth: stroke.line,
                     borderColor: C.line,
                     flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 12,
-                    opacity: pressed ? 0.7 : 1,
+                    gap: space.ms,
+                    opacity: pressed ? opacity.pressed : 1,
                   })}
                 >
-                  <View style={{ flex: 1, gap: 5 }}>
-                    <Text style={{ color: C.text, fontSize: 17, fontWeight: '600' }}>
+                  <View style={{ flex: 1, gap: space.xs }}>
+                    <Text variant="headline" style={{ color: C.text }}>
                       {flow.name}
                     </Text>
-                    <Text style={{ color: C.muted, fontSize: 13 }}>
+                    <Text variant="footnote" style={{ color: C.muted }}>
                       {flow.cards.length} {flow.cards.length === 1 ? 'card' : 'cards'}
                     </Text>
                   </View>
-                  <Text style={{ color: added ? C.muted : C.lime, fontSize: 15 }}>
-                    {added ? '✓ Added' : '+ Add'}
-                  </Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs }}>
+                    {added ? (
+                      <Glyph name={{ ios: 'checkmark', android: 'check' }} fallback="✓" color={C.muted} size={space.md} />
+                    ) : null}
+                    <Text variant="subhead" style={{ color: added ? C.muted : C.lime }}>
+                      {added ? 'Added' : '+ Add'}
+                    </Text>
+                  </View>
                 </Pressable>
               );
             })}
@@ -188,12 +196,9 @@ export function PersonalFlowEditor({
           )
         }
       />
-      <Text
-        accessibilityRole="header"
-        style={{ color: C.text, fontSize: 19, fontWeight: '600', marginTop: 16 }}
-      >
-        Cards in your order
-      </Text>
+      <View style={{ marginTop: space.md }}>
+        <SectionHeader title="Cards in your order" />
+      </View>
       <Text style={{ color: C.muted, lineHeight: 20 }}>
         Reorder or remove cards here. The original collection stays unchanged.
       </Text>
@@ -205,17 +210,17 @@ export function PersonalFlowEditor({
       {flow.cards.map((card, index) => (
         <View
           key={card.cardId}
-          style={{ paddingVertical: 12, borderBottomWidth: 1, borderColor: C.line, gap: 8 }}
+          style={{ paddingVertical: space.ms, borderBottomWidth: stroke.line, borderColor: C.line, gap: space.sm }}
         >
-          <Text style={{ color: C.text, fontSize: 17 }}>
+          <Text variant="body" style={{ color: C.text }}>
             {index + 1}. {card.title}
           </Text>
-          <Text style={{ color: C.muted, fontSize: 12 }}>
+          <Text variant="caption" style={{ color: C.muted }}>
             {missing.has(card.cardId)
               ? 'Currently unavailable · kept in your flow'
               : library.find(item => item.id === card.sourceFlowId)?.title}
           </Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 8 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: space.sm }}>
             {(['up', 'down', 'remove'] as const).map(direction => {
               const disabled =
                 busy ||
@@ -241,13 +246,13 @@ export function PersonalFlowEditor({
                     )
                   }
                   style={{
-                    minWidth: 48,
-                    minHeight: 48,
-                    paddingHorizontal: 12,
+                    minWidth: hit,
+                    minHeight: hit,
+                    paddingHorizontal: space.ms,
                     alignItems: 'center',
                     justifyContent: 'center',
                     backgroundColor: C.card,
-                    borderRadius: 12,
+                    borderRadius: radius.small,
                     opacity: disabled ? 0.35 : 1,
                   }}
                 >

@@ -8,7 +8,8 @@ import {
   sellerPriceLabel,
 } from '../../shared/purchases';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { Glyph } from './design/Glyph';
+import { hit, radius, space, useTheme } from './design/theme';
 import { ReasonLine } from './design/states';
 import { pickReason } from '../../shared/reasons';
 export function ProductPreview({
@@ -37,12 +38,12 @@ export function ProductPreview({
     <View
       style={{
         width: cardWidth ?? (hero ? 168 : '100%'),
-        padding: 12,
-        borderRadius: 22,
+        padding: space.ms,
+        borderRadius: radius.card,
         borderWidth: borderless ? 0 : 1,
         borderColor: C.line,
         backgroundColor: C.card,
-        gap: 10,
+        gap: space.ms,
       }}
     >
       <Pressable
@@ -51,7 +52,7 @@ export function ProductPreview({
         onPress={() => onPick(product)}
         style={{
           flexDirection: hero ? 'column' : 'row',
-          gap: 12,
+          gap: space.ms,
           alignItems: hero ? 'stretch' : 'center',
         }}
       >
@@ -59,14 +60,14 @@ export function ProductPreview({
           style={{
             width: hero ? '100%' : 76,
             height: cardWidth ? Math.min(cardWidth * 0.8, 300) : hero ? 130 : 76,
-            borderRadius: 16,
+            borderRadius: radius.control,
             backgroundColor: C.photoMat,
-            padding: 8,
+            padding: space.sm,
             justifyContent: 'center',
           }}
         >
           {failed || !product.imageUrl ? (
-            <Text style={{ color: C.photoInk, fontSize: 12, textAlign: 'center' }}>
+            <Text variant="caption" style={{ color: C.photoInk, textAlign: 'center' }}>
               Photo unavailable
             </Text>
           ) : (
@@ -79,18 +80,17 @@ export function ProductPreview({
             />
           )}
         </View>
-        <View style={{ flex: hero ? undefined : 1, minWidth: 0, gap: 5 }}>
-          <Text
-            numberOfLines={2}
-            style={{ color: C.text, fontSize: 17, lineHeight: 23, fontWeight: '600' }}
-          >
+        <View style={{ flex: hero ? undefined : 1, minWidth: 0, gap: space.xs }}>
+          <Text numberOfLines={2} variant="headline" style={{ color: C.text }}>
             {product.title}
           </Text>
-          <Text numberOfLines={1} style={{ color: C.muted, fontSize: 12 }}>
+          <Text numberOfLines={1} variant="caption" style={{ color: C.muted }}>
             {product.packLabel ?? product.variantLabel}
           </Text>
         </View>
-        {!hero && <Text style={{ color: C.muted, fontSize: 24 }}>›</Text>}
+        {!hero && (
+          <Glyph name={{ ios: 'chevron.right', android: 'chevron_right' }} fallback="›" color={C.muted} size={space.xl} />
+        )}
       </Pressable>
       {showReason && <ReasonLine>{pickReason(product)}</ReasonLine>}
       {option && (
@@ -99,24 +99,24 @@ export function ProductPreview({
           accessibilityLabel={`${option.sellerName}, ${sellerPriceLabel(option)}, opens seller`}
           onPress={() => onLink(purchaseDestination(option))}
           style={{
-            minHeight: 48,
+            minHeight: hit,
             borderTopWidth: 1,
             borderColor: C.line,
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 8,
+            gap: space.sm,
           }}
         >
-          <Text numberOfLines={1} style={{ color: C.muted, fontSize: 11, flex: 1 }}>
+          <Text numberOfLines={1} variant="caption" style={{ color: C.muted, flex: 1 }}>
             {option.sellerName}
           </Text>
-          <Text style={{ color: C.lime, fontSize: 15, fontWeight: '600' }}>
+          <Text variant="subhead" style={{ color: C.lime, fontWeight: '600' }}>
             {sellerPriceLabel(option)} ↗
           </Text>
         </Pressable>
       )}
       {option && affiliateSeller(option) && (
-        <Text style={{ color: C.muted, fontSize: 10 }}>
+        <Text variant="caption" style={{ color: C.muted }}>
           Affiliate link · we may earn a commission
         </Text>
       )}

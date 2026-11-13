@@ -24,6 +24,6 @@ test('dates, external sources and admin review reasons remain required',()=>{
 });
 test('event editor uses a fixed action footer and a real review, not a step dropdown',()=>{
  const source=readFileSync('mobile/src/EventLinkFields.tsx','utf8');assert.match(source,/What are you planning/);assert.match(source,/Ready to share/);containsCode(source,'eventEditorError(form,step,creator)');assert.match(source,/Submit for approval/);assert.doesNotMatch(source,/<Choice|<Field|ISO; blank/);
- assert.ok(source.search(/borderTopWidth:\s*1/)>source.indexOf('</ScrollView>'));
+ assert.ok(source.search(/borderTopWidth:\s*(1|stroke\.line)/)>source.indexOf('</ScrollView>'));
  const app=readFileSync('mobile/App.tsx','utf8');containsCode(app,"scrollable={editor!=='event'");containsCode(app,'<EventLinkFields busy={busy}');
 });

@@ -1,3 +1,4 @@
+import { designMock, designTokens } from './support/design-mocks';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -49,8 +50,8 @@ function mount(file: string, props: object) {
           useEffect: () => {},
         };
       if (name === 'react-native')
-        return { View: 'View', Pressable: 'Pressable', ScrollView: 'ScrollView', useWindowDimensions: () => ({ width: 390, height: 844 }) };
-      if (name === './design/theme') return { useTheme: () => ({ colors: {} }), space: { lg: 20 } };
+        return { View: 'View', Pressable: 'Pressable', ScrollView: 'ScrollView', StyleSheet: { hairlineWidth: 0.5 }, useWindowDimensions: () => ({ width: 390, height: 844 }) };
+      if (name === './design/theme') return { ...designTokens, useTheme: () => ({ colors: {} }) };
       if (name === './pane-state') return { usePaneState: () => ['male', () => {}] };
       if (name === '@react-native-community/slider') return { default: 'Slider' };
       if (name === './AddToFlowHeader') return { useRegisterAddToFlow: () => false };

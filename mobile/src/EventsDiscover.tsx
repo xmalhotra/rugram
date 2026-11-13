@@ -1,8 +1,9 @@
 import { useId } from 'react';
 import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
+import { Glyph } from './design/Glyph';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { opacity, radius, space, stroke, textRoles, useTheme } from './design/theme';
 import { FocusIllustration } from './FocusIllustration';
 
 export type DiscoverCategory = { id: string; title: string; illustration: string };
@@ -33,10 +34,10 @@ export function EventsDiscover({
   const gradientPrefix = useId().replace(/[^a-zA-Z0-9]/g, '');
 
   return (
-    <View style={{ gap: 28 }}>
-      <View style={{ gap: 14 }}>
-        <Text style={{ fontSize: 22, fontWeight: '700', color: C.text }}>Browse by category</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+    <View style={{ gap: space.xl }}>
+      <View style={{ gap: space.md }}>
+        <Text variant="heading" style={{ color: C.text }}>Browse by category</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.ms }}>
           {categories.map(category => (
             <Pressable
               key={category.id}
@@ -44,16 +45,16 @@ export function EventsDiscover({
               accessibilityLabel={`Browse ${category.title}`}
               onPress={() => onCategory(category.id)}
               style={({ pressed }) => ({
-                borderWidth: 1,
+                borderWidth: stroke.line,
                 borderColor: C.line,
-                borderRadius: 14,
-                paddingVertical: 10,
-                paddingHorizontal: 14,
+                borderRadius: radius.control,
+                paddingVertical: space.ms,
+                paddingHorizontal: space.md,
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 10,
+                gap: space.ms,
                 backgroundColor: C.card,
-                opacity: pressed ? 0.7 : 1,
+                opacity: pressed ? opacity.pressed : 1,
               })}
             >
               <View
@@ -77,21 +78,26 @@ export function EventsDiscover({
                   <FocusIllustration focusId={category.illustration} />
                 </View>
               </View>
-              <Text style={{ fontSize: 16, color: C.text }}>{category.title}</Text>
+              <Text variant="callout" style={{ color: C.text }}>{category.title}</Text>
             </Pressable>
           ))}
         </View>
       </View>
 
-      <View style={{ gap: 14 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Text style={{ fontSize: 22, fontWeight: '700', color: C.text }}>Cities</Text>
-          <Text style={{ fontSize: 22, color: C.muted }}>›</Text>
+      <View style={{ gap: space.md }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+          <Text variant="heading" style={{ color: C.text }}>Cities</Text>
+          <Glyph
+            name={{ ios: 'chevron.right', android: 'chevron_right' }}
+            fallback="›"
+            color={C.muted}
+            size={textRoles.heading.fontSize}
+          />
         </View>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 12, paddingRight: 16 }}
+          contentContainerStyle={{ gap: space.ms, paddingRight: space.md }}
         >
           {cities.map((city, index) => {
             const [from, to] = CITY_GRADIENTS[index % CITY_GRADIENTS.length];
@@ -105,9 +111,9 @@ export function EventsDiscover({
                 style={({ pressed }) => ({
                   width: cardSize,
                   height: cardSize,
-                  borderRadius: 20,
+                  borderRadius: radius.card,
                   overflow: 'hidden',
-                  opacity: pressed ? 0.85 : 1,
+                  opacity: pressed ? opacity.pressed : 1,
                 })}
               >
                 <Svg
@@ -123,7 +129,7 @@ export function EventsDiscover({
                   </Defs>
                   <Rect width={cardSize} height={cardSize} fill={`url(#${gradientId})`} />
                 </Svg>
-                <View pointerEvents="none" style={{ position: 'absolute', top: 14, left: 14 }}>
+                <View pointerEvents="none" style={{ position: 'absolute', top: space.md, left: space.md }}>
                   <Svg width={44} height={44}>
                     <Circle cx={22} cy={22} r={22} fill="rgba(255,255,255,0.18)" />
                     <Path
@@ -134,11 +140,11 @@ export function EventsDiscover({
                     />
                   </Svg>
                 </View>
-                <View style={{ flex: 1, justifyContent: 'flex-end', padding: 16 }}>
-                  <Text style={{ fontSize: 24, fontWeight: '700', color: '#ffffff' }}>
+                <View style={{ flex: 1, justifyContent: 'flex-end', padding: space.md }}>
+                  <Text variant="heading" style={{ color: '#ffffff' }}>
                     {city.name}
                   </Text>
-                  <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>
+                  <Text variant="footnote" style={{ color: 'rgba(255,255,255,0.75)' }}>
                     {city.events === 0 ? 'No events yet' : `${city.events} upcoming`}
                   </Text>
                 </View>
@@ -148,7 +154,7 @@ export function EventsDiscover({
         </ScrollView>
       </View>
 
-      <Text style={{ fontSize: 13, color: C.muted }}>Pick a city to see what's happening.</Text>
+      <Text variant="footnote" style={{ color: C.muted }}>Pick a city to see what's happening.</Text>
     </View>
   );
 }

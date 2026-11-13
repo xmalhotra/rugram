@@ -1,13 +1,13 @@
 import { formatDate } from '../../shared/format';
 import { LearningContent } from './LearningContent';
 import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from './design/Text';
 import type { CityEvent, HabitFlow, MobilePayload, Product } from '../../shared/mobile';
 import { eventsForFlow, eventCost, eventDates, picksForHabit } from '../../shared/flow-connections';
 import { eventProvider } from '../../shared/event-discovery';
-import { Badge, Button, Card, Field } from './design/components';
-import { useTheme } from './design/theme';
+import { Badge, Button, Card, Field, SectionHeader } from './design/components';
+import { hit, space, useTheme } from './design/theme';
 import { WorkoutJourney } from './WorkoutJourney';
 import { MagnesiumGuide } from './MagnesiumGuide';
 import { GymSupportGuide } from './GymSupportGuide';
@@ -116,13 +116,10 @@ function FlowReferenceDetails({
   function saveAvailability(id: SupportKind, enabled: boolean) {
     if (isAdded && !busy) onAvailable(id, enabled);
   }
-  const text = { color: C.muted, fontSize: 16, lineHeight: 24 } as const;
+  const text = { color: C.muted } as const;
   const heading = {
     color: C.text,
-    fontSize: 21,
-    lineHeight: 28,
-    fontWeight: '600',
-    marginTop: 12,
+    marginTop: space.ms,
   } as const;
   const candidates = [
     ...new Map(
@@ -144,11 +141,11 @@ function FlowReferenceDetails({
   return (
     <>
       {flow.area !== 'Tech' && <HealthNote />}
-      <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
+      <View style={{ flexDirection: 'row', gap: space.md, alignItems: 'center' }}>
         <FlowIllustration flow={flow} />
-        <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
+        <View style={{ flex: 1, minWidth: 0, gap: space.sm }}>
           <Badge>{flow.goal}</Badge>
-          <Text style={text}>{flow.milestone ?? flow.description}</Text>
+          <Text variant="callout" style={text}>{flow.milestone ?? flow.description}</Text>
         </View>
       </View>
       <FlowHomeAction
@@ -159,13 +156,13 @@ function FlowReferenceDetails({
         onRemove={onRemove}
       />
       {!isAdded && (
-        <Text style={{ ...text, fontSize: 13, lineHeight: 20 }}>
+        <Text variant="footnote" style={text}>
           Preview only. Add this flow to make it yours.
         </Text>
       )}
       {flow.milestone && (
         <Disclosure title="About this flow">
-          <Text style={text}>{flow.description}</Text>
+          <Text variant="callout" style={text}>{flow.description}</Text>
         </Disclosure>
       )}
       {flow.guideId === 'magnesium' && (
@@ -187,13 +184,13 @@ function FlowReferenceDetails({
       )}
       {flow.recipe && (
         <>
-          <Text style={heading}>Ingredients</Text>
+          <Text variant="section" style={heading}>Ingredients</Text>
           {flow.recipe.ingredients.map(ingredient => (
             <Text key={ingredient} style={text}>
               • {ingredient}
             </Text>
           ))}
-          <Text style={heading}>How to put it together</Text>
+          <Text variant="section" style={heading}>How to put it together</Text>
           {flow.recipe.method.map((step, index) => (
             <Text key={step} style={text}>
               {index + 1}. {step}
@@ -205,9 +202,9 @@ function FlowReferenceDetails({
       {flow.rhythm && !flow.workout && <Badge>{flow.rhythm} · at your pace</Badge>}
       {flow.workout && <WorkoutJourney key={flow.id} flow={flow} data={data} onLink={onLink} />}
       {!flow.workout && (
-        <Text accessibilityRole="header" style={heading}>
-          Small steps
-        </Text>
+        <View style={{ marginTop: space.ms }}>
+          <SectionHeader title="Small steps" />
+        </View>
       )}
       {!flow.workout &&
         flow.steps.map((step, index) => (
@@ -216,7 +213,7 @@ function FlowReferenceDetails({
             title={`${index + 1}. ${step.title}`}
             initiallyOpen={index === 0}
           >
-            <Text style={text}>{step.cue}</Text>
+            <Text variant="callout" style={text}>{step.cue}</Text>
             <Badge>{step.duration}</Badge>
             {isAdded && (
               <HabitToggle
@@ -235,7 +232,7 @@ function FlowReferenceDetails({
             {step.pickContext && flow.guideId !== 'gym-supports' && (
               <Disclosure title={step.pickContext.label}>
                 <Card>
-                  <Text style={text}>Optional ideas. No purchase needed.</Text>
+                  <Text variant="callout" style={text}>Optional ideas. No purchase needed.</Text>
                   <Badge>Pack prices shown. Shipping and checkout charges may apply.</Badge>
                   <Field
                     label="Optional maximum pack budget (INR)"
@@ -254,23 +251,23 @@ function FlowReferenceDetails({
                       accessibilityLabel={`View ${product.title} in Picks`}
                       onPress={() => onPick(product)}
                       style={{
-                        minHeight: 48,
-                        paddingVertical: 12,
-                        borderTopWidth: 0.5,
+                        minHeight: hit,
+                        paddingVertical: space.ms,
+                        borderTopWidth: StyleSheet.hairlineWidth,
                         borderColor: C.line,
-                        gap: 6,
+                        gap: space.sm,
                       }}
                     >
-                      <Text style={{ color: C.text, fontSize: 18, fontWeight: '600' }}>
+                      <Text variant="headline" style={{ color: C.text }}>
                         {product.title}
                       </Text>
-                      <Text style={text}>{product.packLabel ?? 'Compare seller options'}</Text>
+                      <Text variant="callout" style={text}>{product.packLabel ?? 'Compare seller options'}</Text>
                       <Badge>
                         {product.demo
                           ? 'Illustrative demo listing'
                           : 'Seller prices in Pick details'}
                       </Badge>
-                      <Text style={{ color: C.lime, fontSize: 16 }}>View pick details →</Text>
+                      <Text variant="callout" style={{ color: C.lime }}>View pick details →</Text>
                     </Pressable>
                   ))}
                   {picksForHabit(
@@ -278,7 +275,7 @@ function FlowReferenceDetails({
                     step.pickContext.useCase,
                     Number.isFinite(maxBudget) ? maxBudget : Infinity,
                   ).length === 0 && (
-                    <Text style={text}>
+                    <Text variant="callout" style={text}>
                       No published matching picks in this budget. Raise or clear the limit; you can
                       still follow the habit without a purchase.
                     </Text>
@@ -290,25 +287,26 @@ function FlowReferenceDetails({
         ))}
       {flow.eventContext && (
         <>
-          <Text accessibilityRole="header" style={heading}>
-            Upcoming {flow.eventContext.topic}{' '}
-            {flow.eventContext.country === 'IN' ? 'in India' : 'events'}
-          </Text>
-          <Text style={text}>
+          <View style={{ marginTop: space.ms }}>
+            <SectionHeader
+              title={`Upcoming ${flow.eventContext.topic} ${flow.eventContext.country === 'IN' ? 'in India' : 'events'}`}
+            />
+          </View>
+          <Text variant="callout" style={text}>
             Related to this flow, across cities. Dates and availability can change; registration
             happens with the organiser.
           </Text>
           {events.map(event => (
             <Card key={event.id}>
-              <Text style={heading}>{event.title}</Text>
-              <Text style={text}>
+              <Text variant="section" style={heading}>{event.title}</Text>
+              <Text variant="callout" style={text}>
                 {eventDates(event)} · {event.city}
               </Text>
-              <Text style={text}>{event.venue}</Text>
+              <Text variant="callout" style={text}>{event.venue}</Text>
               <Badge>{event.registrationStatus ?? 'Check provider'}</Badge>
-              <Text style={text}>{eventCost(event)}</Text>
-              {event.feeNote && <Text style={text}>{event.feeNote}</Text>}
-              {event.scheduleNote && <Text style={text}>{event.scheduleNote}</Text>}
+              <Text variant="callout" style={text}>{eventCost(event)}</Text>
+              {event.feeNote && <Text variant="callout" style={text}>{event.feeNote}</Text>}
+              {event.scheduleNote && <Text variant="callout" style={text}>{event.scheduleNote}</Text>}
               {event.checkedAt && (
                 <Badge>
                   Source checked {formatDate(new Date(event.checkedAt))} · not a live feed
@@ -335,7 +333,7 @@ function FlowReferenceDetails({
             </Card>
           ))}
           {events.length === 0 && (
-            <Text style={text}>
+            <Text variant="callout" style={text}>
               No published upcoming events are connected yet. Check the official event directory for
               the latest announcements.
             </Text>
@@ -352,13 +350,13 @@ function FlowReferenceDetails({
           ))}
       {isAdded && flow.review && !flow.workout && (
         <Disclosure title="How’s it going?">
-          <Text style={text}>{flow.review}</Text>
+          <Text variant="callout" style={text}>{flow.review}</Text>
         </Disclosure>
       )}
-      {flow.guidance && !flow.workout && <Text style={text}>{flow.guidance}</Text>}
+      {flow.guidance && !flow.workout && <Text variant="callout" style={text}>{flow.guidance}</Text>}
       {Boolean(flow.sources?.length) && (
         <Disclosure title="Sources & background">
-          <Text style={text}>Background reading, not a guarantee of results.</Text>
+          <Text variant="callout" style={text}>Background reading, not a guarantee of results.</Text>
           {flow.sources?.map(source => (
             <Button
               key={source.url}

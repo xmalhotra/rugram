@@ -228,6 +228,11 @@ async function ownFlows(user: PublicUser) {
   return stored(ids.map(row => String(row.id)));
 }
 
+/** Authors this member follows. */
+export async function followedAuthors(user: PublicUser) {
+  return following(user);
+}
+
 async function following(user: PublicUser) {
   if (isDemoMode()) return new Set<string>(demo().follows.get(user.id) ?? []);
   const rows = await sqlClient()`SELECT author_id FROM community_follows WHERE user_id=${user.id}`;

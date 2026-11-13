@@ -1,3 +1,4 @@
+import { designMock, designTokens } from './support/design-mocks';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -70,8 +71,7 @@ function mount(categoryId: string, initialSection?: string) {
           RefreshControl: 'RefreshControl',
         };
       if (name === './design/theme')
-        return {
-          useTheme: () => ({
+        return { ...designTokens, useTheme: () => ({
             colors: { text: '#fff', muted: '#999', bg: '#000', line: '#333', lime: '#7fa' },
           }),
         };
@@ -80,6 +80,7 @@ function mount(categoryId: string, initialSection?: string) {
       if (name === './FlowPreview') return { FlowPreview: 'FlowPreview' };
       if (name === '../../shared/flow-sections') return require('../shared/flow-sections');
       if (name === '../../shared/flow-scroll') return require('../shared/flow-scroll');
+      { const mock = designMock(name); if (mock) return mock; }
       throw new Error(`Unexpected component import: ${name}`);
     },
     loaded,
@@ -157,7 +158,9 @@ for (const category of defaultFlowCategoryGroups) {
     assert.ok(category.focusIds.includes(screen.opened[0].focusId));
     const back = descendants(tree).find(
       node =>
-        node.type === 'Pressable' && node.props.accessibilityLabel === 'Back to All categories',
+        // The back control is the shared IconButton now; its spoken name is `label`.
+        (node.type === 'Pressable' || node.type === 'IconButton') &&
+        (node.props.accessibilityLabel ?? node.props.label) === 'Back to All categories',
     )!;
     (back.props.onPress as () => void)();
     assert.equal(screen.backCount(), 1);

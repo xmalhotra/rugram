@@ -12,7 +12,7 @@ import {
 import { SymbolView } from 'expo-symbols';
 import { Avatar, useToast } from '../src/design/states';
 import { Text } from '../src/design/Text';
-import { useTheme } from '../src/design/theme';
+import { radius, useTheme } from '../src/design/theme';
 import { useSession } from '../src/session';
 import { avatarUri, pickAvatar, removeAvatar, uploadAvatar } from '../src/avatar';
 
@@ -115,7 +115,7 @@ export function ProfileAvatar({ name, avatarUrl }: { name: string; avatarUrl?: s
           style={[
             StyleSheet.absoluteFill,
             {
-              borderRadius: 44,
+              borderRadius: radius.pill,
               backgroundColor: 'rgba(0,0,0,0.35)',
               alignItems: 'center',
               justifyContent: 'center',
@@ -133,7 +133,7 @@ export function ProfileAvatar({ name, avatarUrl }: { name: string; avatarUrl?: s
           bottom: 0,
           width: 28,
           height: 28,
-          borderRadius: 14,
+          borderRadius: radius.pill,
           backgroundColor: C.lime,
           alignItems: 'center',
           justifyContent: 'center',
@@ -142,7 +142,7 @@ export function ProfileAvatar({ name, avatarUrl }: { name: string; avatarUrl?: s
         {Platform.OS === 'ios' ? (
           <SymbolView name="camera.fill" tintColor={C.onAccent} style={{ width: 14, height: 14 }} />
         ) : (
-          <Text style={{ color: C.onAccent, fontSize: 15, lineHeight: 18 }}>✎</Text>
+          <Text variant="subhead" style={{ color: C.onAccent }}>✎</Text>
         )}
       </View>
     </Pressable>

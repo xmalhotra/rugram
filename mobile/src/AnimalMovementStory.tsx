@@ -2,39 +2,37 @@ import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { animalMovementContext } from '../../shared/animal-movement-context';
 import { Button, Sheet } from './design/components';
+import { Glyph } from './design/Glyph';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { hit, opacity, radius, space, stroke, useTheme } from './design/theme';
 
 export function AnimalMovementStory({ onLink }: { onLink: (url: string) => void }) {
   const { colors: C } = useTheme();
   return (
-    <View style={{ gap: 18, paddingVertical: 12 }}>
-      <Text accessibilityRole="header" style={{ color: C.text, fontSize: 23, fontWeight: '600' }}>
+    <View style={{ gap: space.md, paddingVertical: space.ms }}>
+      <Text accessibilityRole="header" variant="heading" style={{ color: C.text }}>
         {animalMovementContext.title}
       </Text>
-      <Text style={{ color: C.muted, fontSize: 16, lineHeight: 24 }}>
+      <Text variant="callout" style={{ color: C.muted }}>
         {animalMovementContext.summary}
       </Text>
       {animalMovementContext.connections.map(connection => (
         <View
           key={connection.name}
           style={{
-            padding: 16,
-            gap: 8,
+            padding: space.md,
+            gap: space.sm,
             backgroundColor: C.card,
-            borderWidth: 1,
+            borderWidth: stroke.line,
             borderColor: C.line,
-            borderRadius: 18,
+            borderRadius: radius.card,
           }}
         >
-          <Text style={{ color: C.muted, fontSize: 12 }}>{connection.label}</Text>
-          <Text
-            accessibilityRole="header"
-            style={{ color: C.text, fontSize: 19, fontWeight: '600' }}
-          >
+          <Text variant="caption" style={{ color: C.muted }}>{connection.label}</Text>
+          <Text accessibilityRole="header" variant="section" style={{ color: C.text }}>
             {connection.name}
           </Text>
-          <Text style={{ color: C.muted, fontSize: 15, lineHeight: 22 }}>{connection.body}</Text>
+          <Text variant="subhead" style={{ color: C.muted }}>{connection.body}</Text>
           <Button
             title={`${connection.source.title} ↗`}
             secondary
@@ -42,7 +40,7 @@ export function AnimalMovementStory({ onLink }: { onLink: (url: string) => void 
           />
         </View>
       ))}
-      <Text style={{ color: C.muted, fontSize: 13, lineHeight: 20 }}>
+      <Text variant="footnote" style={{ color: C.muted }}>
         {animalMovementContext.boundary}
       </Text>
     </View>
@@ -66,26 +64,24 @@ export function AnimalStoryEntry({
         accessibilityLabel="Read the Animal movements backstory and verified sources"
         onPress={() => setOpen(true)}
         style={({ pressed }) => ({
-          minHeight: 44,
-          paddingHorizontal: 12,
-          borderRadius: 12,
-          borderWidth: 1,
+          minHeight: hit,
+          paddingHorizontal: space.ms,
+          borderRadius: radius.small,
+          borderWidth: stroke.line,
           borderColor: C.line,
           backgroundColor: C.card,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 8,
-          marginBottom: inline ? 0 : 8,
+          gap: space.sm,
+          marginBottom: inline ? 0 : space.sm,
           flex: inline ? 1 : undefined,
-          opacity: pressed ? 0.7 : 1,
+          opacity: pressed ? opacity.pressed : 1,
         })}
       >
-        <Text numberOfLines={1} style={{ flex: 1, color: C.muted, fontSize: 12 }}>
+        <Text numberOfLines={1} variant="caption" style={{ flex: 1, color: C.muted }}>
           Backstory · Vidyut Jammwal & Da Rulk
         </Text>
-        <Text accessible={false} style={{ color: C.text, fontSize: 18 }}>
-          ›
-        </Text>
+        <Glyph name={{ ios: 'chevron.right', android: 'chevron_right' }} fallback="›" color={C.text} size={space.lg} />
       </Pressable>
       {open && (
         <Sheet

@@ -1,5 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
+import { space } from './design/theme';
 import type { HabitFlow, MobilePayload, Product } from '../../shared/mobile';
 import type { CreditCard } from '../../shared/credit-cards';
 import { SupplementDiscovery } from './SupplementDiscovery';
@@ -24,7 +25,7 @@ type PicksBrowserProps = {
 };
 export function PicksBrowser(props: PicksBrowserProps) {
   return (
-    <View style={props.section === 'products' ? { flex: 1 } : { gap: 18 }}>
+    <View style={props.section === 'products' ? { flex: 1 } : { gap: space.md }}>
       {/* The top bar already names the tab, so no page title repeats it. */}
       {props.section === 'yours' ? (
         <SavedPicks

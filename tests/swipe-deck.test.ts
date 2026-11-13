@@ -28,7 +28,7 @@ test('detail deck uses native paging, independent vertical reading and a fixed a
   containsCode(ui, '<ScrollView showsVerticalScrollIndicator');
   assert.ok(ui.indexOf('{footer}') > ui.indexOf('</ScrollView>'));
   const sheet = readFileSync('mobile/src/design/components.shared.tsx', 'utf8');
-  assert.match(sheet, /scrollable\?<ScrollView/);
+  assert.match(sheet.replaceAll(/\s/g, ''), /scrollable\?\(?<ScrollView/);
   assert.match(sheet, /<DetailSurface/);
   const surface = readFileSync('mobile/src/design/DetailSurface.tsx', 'utf8');
   containsCode(surface, "fullScreen?'fullScreen':'pageSheet'");
@@ -49,11 +49,12 @@ test('Picks and card details read as one scrolling page and every Flow uses card
   assert.match(card, /Verify current issuer terms/);
 });
 test('saved flow action opens Home instead of looking like a disabled add button', () => {
-  const action = readFileSync('mobile/src/FlowHomeAction.tsx', 'utf8');
-  assert.match(action, /added\?'View on Home →':'Add to Home'/);
+  const action = readFileSync('mobile/src/FlowHomeAction.tsx', 'utf8').replaceAll(/\s/g, '');
+  assert.match(action, /added\?'ViewonHome→':'AddtoHome'/);
   assert.match(action, /onPress=\{added\?onHome:onAdd\}/);
   assert.match(action, /disabled=\{busy\}/);
-  assert.match(action, /minHeight:56/);
+  // The shared Button is the full-height main button; the action never draws its own.
+  assert.match(action, /<Button/);
   assert.doesNotMatch(action, /SwiftButton|<Host|disabled=\{[^}]*added/);
   const surface = readFileSync('mobile/src/design/DetailSurface.tsx', 'utf8');
   containsCode(

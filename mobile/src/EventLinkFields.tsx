@@ -2,7 +2,7 @@ import { formatInr, formatDate } from '../../shared/format';
 import React, { useEffect, useRef, useState } from 'react';
 import { Keyboard, Pressable, ScrollView, View } from 'react-native';
 import { Text } from './design/Text';
-import { DateTimeField } from './design/components';
+import { Button, DateTimeField } from './design/components';
 import { EventTextField, EventSelectField } from './EventEditorControls';
 import { Disclosure } from './Disclosure';
 import {
@@ -10,7 +10,7 @@ import {
   eventEditorSteps,
   type EventEditorStep,
 } from '../../shared/event-editor';
-import { useTheme } from './design/theme';
+import { radius, space, stroke, useTheme } from './design/theme';
 import type { AppSettings } from '../../shared/admin-content';
 import type { CityEvent } from '../../shared/mobile';
 export function curatedEventForm(
@@ -116,7 +116,7 @@ export function EventLinkFields({
     'Who’s coming?',
     'Ready to share?',
   ];
-  const copy = { color: C.muted, fontSize: 14, lineHeight: 21 } as const;
+  const copy = { color: C.muted } as const;
   useEffect(() => {
     Keyboard.dismiss();
     scroll.current?.scrollTo({ y: 0, animated: false });
@@ -166,8 +166,8 @@ export function EventLinkFields({
     : 'Choose a date';
   return (
     <View style={{ flex: 1, minHeight: 0, backgroundColor: C.bg }}>
-      <View style={{ gap: 8, paddingBottom: 14 }}>
-        <View style={{ flexDirection: 'row', gap: 5 }}>
+      <View style={{ gap: space.sm, paddingBottom: space.md }}>
+        <View style={{ flexDirection: 'row', gap: space.xs }}>
           {eventEditorSteps.map((item, i) => (
             <View
               key={item}
@@ -180,7 +180,7 @@ export function EventLinkFields({
             />
           ))}
         </View>
-        <Text style={{ ...copy, fontSize: 12 }}>
+        <Text variant="caption" style={copy}>
           {index + 1} of 4 · {names[index]}
         </Text>
       </View>
@@ -189,16 +189,17 @@ export function EventLinkFields({
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ gap: 18, paddingBottom: 24 }}
+        contentContainerStyle={{ gap: space.md, paddingBottom: space.xl }}
       >
         <Text
           accessibilityRole="header"
-          style={{ color: C.text, fontSize: 27, lineHeight: 34, fontWeight: '600' }}
+          variant="title"
+          style={{ color: C.text }}
         >
           {titles[index]}
         </Text>
         {error && (
-          <Text accessibilityRole="alert" style={{ color: C.danger, fontSize: 14, lineHeight: 21 }}>
+          <Text accessibilityRole="alert" variant="subhead" style={{ color: C.danger }}>
             {error}
           </Text>
         )}
@@ -208,7 +209,7 @@ export function EventLinkFields({
               placeholder: 'e.g. Hyderabad builders meetup',
               maxLength: 100,
             })}
-            <View style={{ flexDirection: 'row', gap: 8 }}>
+            <View style={{ flexDirection: 'row', gap: space.sm }}>
               {[
                 { id: 'approval', title: 'Host here', note: 'Free · invite approval' },
                 { id: 'external', title: 'Share a link', note: 'Luma, Meetup & more' },
@@ -229,18 +230,18 @@ export function EventLinkFields({
                   style={{
                     flex: 1,
                     minHeight: 76,
-                    padding: 12,
-                    gap: 5,
-                    borderRadius: 14,
-                    borderWidth: 1,
+                    padding: space.ms,
+                    gap: space.xs,
+                    borderRadius: radius.control,
+                    borderWidth: stroke.line,
                     borderColor: form.registrationMode === mode.id ? C.lime : C.line,
                     backgroundColor: C.card,
                   }}
                 >
-                  <Text style={{ color: C.text, fontSize: 15, fontWeight: '600' }}>
+                  <Text variant="subhead" style={{ color: C.text, fontWeight: '600' }}>
                     {mode.title}
                   </Text>
-                  <Text style={{ ...copy, fontSize: 12 }}>{mode.note}</Text>
+                  <Text variant="caption" style={copy}>{mode.note}</Text>
                 </Pressable>
               ))}
             </View>
@@ -277,7 +278,7 @@ export function EventLinkFields({
               placeholder: 'Venue name or meeting location',
               maxLength: 160,
             })}
-            <View style={{ padding: 14, borderRadius: 14, backgroundColor: C.card }}>
+            <View style={{ padding: space.md, borderRadius: radius.control, backgroundColor: C.card }}>
               <DateTimeField
                 label="Starts"
                 value={form.startsAt ?? ''}
@@ -291,28 +292,24 @@ export function EventLinkFields({
                   value={form.endsAt}
                   onChange={value => update('endsAt', value)}
                 />
-                <Pressable
-                  onPress={() => update('endsAt', '')}
-                  accessibilityRole="button"
+                <Button
+                  variant="text"
+                  title="Remove end time"
                   accessibilityLabel="Remove end time"
-                  style={{ minHeight: 48, justifyContent: 'center' }}
-                >
-                  <Text style={{ color: C.lime }}>Remove end time</Text>
-                </Pressable>
+                  onPress={() => update('endsAt', '')}
+                />
               </>
             ) : (
-              <Pressable
-                accessibilityRole="button"
+              <Button
+                variant="text"
+                title="+ Add an end time"
                 accessibilityLabel="Add an end time"
                 onPress={() =>
                   update('endsAt', new Date(Date.parse(form.startsAt) + 3600000).toISOString())
                 }
-                style={{ minHeight: 48, justifyContent: 'center' }}
-              >
-                <Text style={{ color: C.lime }}>+ Add an end time</Text>
-              </Pressable>
+              />
             )}
-            <Text style={copy}>Choose a date within the next year.</Text>
+            <Text variant="subhead" style={copy}>Choose a date within the next year.</Text>
           </>
         )}
         {step === 'Guests' && (
@@ -321,7 +318,7 @@ export function EventLinkFields({
               <>
                 {field('organizerName', 'Host name', { maxLength: 100 })}
                 {field('guestCapacity', 'Guest limit', { numeric: true, placeholder: '100' })}
-                <Text style={copy}>
+                <Text variant="subhead" style={copy}>
                   Free entry. You approve invite requests; guest names stay private until approval.
                 </Text>
               </>
@@ -355,24 +352,20 @@ export function EventLinkFields({
                     value={form.registrationClosesAt}
                     onChange={value => update('registrationClosesAt', value)}
                   />
-                  <Pressable
-                    accessibilityRole="button"
+                  <Button
+                    variant="text"
+                    title="Remove deadline"
                     accessibilityLabel="Remove registration deadline"
                     onPress={() => update('registrationClosesAt', '')}
-                    style={{ minHeight: 48, justifyContent: 'center' }}
-                  >
-                    <Text style={{ color: C.lime }}>Remove deadline</Text>
-                  </Pressable>
+                  />
                 </>
               ) : (
-                <Pressable
-                  accessibilityRole="button"
+                <Button
+                  variant="text"
+                  title="+ Add a confirmed deadline"
                   accessibilityLabel="Add a confirmed registration deadline"
                   onPress={() => update('registrationClosesAt', form.startsAt)}
-                  style={{ minHeight: 48, justifyContent: 'center' }}
-                >
-                  <Text style={{ color: C.lime }}>+ Add a confirmed deadline</Text>
-                </Pressable>
+                />
               )}
               <EventSelectField
                 label="Registration status"
@@ -399,32 +392,32 @@ export function EventLinkFields({
           <>
             <View
               style={{
-                padding: 18,
-                borderRadius: 20,
-                borderWidth: 1,
+                padding: space.md,
+                borderRadius: radius.card,
+                borderWidth: stroke.line,
                 borderColor: C.line,
                 backgroundColor: C.card,
-                gap: 10,
+                gap: space.ms,
               }}
             >
-              <Text style={{ color: C.lime, fontSize: 12 }}>
+              <Text variant="caption" style={{ color: C.lime }}>
                 {hosted ? 'HOSTED IN QRAM' : 'EXTERNAL EVENT'} · {form.topic}
               </Text>
-              <Text style={{ color: C.text, fontSize: 23, lineHeight: 30, fontWeight: '600' }}>
+              <Text variant="heading" style={{ color: C.text }}>
                 {form.title}
               </Text>
-              <Text style={copy}>{dateLabel}</Text>
-              <Text style={copy}>
+              <Text variant="subhead" style={copy}>{dateLabel}</Text>
+              <Text variant="subhead" style={copy}>
                 {form.venue} · {form.city}
               </Text>
-              <Text style={{ color: C.text, fontSize: 15 }}>
+              <Text variant="subhead" style={{ color: C.text }}>
                 {hosted
                   ? 'Free · ' + form.guestCapacity + ' places'
                   : form.entryFee?.trim()
                     ? formatInr(Number(form.entryFee))
                     : 'Fee not confirmed'}
               </Text>
-              <Text numberOfLines={3} style={copy}>
+              <Text numberOfLines={3} variant="subhead" style={copy}>
                 {form.description}
               </Text>
             </View>
@@ -456,7 +449,7 @@ export function EventLinkFields({
                 })}
               </>
             )}
-            <Text style={copy}>
+            <Text variant="subhead" style={copy}>
               {creator
                 ? 'An admin reviews this before it appears in Events.'
                 : editing
@@ -468,55 +461,42 @@ export function EventLinkFields({
       </ScrollView>
       <View
         style={{
-          paddingTop: 12,
-          paddingBottom: 8,
-          borderTopWidth: 1,
+          paddingTop: space.ms,
+          paddingBottom: space.sm,
+          borderTopWidth: stroke.line,
           borderColor: C.line,
           flexDirection: 'row',
-          gap: 12,
+          gap: space.ms,
           alignItems: 'center',
         }}
       >
         {index > 0 && (
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            variant="text"
+            title="Back"
             accessibilityLabel="Previous event creation step"
             disabled={busy}
             onPress={() => update('_eventStep', eventEditorSteps[index - 1])}
-            style={{ minWidth: 64, minHeight: 52, alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Text style={{ color: C.lime, fontSize: 16 }}>Back</Text>
-          </Pressable>
+          />
         )}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={index===eventEditorSteps.length-1?'Submit event':'Next event creation step'}
-          accessibilityState={{ disabled: busy, busy }}
-          disabled={busy}
-          onPress={advance}
-          style={({ pressed }) => ({
-            flex: 1,
-            minHeight: 52,
-            padding: 14,
-            borderRadius: 16,
-            backgroundColor: C.lime,
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: busy ? 0.5 : pressed ? 0.8 : 1,
-          })}
-        >
-          <Text style={{ color: C.onAccent, fontSize: 16, fontWeight: '600' }}>
-            {busy
-              ? 'Saving…'
-              : index < 3
-                ? 'Continue →'
-                : editing
-                  ? 'Save changes'
-                  : creator
-                    ? 'Submit for approval'
-                    : 'Publish event'}
-          </Text>
-        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Button
+            title={
+              busy
+                ? 'Saving…'
+                : index < 3
+                  ? 'Continue →'
+                  : editing
+                    ? 'Save changes'
+                    : creator
+                      ? 'Submit for approval'
+                      : 'Publish event'
+            }
+            accessibilityLabel={index===eventEditorSteps.length-1?'Submit event':'Next event creation step'}
+            disabled={busy}
+            onPress={advance}
+          />
+        </View>
       </View>
     </View>
   );

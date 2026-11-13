@@ -1,5 +1,7 @@
+import { Glyph } from './design/Glyph';
+import { DetailSurface } from './design/DetailSurface';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { AppState, FlatList, Modal, Platform, Pressable, View } from 'react-native';
+import { AppState, FlatList, Platform, Pressable, View, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SymbolView } from 'expo-symbols';
 import { useFocusEffect } from 'expo-router';
@@ -11,7 +13,7 @@ import { Button } from './design/components';
 import { ScreenBackground } from './design/ScreenBackground';
 import { Banner, EmptyState, Skeleton } from './design/states';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { useTheme, space, radius, hit, opacity, size } from './design/theme';
 /** Lets a page cover its tab's content while the bottom menu stays visible. */
 export const ScreenOverlay = createContext<((node: React.ReactNode) => void) | null>(null);
 
@@ -35,24 +37,24 @@ function UpdateRow({ item, disabled, onPress }: { item: InboxItem; disabled: boo
       onPress={onPress}
       style={({ pressed }) => ({
         flexDirection: 'row',
-        gap: 12,
-        paddingVertical: 14,
-        borderBottomWidth: 0.5,
+        gap: space.ms,
+        paddingVertical: space.md,
+        borderBottomWidth: StyleSheet.hairlineWidth,
         borderColor: C.line,
-        opacity: pressed ? 0.6 : 1,
+        opacity: pressed ? opacity.pressed : 1
       })}
     >
       <View style={{ width: 8, paddingTop: 7 }}>
         {unread ? <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: C.lime }} /> : null}
       </View>
-      <View style={{ flex: 1, gap: 3 }}>
-        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'baseline' }}>
-          <Text numberOfLines={2} style={{ flex: 1, color: C.text, fontSize: 16, fontWeight: unread ? '700' : '500' }}>
+      <View style={{ flex: 1, gap: space.xs }}>
+        <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'baseline' }}>
+          <Text variant="callout" numberOfLines={2} style={{ flex: 1, color: C.text, fontWeight: unread ? '600' : '400'}}>
             {item.title}
           </Text>
-          <Text style={{ color: C.muted, fontSize: 13 }}>{timeAgo(item.createdAt)}</Text>
+          <Text variant="footnote" style={{ color: C.muted }}>{timeAgo(item.createdAt)}</Text>
         </View>
-        <Text numberOfLines={2} style={{ color: C.muted, fontSize: 14, lineHeight: 20 }}>
+        <Text variant="subhead" numberOfLines={2} style={{ color: C.muted }}>
           {item.body}
         </Text>
       </View>
@@ -68,7 +70,7 @@ function UpdatesPage({
   onRetry,
   onRead,
   onReadAll,
-  onMore,
+  onMore
 }: {
   inbox: NotificationInbox;
   busy: boolean;
@@ -86,35 +88,34 @@ function UpdatesPage({
       <ScreenBackground />
       <View
         style={{
-          minHeight: 52,
+          minHeight: size.button,
           flexDirection: 'row',
           alignItems: 'center',
-          paddingHorizontal: 8,
-          borderBottomWidth: 0.5,
-          borderColor: C.line,
+          paddingHorizontal: space.sm,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderColor: C.line
         }}
       >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
           onPress={onBack}
-          style={{ minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' }}
+          style={{ minWidth: hit, minHeight: hit, alignItems: 'center', justifyContent: 'center' }}
         >
-          <Text style={{ color: C.lime, fontSize: 26 }}>←</Text>
+          <Glyph name={{ ios: 'chevron.left', android: 'arrow_back' }} fallback="←" color={C.text} />
         </Pressable>
-        <Text accessibilityRole="header" style={{ flex: 1, color: C.text, fontSize: 18, fontWeight: '700' }}>
+        <Text variant="headline" accessibilityRole="header" style={{ flex: 1, color: C.text }}>
           Updates
         </Text>
         {inbox.unreadCount > 0 ? (
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            variant="text"
+            size="regular"
+            title="Mark all read"
             accessibilityLabel="Mark all as read"
             disabled={busy}
             onPress={onReadAll}
-            style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 }}
-          >
-            <Text style={{ color: C.lime, fontSize: 14, fontWeight: '600' }}>Mark all read</Text>
-          </Pressable>
+          />
         ) : null}
       </View>
       {error ? <Banner kind="error" message={error} action={{ label: 'Retry', onPress: onRetry }} /> : null}
@@ -124,7 +125,7 @@ function UpdatesPage({
         <FlatList
           data={inbox.items}
           keyExtractor={item => item.id}
-          contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 128 }}
+          contentContainerStyle={{ paddingHorizontal: space.md, paddingBottom: 128 }}
           renderItem={({ item }) => <UpdateRow item={item} disabled={busy} onPress={() => onRead(item)} />}
           ListEmptyComponent={
             <EmptyState title="Nothing here yet." description="Approvals and updates will appear here." />
@@ -211,7 +212,7 @@ export function NotificationCentre({ onOpen }: { onOpen: (target: InboxItem['tar
         ...value,
         items: [
           ...new Map([...previous.items, ...value.items].map(item => [item.id, item])).values(),
-        ],
+        ]
       }));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load older updates.');
@@ -246,12 +247,12 @@ export function NotificationCentre({ onOpen }: { onOpen: (target: InboxItem['tar
           setOpen(true);
           void load();
         }}
-        style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}
+        style={{ width: hit, height: hit, alignItems: 'center', justifyContent: 'center' }}
       >
         {Platform.OS === 'ios' ? (
           <SymbolView name="bell" tintColor={C.lime} style={{ width: 24, height: 24 }} />
         ) : (
-          <Text style={{ color: C.lime, fontSize: 22 }}>♧</Text>
+          <Text variant="heading" style={{ color: C.lime }}>♧</Text>
         )}
         {inbox.unreadCount > 0 && (
           <View
@@ -259,24 +260,26 @@ export function NotificationCentre({ onOpen }: { onOpen: (target: InboxItem['tar
               position: 'absolute',
               top: 0,
               right: 0,
-              borderRadius: 10,
+              borderRadius: radius.pill,
               minWidth: 18,
               height: 18,
               backgroundColor: C.lime,
               alignItems: 'center',
-              justifyContent: 'center',
+              justifyContent: 'center'
             }}
           >
-            <Text style={{ color: C.onAccent, fontSize: 10 }}>
+            <Text variant="caption" style={{ color: C.onAccent }}>
               {inbox.unreadCount > 99 ? '99+' : inbox.unreadCount}
             </Text>
           </View>
         )}
       </Pressable>
       {!showOverlay ? (
-        <Modal visible={open} animationType="slide" onRequestClose={() => setOpen(false)}>
-          {page}
-        </Modal>
+        open ? (
+          <DetailSurface presentation="modal" fullScreen safeArea={false} onClose={() => setOpen(false)}>
+            {page}
+          </DetailSurface>
+        ) : null
       ) : null}
     </>
   );

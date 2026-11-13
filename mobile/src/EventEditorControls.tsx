@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { Text } from './design/Text';
 import { Sheet } from './design/components';
-import { useTheme } from './design/theme';
+import { radius, size, space, stroke, textRoles, useTheme } from './design/theme';
 export function EventTextField({
   label,
   value,
@@ -25,8 +25,8 @@ export function EventTextField({
   const { colors: C } = useTheme();
   const [focused, setFocused] = useState(false);
   return (
-    <View style={{ gap: 7 }}>
-      <Text style={{ color: C.muted, fontSize: 13 }}>{label}</Text>
+    <View style={{ gap: space.sm }}>
+      <Text variant="footnote" style={{ color: C.muted }}>{label}</Text>
       <TextInput
         accessibilityLabel={label}
         value={value}
@@ -43,15 +43,15 @@ export function EventTextField({
         selectionColor={C.lime}
         style={{
           color: C.text,
-          fontSize: 16,
-          lineHeight: 23,
-          minHeight: multiline ? 110 : 52,
+          fontSize: textRoles.callout.fontSize,
+          lineHeight: textRoles.callout.lineHeight,
+          minHeight: multiline ? 110 : size.button,
           textAlignVertical: multiline ? 'top' : 'center',
-          paddingHorizontal: 14,
-          paddingVertical: 13,
-          borderWidth: 1,
+          paddingHorizontal: space.md,
+          paddingVertical: space.ms,
+          borderWidth: stroke.line,
           borderColor: focused ? C.lime : C.line,
-          borderRadius: 14,
+          borderRadius: radius.control,
           backgroundColor: C.card,
         }}
       />
@@ -80,19 +80,19 @@ export function EventSelectField({
         disabled={options.length <= 1}
         onPress={() => setOpen(true)}
         style={{
-          minHeight: 54,
-          borderWidth: 1,
+          minHeight: size.button,
+          borderWidth: stroke.line,
           borderColor: C.line,
-          borderRadius: 14,
+          borderRadius: radius.control,
           backgroundColor: C.card,
-          paddingHorizontal: 14,
+          paddingHorizontal: space.md,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 12,
+          gap: space.ms,
         }}
       >
-        <Text style={{ color: C.muted, fontSize: 13, flex: 1 }}>{label}</Text>
-        <Text style={{ color: C.text, fontSize: 15, flexShrink: 1 }}>{value}</Text>
+        <Text variant="footnote" style={{ color: C.muted, flex: 1 }}>{label}</Text>
+        <Text variant="subhead" style={{ color: C.text, flexShrink: 1 }}>{value}</Text>
         {options.length > 1 && <Text style={{ color: C.lime }}>⌄</Text>}
       </Pressable>
       {open && (
@@ -108,15 +108,15 @@ export function EventSelectField({
                 setOpen(false);
               }}
               style={{
-                minHeight: 52,
-                padding: 14,
-                borderBottomWidth: 1,
+                minHeight: size.button,
+                padding: space.md,
+                borderBottomWidth: stroke.line,
                 borderColor: C.line,
                 flexDirection: 'row',
-                gap: 12,
+                gap: space.ms,
               }}
             >
-              <Text style={{ flex: 1, color: C.text, fontSize: 16 }}>{option}</Text>
+              <Text variant="callout" style={{ flex: 1, color: C.text }}>{option}</Text>
               <Text style={{ color: C.lime }}>{value === option ? '●' : '○'}</Text>
             </Pressable>
           ))}

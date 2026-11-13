@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { flows as catalogFlows } from '../../shared/mobile';
 import type { HabitFlow } from '../../shared/mobile';
 import { exercise } from '../../shared/exercises';
@@ -7,7 +7,9 @@ import { flowMuscleMap } from '../../shared/muscle-map';
 import { blockFields, targetLabel, type PlanItem, type TrainingSession } from '../../shared/training';
 import { localDate } from '../../shared/flow-habits';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { Button, SectionHeader } from './design/components';
+import { Glyph } from './design/Glyph';
+import { hit, opacity, radius, size, space, stroke, useTheme } from './design/theme';
 import { CatalogBar } from './FlowCatalogTile';
 import { useRootListInset } from './RootList';
 import { BodyMap } from './BodyMap';
@@ -19,7 +21,8 @@ import { useTrainingRoute, useTrainingSessionPane } from './training-route';
 import { applyCustomflow } from '../../shared/customflows';
 import { isCustomOrder } from '../../shared/item-order';
 import { DragList } from './DragList';
-import { resetCustomflow, saveCustomflowOrder, useCustomflow } from './customflows';
+import { saveCustomflowOrder, useCustomflow } from './customflows';
+import { EquipmentCheck } from './EquipmentCheck';
 
 export function WeeklyPlanSection({ onOpen, onBuild, heading = true }: { onOpen: (id: string) => void; onBuild: () => void; heading?: boolean }) {
   const { colors: C } = useTheme();
@@ -36,21 +39,15 @@ export function WeeklyPlanSection({ onOpen, onBuild, heading = true }: { onOpen:
     };
   }, []);
   return (
-    <View style={{ gap: 12 }}>
-      {heading ? (
-        <Text accessibilityRole="header" style={{ color: C.text, fontSize: 22, fontWeight: '700' }}>
-          Weekly Plans
-        </Text>
-      ) : null}
+    <View style={{ gap: space.ms }}>
+      {heading ? <SectionHeader title="Weekly Plans" /> : null}
       {plans.map(plan => (
-        <Pressable key={plan.id} accessibilityRole="button" accessibilityLabel={plan.title} onPress={() => onOpen(plan.id)} style={{ minHeight: 44, justifyContent: 'center' }}>
-          <Text style={{ color: C.text, fontSize: 17, fontWeight: '600' }}>{plan.title}</Text>
-          <Text style={{ color: C.muted, fontSize: 14 }}>{plan.goal}</Text>
+        <Pressable key={plan.id} accessibilityRole="button" accessibilityLabel={plan.title} onPress={() => onOpen(plan.id)} style={{ minHeight: hit, justifyContent: 'center' }}>
+          <Text variant="headline" style={{ color: C.text }}>{plan.title}</Text>
+          <Text variant="subhead" style={{ color: C.muted }}>{plan.goal}</Text>
         </Pressable>
       ))}
-      <Pressable accessibilityRole="button" accessibilityLabel="Build your own week" onPress={onBuild} style={{ minHeight: 44, justifyContent: 'center' }}>
-        <Text style={{ color: C.lime, fontSize: 16, fontWeight: '600' }}>Build your own week</Text>
-      </Pressable>
+      <Button variant="text" size="regular" title="Build your own week" accessibilityLabel="Build your own week" onPress={onBuild} />
     </View>
   );
 }
@@ -73,18 +70,18 @@ function PlanRow({ title, detail, exerciseId, label, onPress }: { title: string;
       accessibilityRole="button"
       accessibilityLabel={label}
       onPress={onPress}
-      style={({ pressed }) => ({ minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, opacity: pressed ? 0.6 : 1 })}
+      style={({ pressed }) => ({ minHeight: size.button, flexDirection: 'row', alignItems: 'center', gap: space.ms, opacity: pressed ? opacity.pressed : 1 })}
     >
-      <View style={{ width: 48, height: 48, borderRadius: 10, overflow: 'hidden', backgroundColor: C.card }}>
+      <View style={{ width: 48, height: 48, borderRadius: radius.small, overflow: 'hidden', backgroundColor: C.card }}>
         <ExerciseVisual exerciseId={exerciseId} cover />
       </View>
       <View style={{ flex: 1 }}>
-        <Text numberOfLines={2} style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>
+        <Text numberOfLines={2} variant="callout" style={{ color: C.text, fontWeight: '600' }}>
           {title}
         </Text>
-        {detail ? <Text style={{ color: C.muted, fontSize: 13 }}>{detail}</Text> : null}
+        {detail ? <Text variant="footnote" style={{ color: C.muted }}>{detail}</Text> : null}
       </View>
-      <Text style={{ color: C.muted, fontSize: 20 }}>›</Text>
+      <Glyph name={{ ios: 'chevron.right', android: 'chevron_right' }} fallback="›" color={C.text} size={space.lg} />
     </Pressable>
   );
 }
@@ -129,13 +126,13 @@ export function TrainingPlanPage({ id, flows, onBack, onSession, onStartFlow }: 
     else run();
   }
   return (
-    <View style={{ flex: 1, paddingTop: Math.max(0, inset - 12) }}>
+    <View style={{ flex: 1, paddingTop: Math.max(0, inset - space.ms) }}>
       <CatalogBar title={plan?.title ?? 'Plan'} onBack={onBack} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 128, gap: 16 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: space.md, paddingTop: space.sm, paddingBottom: 128, gap: space.md }}>
         {plan ? (
-          <View style={{ gap: 4 }}>
-            <Text style={{ color: C.text, fontSize: 16, lineHeight: 22 }}>{plan.goal}</Text>
-            <Text style={{ color: C.muted, fontSize: 14 }}>{planLength(plan.weeks)}. Tap a day to see what's in it.</Text>
+          <View style={{ gap: space.xs }}>
+            <Text variant="callout" style={{ color: C.text }}>{plan.goal}</Text>
+            <Text variant="subhead" style={{ color: C.muted }}>{planLength(plan.weeks)}. Tap a day to see what's in it.</Text>
           </View>
         ) : null}
         <View>
@@ -147,19 +144,20 @@ export function TrainingPlanPage({ id, flows, onBack, onSession, onStartFlow }: 
               return (
                 <View
                   key={`${slot.week}-${slot.weekday}`}
-                  style={{ flexDirection: 'row', gap: 12, paddingVertical: 8, borderTopWidth: 0.5, borderColor: C.line }}
+                  style={{ flexDirection: 'row', gap: space.ms, paddingVertical: space.sm, borderTopWidth: StyleSheet.hairlineWidth, borderColor: C.line }}
                 >
                   <View style={{ width: 44, minHeight: 56, justifyContent: 'center' }}>
-                    {plan.weeks > 1 ? <Text style={{ color: C.muted, fontSize: 11 }}>Wk {slot.week}</Text> : null}
+                    {plan.weeks > 1 ? <Text variant="caption" style={{ color: C.muted }}>Wk {slot.week}</Text> : null}
                     <Text
                       accessibilityLabel={dayName[slot.weekday - 1]}
-                      style={{ color: isToday ? C.lime : C.muted, fontSize: 13, fontWeight: '700' }}
+                      variant="footnote"
+                      style={{ color: isToday ? C.lime : C.muted, fontWeight: '600' }}
                     >
                       {dayName[slot.weekday - 1].slice(0, 3)}
                     </Text>
-                    {isToday ? <Text style={{ color: C.lime, fontSize: 11 }}>Today</Text> : null}
+                    {isToday ? <Text variant="caption" style={{ color: C.lime }}>Today</Text> : null}
                   </View>
-                  <View style={{ flex: 1, gap: 4, justifyContent: 'center' }}>
+                  <View style={{ flex: 1, gap: space.xs, justifyContent: 'center' }}>
                     {slot.items.map((item, index) => (
                       <PlanItemRow key={`${item.kind}-${index}`} item={item} sessions={loaded?.sessions ?? []} flows={flows} onSession={onSession} onStartFlow={onStartFlow} />
                     ))}
@@ -169,18 +167,16 @@ export function TrainingPlanPage({ id, flows, onBack, onSession, onStartFlow }: 
             })}
         </View>
         {adopted ? (
-          <View style={{ gap: 4, alignItems: 'center' }}>
-            <Text accessibilityRole="alert" style={{ color: C.lime, fontSize: 17, fontWeight: '700' }}>
+          <View style={{ gap: space.xs, alignItems: 'center' }}>
+            <Text accessibilityRole="alert" variant="headline" style={{ color: C.lime }}>
               ✓ This is now your week
             </Text>
-            <Text style={{ color: C.muted, fontSize: 14, textAlign: 'center' }}>Find today's session in Home, Yours, Daily.</Text>
+            <Text variant="subhead" style={{ color: C.muted, textAlign: 'center' }}>Find today's session in Home, Yours, Daily.</Text>
           </View>
         ) : plan ? (
-          <View style={{ gap: 8 }}>
-            <Pressable accessibilityRole="button" accessibilityLabel="Use this plan" onPress={apply} style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, backgroundColor: C.lime }}>
-              <Text style={{ color: C.onAccent, fontSize: 17, fontWeight: '700' }}>Use this plan</Text>
-            </Pressable>
-            <Text style={{ color: C.muted, fontSize: 14, textAlign: 'center' }}>
+          <View style={{ gap: space.sm }}>
+            <Button title="Use this plan" accessibilityLabel="Use this plan" onPress={apply} />
+            <Text variant="subhead" style={{ color: C.muted, textAlign: 'center' }}>
               Puts these on your Daily. You can change any day.
             </Text>
           </View>
@@ -209,7 +205,7 @@ function PlanItemRow({
   onStartFlow: (flow: HabitFlow) => void;
 }) {
   const { colors: C } = useTheme();
-  if (item.kind === 'rest') return <Text style={{ color: C.muted, fontSize: 16 }}>{item.label ?? 'Rest'}</Text>;
+  if (item.kind === 'rest') return <Text variant="callout" style={{ color: C.muted }}>{item.label ?? 'Rest'}</Text>;
   if (item.kind === 'session') {
     const session = sessions.find(row => row.id === item.id);
     const title = session?.title ?? 'Session';
@@ -228,7 +224,7 @@ function PlanItemRow({
   return <PlanRow title={flowTitle} label={`Open ${flowTitle}`} onPress={() => flow && onStartFlow(flow)} />;
 }
 
-export function TrainingSessionPreview({ id, onBack }: { id: string; onBack: () => void }) {
+export function TrainingSessionPreview({ id, library, onBack }: { id: string; library: HabitFlow[]; onBack: () => void }) {
   const { colors: C } = useTheme();
   useTrainingSchemes();
   const inset = useRootListInset();
@@ -275,34 +271,69 @@ export function TrainingSessionPreview({ id, onBack }: { id: string; onBack: () 
   const type = detail?.type;
   const customflow = useCustomflow('qram-session', session?.id);
   const [dragging, setDragging] = useState(false);
+  const [equipment, setEquipment] = useState(false);
   const [orderError, setOrderError] = useState('');
   // As the member's Customflow when they've customised this session; blocks they haven't placed keep the catalog order at the end.
   const blocks = session ? applyCustomflow(session.blocks, customflow, block => block.id) : [];
-  const custom = Boolean(customflow);
+  const customOrder = Boolean(
+    session && customflow?.changes.order?.length && isCustomOrder(session.blocks.map(block => block.id), customflow.changes.order),
+  );
+  const canSwap = Boolean(session?.blocks.some(block => block.exerciseId));
   function reorder(keys: string[] | null) {
     if (!session) return;
     setOrderError('');
     const source = { kind: 'qram-session' as const, id: session.id, version: null };
     // Dragging back to the original order clears it, rather than saving a copy of the original.
-    const save = keys && isCustomOrder(session.blocks.map(block => block.id), keys) ? saveCustomflowOrder(source, keys) : resetCustomflow(source);
+    const save = keys && isCustomOrder(session.blocks.map(block => block.id), keys) ? saveCustomflowOrder(source, keys) : saveCustomflowOrder(source, null);
     void save.catch(() => setOrderError('Could not save the new order. Try again.'));
   }
-  const ids = session?.blocks.flatMap(block => (block.exerciseId ? [block.exerciseId] : [])) ?? [];
+  const ids = blocks.flatMap(block => (block.exerciseId ? [block.exerciseId] : []));
   const map = flowMuscleMap(ids);
   return (
-    <View style={{ flex: 1, paddingTop: Math.max(0, inset - 12) }}>
+    <View style={{ flex: 1, paddingTop: Math.max(0, inset - space.ms) }}>
       <CatalogBar title={session?.title ?? 'Session'} onBack={onBack} />
       <ScrollView
         scrollEnabled={!dragging}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 128, gap: 16 }}
+        contentContainerStyle={{ paddingHorizontal: space.md, paddingTop: space.sm, paddingBottom: 128, gap: space.md }}
       >
-        {session ? <Text style={{ color: C.text, fontSize: 16, lineHeight: 22 }}>{session.goal}</Text> : null}
+        {session ? <Text variant="callout" style={{ color: C.text }}>{session.goal}</Text> : null}
+        {customflow ? <Text variant="footnote" style={{ color: C.lime, fontWeight: '600' }}>Customised</Text> : null}
         {map.main.length || map.helpers.length ? (
           <View style={{ alignItems: 'center' }}>
             <BodyMap main={map.main} helpers={map.helpers} width={180} />
           </View>
         ) : null}
-        {session?.note ? <Text style={{ color: C.muted, fontSize: 14, lineHeight: 20 }}>{session.note}</Text> : null}
+        {session?.note ? <Text variant="subhead" style={{ color: C.muted }}>{session.note}</Text> : null}
+        {canSwap && session ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Missing something? Swap an exercise"
+            onPress={() => setEquipment(true)}
+            style={({ pressed }) => ({
+              minHeight: hit,
+              borderRadius: radius.control,
+              borderWidth: stroke.line,
+              borderColor: C.line,
+              backgroundColor: C.card,
+              paddingHorizontal: space.md,
+              paddingVertical: space.ms,
+              justifyContent: 'center',
+              opacity: pressed ? opacity.pressed : 1,
+            })}
+          >
+            <Text variant="subhead" style={{ color: C.text, fontWeight: '600' }}>Equipment check</Text>
+            <Text variant="footnote" style={{ color: C.muted }}>Missing something? Swap an exercise</Text>
+          </Pressable>
+        ) : null}
+        {equipment && session ? (
+          <EquipmentCheck
+            source={{ kind: 'qram-session', id: session.id, version: null }}
+            rows={session.blocks.flatMap(block => (block.exerciseId ? [{ key: block.id, exerciseId: block.exerciseId }] : []))}
+            library={library}
+            onClose={() => setEquipment(false)}
+            onView={() => setEquipment(false)}
+          />
+        ) : null}
         {session && type ? (
           <DragList
             items={blocks}
@@ -315,16 +346,22 @@ export function TrainingSessionPreview({ id, onBack }: { id: string; onBack: () 
               const move = block.exerciseId ? exercise(block.exerciseId) : undefined;
               const labels = fields.map(field => targetLabel(field, block.targets?.[field.key], block.sets, block.scheme)).filter(Boolean);
               const title = block.label ?? move?.name ?? `Block ${index + 1}`;
+              const sourceExercise = session.blocks.find(item => item.id === block.id)?.exerciseId;
+              const swapped =
+                sourceExercise && block.exerciseId && sourceExercise !== block.exerciseId
+                  ? (exercise(sourceExercise)?.name ?? sourceExercise)
+                  : null;
               return (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 8 }}>
-                  <View style={{ width: 56, height: 56, borderRadius: 10, overflow: 'hidden', backgroundColor: C.card }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.ms, paddingVertical: space.sm }}>
+                  <View style={{ width: 56, height: 56, borderRadius: radius.small, overflow: 'hidden', backgroundColor: C.card }}>
                     <ExerciseVisual exerciseId={block.exerciseId} cover />
                   </View>
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>{title}</Text>
-                    {block.label && move ? <Text style={{ color: C.muted, fontSize: 13 }}>{move.name}</Text> : null}
+                  <View style={{ flex: 1, gap: space.xxs }}>
+                    <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>{title}</Text>
+                    {block.label && move ? <Text variant="footnote" style={{ color: C.muted }}>{move.name}</Text> : null}
+                    {swapped ? <Text variant="footnote" style={{ color: C.muted }}>Swapped from {swapped}</Text> : null}
                     {labels.map(label => (
-                      <Text key={label} style={{ color: C.muted, fontSize: 14 }}>
+                      <Text key={label} variant="subhead" style={{ color: C.muted }}>
                         {label}
                       </Text>
                     ))}
@@ -334,58 +371,53 @@ export function TrainingSessionPreview({ id, onBack }: { id: string; onBack: () 
             }}
           />
         ) : null}
-        {custom || orderError ? (
-          <View style={{ gap: 4 }}>
-            {orderError ? <Text style={{ color: C.danger, fontSize: 14 }}>{orderError}</Text> : null}
-            {custom ? (
-              <Text style={{ color: C.muted, fontSize: 14 }}>Customflow: you changed the order.</Text>
+        {customOrder || orderError ? (
+          <View style={{ gap: space.xs }}>
+            {orderError ? <Text variant="subhead" style={{ color: C.danger }}>{orderError}</Text> : null}
+            {customOrder ? (
+              <Text variant="subhead" style={{ color: C.muted }}>Customflow: you changed the order.</Text>
             ) : null}
-            {custom ? (
-              <Pressable
-                accessibilityRole="button"
+            {customOrder ? (
+              <Button
+                variant="text"
+                size="regular"
+                title="Back to the original"
                 accessibilityLabel="Back to the original order"
                 onPress={() => reorder(null)}
-                style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}
-              >
-                <Text style={{ color: C.lime, fontSize: 15, fontWeight: '600' }}>Back to the original</Text>
-              </Pressable>
+              />
             ) : null}
           </View>
         ) : null}
         {session ? (
-          <View style={{ gap: 12 }}>
-            <Pressable
-              accessibilityRole="button"
+          <View style={{ gap: space.ms }}>
+            <Button
+              title="Start this session"
               accessibilityLabel="Start this session"
               onPress={() => setSession({ id: session.id, date: localDate(new Date()) })}
-              style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, backgroundColor: C.lime }}
-            >
-              <Text style={{ color: C.onAccent, fontSize: 17, fontWeight: '700' }}>Start this session</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
+            />
+            <Button
+              variant="text"
+              size="regular"
+              title="Add to my week"
               accessibilityLabel="Add to my week"
               onPress={() => setChoosingDay(value => !value)}
-              style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
-            >
-              <Text style={{ color: C.lime, fontSize: 16, fontWeight: '600' }}>Add to my week</Text>
-            </Pressable>
+            />
             {choosingDay ? (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
                 {dayName.map((name, index) => (
                   <Pressable
                     key={name}
                     accessibilityRole="button"
                     accessibilityLabel={`Add to ${name}`}
                     onPress={() => void addToWeek(index + 1, name)}
-                    style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 }}
+                    style={{ minHeight: hit, justifyContent: 'center', paddingHorizontal: space.sm }}
                   >
-                    <Text style={{ color: C.text, fontSize: 15 }}>{name}</Text>
+                    <Text variant="subhead" style={{ color: C.text }}>{name}</Text>
                   </Pressable>
                 ))}
               </View>
             ) : null}
-            {weekNote ? <Text style={{ color: C.muted, fontSize: 14 }}>{weekNote}</Text> : null}
+            {weekNote ? <Text variant="subhead" style={{ color: C.muted }}>{weekNote}</Text> : null}
             {weekError ? (
               <Text accessibilityRole="alert" style={{ color: C.danger }}>
                 {weekError}
@@ -411,13 +443,13 @@ export function BuildWeekPage({ flows, onBack }: { flows: HabitFlow[]; onBack: (
   }
   useEffect(load, []);
   return (
-    <View style={{ flex: 1, paddingTop: Math.max(0, inset - 12) }}>
+    <View style={{ flex: 1, paddingTop: Math.max(0, inset - space.ms) }}>
       <CatalogBar title="Your week" onBack={onBack} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 128, gap: 12 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: space.md, paddingTop: space.sm, paddingBottom: 128, gap: space.ms }}>
         {days.map(day => (
-          <Pressable key={day.date} accessibilityRole="button" accessibilityLabel={`Change ${dayName[day.weekday - 1]}`} onPress={() => setOpen(day)} style={{ minHeight: 44, justifyContent: 'center' }}>
-            <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>{dayName[day.weekday - 1]}</Text>
-            <Text style={{ color: C.muted, fontSize: 14 }}>{day.items.map(item => item.title || item.label).filter(Boolean).join(', ') || 'Empty'}</Text>
+          <Pressable key={day.date} accessibilityRole="button" accessibilityLabel={`Change ${dayName[day.weekday - 1]}`} onPress={() => setOpen(day)} style={{ minHeight: hit, justifyContent: 'center' }}>
+            <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>{dayName[day.weekday - 1]}</Text>
+            <Text variant="subhead" style={{ color: C.muted }}>{day.items.map(item => item.title || item.label).filter(Boolean).join(', ') || 'Empty'}</Text>
           </Pressable>
         ))}
         {open ? (
@@ -464,7 +496,13 @@ export function TrainingRoutes({
       />
     );
   if (route.page === 'session')
-    return <TrainingSessionPreview id={route.id} onBack={() => setRoute(route.planId ? { page: 'plan', id: route.planId } : { page: 'plans' })} />;
+    return (
+      <TrainingSessionPreview
+        id={route.id}
+        library={flows}
+        onBack={() => setRoute(route.planId ? { page: 'plan', id: route.planId } : { page: 'plans' })}
+      />
+    );
   if (route.page === 'build') return <BuildWeekPage flows={flows} onBack={() => setRoute({ page: 'home' })} />;
   if (route.page === 'plans')
     return (
@@ -480,9 +518,9 @@ export function TrainingRoutes({
 function PlansIndex({ onBack, onOpen, onBuild }: { onBack: () => void; onOpen: (id: string) => void; onBuild: () => void }) {
   const inset = useRootListInset();
   return (
-    <View style={{ flex: 1, paddingTop: Math.max(0, inset - 12) }}>
+    <View style={{ flex: 1, paddingTop: Math.max(0, inset - space.ms) }}>
       <CatalogBar title="Weekly Plans" onBack={onBack} />
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 128 }}>
+      <ScrollView contentContainerStyle={{ paddingHorizontal: space.md, paddingTop: space.sm, paddingBottom: 128 }}>
         <WeeklyPlanSection heading={false} onOpen={onOpen} onBuild={onBuild} />
       </ScrollView>
     </View>

@@ -5,7 +5,7 @@ import { animalIllustrations, type AnimalIllustration } from '../../shared/anima
 import type { WorkoutGuide } from '../../shared/workout-guides';
 import { FocusIllustration } from './FocusIllustration';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { radius, space, useTheme } from './design/theme';
 
 // Original schematic starting poses, not copied photos or clinical form analysis.
 const poses: Record<AnimalIllustration, { head: [number, number]; body: string; limbs: string }> = {
@@ -55,11 +55,11 @@ export function WorkoutGuideIllustration({
   const pose = poses[illustration as AnimalIllustration];
   const size = compact ? 80 : 152;
   return (
-    <View style={{ alignItems: 'center', gap: 6 }}>
+    <View style={{ alignItems: 'center', gap: space.sm }}>
       <View
         accessible={false}
         accessibilityElementsHidden
-        style={{ borderRadius: 20, backgroundColor: C.illustrationBackdrop }}
+        style={{ borderRadius: radius.card, backgroundColor: C.illustrationBackdrop }}
       >
         <Svg width={size} height={size} viewBox="0 0 104 96">
           <Path d="M10 80 H94" stroke={C.line} strokeWidth={2} />
@@ -76,7 +76,7 @@ export function WorkoutGuideIllustration({
         </Svg>
       </View>
       {!compact && (
-        <Text style={{ color: C.muted, fontSize: 11 }}>Position sketch · follow the cues</Text>
+        <Text variant="caption" style={{ color: C.muted }}>Position sketch · follow the cues</Text>
       )}
     </View>
   );

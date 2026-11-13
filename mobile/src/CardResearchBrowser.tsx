@@ -11,7 +11,7 @@ import {
 } from '../../shared/card-research';
 import { Text } from './design/Text';
 import { Badge, Button, Choice, Field, Sheet } from './design/components';
-import { useTheme } from './design/theme';
+import { hit, radius, space, useTheme } from './design/theme';
 import { SwipeDeck, DeckPage } from './SwipeDeck';
 import { Disclosure } from './Disclosure';
 
@@ -55,15 +55,15 @@ export function CardResearchBrowser({
     if (reviewed) onOpen(reviewed);
     else setListing(item);
   }
-  const text = { color: C.muted, fontSize: 14, lineHeight: 21 } as const;
+  const text = { color: C.muted } as const;
   function offerRow(offer: CardOffer) {
     const state = cardOfferState(offer);
     return (
       <View
         key={offer.id}
-        style={{ padding: 18, borderWidth: 1, borderColor: C.line, borderRadius: 20, gap: 8 }}
+        style={{ padding: space.md, borderWidth: 1, borderColor: C.line, borderRadius: radius.card, gap: space.sm }}
       >
-        <Text style={{ color: C.text, fontSize: 18, lineHeight: 25, fontWeight: '600' }}>
+        <Text variant="headline" style={{ color: C.text }}>
           {offer.title}
         </Text>
         <Badge>
@@ -75,7 +75,7 @@ export function CardResearchBrowser({
                 ? 'Upcoming'
                 : 'Within published dates · check eligibility'}
         </Badge>
-        <Text style={text}>
+        <Text variant="subhead" style={text}>
           {offer.paymentRoute === 'voucher'
             ? 'Via voucher purchase'
             : offer.paymentRoute === 'emi'
@@ -95,17 +95,17 @@ export function CardResearchBrowser({
                 : 'Value subject to terms'}
         </Text>
         <Disclosure title="Eligibility & limits">
-          <Text style={text}>Eligible: {offer.eligibleCards.join(', ')}</Text>
+          <Text variant="subhead" style={text}>Eligible: {offer.eligibleCards.join(', ')}</Text>
           {offer.excludedCards.length > 0 && (
-            <Text style={text}>Excluded: {offer.excludedCards.join(', ')}</Text>
+            <Text variant="subhead" style={text}>Excluded: {offer.excludedCards.join(', ')}</Text>
           )}
-          <Text style={text}>
+          <Text variant="subhead" style={text}>
             Minimum: {offer.minSpend === null ? 'unverified' : `₹${offer.minSpend}`} · cap:{' '}
             {offer.maxSaving === null ? 'unverified' : `₹${offer.maxSaving}`}
           </Text>
-          <Text style={text}>{offer.frequency}</Text>
-          <Text style={text}>{offer.conditions}</Text>
-          <Text style={text}>
+          <Text variant="subhead" style={text}>{offer.frequency}</Text>
+          <Text variant="subhead" style={text}>{offer.conditions}</Text>
+          <Text variant="subhead" style={text}>
             Expiry: {offer.endsAt ? formatDate(new Date(offer.endsAt)) : 'unverified'} · stacking:{' '}
             {offer.stacking}
           </Text>
@@ -116,12 +116,12 @@ export function CardResearchBrowser({
     );
   }
   return (
-    <View style={{ gap: 14 }}>
+    <View style={{ gap: space.md }}>
       <Button title={`My Cards · ${Object.keys(wallet).length}`} secondary onPress={onMyCards} />
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 8 }}
+        contentContainerStyle={{ gap: space.sm }}
       >
         {['Cards', 'Platform offers', 'Coverage'].map(title => (
           <Pressable
@@ -131,16 +131,16 @@ export function CardResearchBrowser({
             accessibilityState={{ selected: view === title }}
             onPress={() => setView(title)}
             style={{
-              minHeight: 48,
-              padding: 12,
-              borderRadius: 14,
+              minHeight: hit,
+              padding: space.ms,
+              borderRadius: radius.control,
               backgroundColor: view === title ? C.lime : C.card,
             }}
           >
             <Text
+              variant="subhead"
               style={{
                 color: view === title ? C.onAccent : C.text,
-                fontSize: 14,
                 fontWeight: '600',
               }}
             >
@@ -151,7 +151,7 @@ export function CardResearchBrowser({
       </ScrollView>
       {view === 'Cards' && (
         <>
-          <Text style={text}>
+          <Text variant="subhead" style={text}>
             Source-listed directory · not yet an exhaustive list of cards open for new applications.
           </Text>
           <Field
@@ -179,9 +179,9 @@ export function CardResearchBrowser({
               setLegacy(value => !value);
               setLimit(20);
             }}
-            style={{ minHeight: 48, justifyContent: 'center' }}
+            style={{ minHeight: hit, justifyContent: 'center' }}
           >
-            <Text style={{ color: C.lime, fontSize: 14 }}>
+            <Text variant="subhead" style={{ color: C.lime }}>
               {legacy ? '☑' : '☐'} Include paused, legacy & discontinued
             </Text>
           </Pressable>
@@ -193,20 +193,20 @@ export function CardResearchBrowser({
               accessibilityLabel={`Open ${item.title}`}
               onPress={() => open(item)}
               style={{
-                padding: 17,
-                borderRadius: 18,
+                padding: space.md,
+                borderRadius: radius.card,
                 borderWidth: 1,
                 borderColor: C.line,
                 backgroundColor: C.card,
-                gap: 6,
+                gap: space.sm,
                 minHeight: 88,
               }}
             >
               <Badge>{item.issuer}</Badge>
-              <Text style={{ color: C.text, fontSize: 17, lineHeight: 24, fontWeight: '600' }}>
+              <Text variant="headline" style={{ color: C.text }}>
                 {item.title} →
               </Text>
-              <Text style={text}>
+              <Text variant="subhead" style={text}>
                 {item.availability === 'open'
                   ? 'Issuer marked open · check eligibility'
                   : item.availability === 'invitation-only'
@@ -221,7 +221,7 @@ export function CardResearchBrowser({
             <Button title="Show 20 more" secondary onPress={() => setLimit(value => value + 20)} />
           )}
           {items.length === 0 && (
-            <Text style={text}>
+            <Text variant="subhead" style={text}>
               No reviewed directory names here yet. Check Coverage for the issuer source; this does
               not mean the issuer has no cards.
             </Text>
@@ -248,7 +248,7 @@ export function CardResearchBrowser({
               setPlatform(research.platforms.find(item => item.title === title)?.id ?? 'All')
             }
           />
-          <Text style={text}>
+          <Text variant="subhead" style={text}>
             Research leads, not guaranteed savings. Expired offers are labelled; incomplete terms
             are not used for recommendations.
           </Text>
@@ -256,8 +256,8 @@ export function CardResearchBrowser({
             .filter(offer => platform === 'All' || offer.platformId === platform)
             .map(offerRow)}
           {platform !== 'All' && !research.offers.some(offer => offer.platformId === platform) && (
-            <View style={{ gap: 10 }}>
-              <Text style={text}>
+            <View style={{ gap: space.ms }}>
+              <Text variant="subhead" style={text}>
                 Offer collection pending. No verified current offer is recorded; this does not mean
                 none exists.
               </Text>
@@ -274,7 +274,7 @@ export function CardResearchBrowser({
       )}
       {view === 'Coverage' && (
         <>
-          <Text style={text}>
+          <Text variant="subhead" style={text}>
             {research.listings.length} discovered listings · {research.issuers.length} issuer
             sources · {research.platforms.length} platform targets. Completeness is not certified.
             Network variants, business/secured cards and invitation-only products need separate
@@ -282,7 +282,7 @@ export function CardResearchBrowser({
           </Text>
           {research.issuers.map(item => (
             <Disclosure key={item.id} title={`${item.title} · ${item.coverage}`}>
-              <Text style={text}>{item.note}</Text>
+              <Text variant="subhead" style={text}>{item.note}</Text>
               <Badge>
                 {research.listings.filter(card => card.issuerId === item.id).length} names collected
                 · checked {formatDate(new Date(item.checkedAt))}
@@ -292,11 +292,11 @@ export function CardResearchBrowser({
           ))}
           <Disclosure title="Platform collection gaps">
             {research.platforms.map(item => (
-              <View key={item.id} style={{ gap: 5, paddingVertical: 10 }}>
-                <Text style={{ color: C.text, fontSize: 16 }}>
+              <View key={item.id} style={{ gap: space.xs, paddingVertical: space.ms }}>
+                <Text variant="callout" style={{ color: C.text }}>
                   {item.title} · {item.coverage}
                 </Text>
-                <Text style={text}>{item.note}</Text>
+                <Text variant="subhead" style={text}>{item.note}</Text>
               </View>
             ))}
           </Disclosure>
@@ -328,13 +328,13 @@ export function CardResearchBrowser({
                       borderWidth: 1,
                       borderColor: C.line,
                       backgroundColor: C.card,
-                      borderRadius: 24,
-                      padding: 25,
+                      borderRadius: radius.card,
+                      padding: space.xl,
                       justifyContent: 'space-between',
                     }}
                   >
-                    <Text style={{ color: C.lime, fontSize: 14 }}>{listing.issuer}</Text>
-                    <Text style={{ color: C.text, fontSize: 21 }}>{listing.title}</Text>
+                    <Text variant="subhead" style={{ color: C.lime }}>{listing.issuer}</Text>
+                    <Text variant="section" style={{ color: C.text }}>{listing.title}</Text>
                   </View>
                 }
               />,
@@ -344,15 +344,15 @@ export function CardResearchBrowser({
                 title="Unknown is not free."
                 caption={listing.note}
               >
-                <Text style={text}>
+                <Text variant="subhead" style={text}>
                   Annual fee:{' '}
                   {listing.annualFee === null ? 'not verified' : `₹${listing.annualFee}`}
                 </Text>
-                <Text style={text}>
+                <Text variant="subhead" style={text}>
                   Joining fee:{' '}
                   {listing.joiningFee === null ? 'not verified' : `₹${listing.joiningFee}`}
                 </Text>
-                <Text style={text}>
+                <Text variant="subhead" style={text}>
                   Exact card/network variants and complete terms are pending. This listing is not a
                   recommendation.
                 </Text>
@@ -363,7 +363,7 @@ export function CardResearchBrowser({
                 title="Check the issuer."
                 caption="An issuer-wide offer does not necessarily include every card from that bank."
               >
-                <Text style={text}>
+                <Text variant="subhead" style={text}>
                   Fees and eligibility must be reviewed before this listing can be used to calculate
                   personal value.
                 </Text>

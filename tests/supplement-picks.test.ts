@@ -1,3 +1,4 @@
+import { designMock, designTokens } from './support/design-mocks';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -113,7 +114,7 @@ function mount() {
         };
       if (name === 'react-native')
         return { View: 'View', Pressable: 'Pressable', Image: 'Image', ScrollView: 'ScrollView' };
-      if (name === './design/theme') return { useTheme: () => ({ colors: {} }) };
+      if (name === './design/theme') return { ...designTokens, useTheme: () => ({ colors: {} }) };
       // Topic selection moved from component useState to account-scoped pane state so a flow can open it.
       if (name === './pane-state')
         return {
@@ -157,7 +158,8 @@ function mount() {
   };
   const press = (tree: Element, label: string) => {
     const button = nodes(tree).find(
-      node => node.type === 'Pressable' && node.props.accessibilityLabel === label,
+      // Shared Buttons carry the same spoken label as the hand-drawn Pressables they replaced.
+      node => (node.type === 'Pressable' || node.type === 'Button') && node.props.accessibilityLabel === label,
     );
     assert.ok(button, label);
     (button.props.onPress as () => void)();

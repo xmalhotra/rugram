@@ -6,7 +6,7 @@ import type { CityEvent } from '../../shared/mobile';
 import { eventCalendar } from '../../shared/calendar';
 import { Button } from './design/components';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { space, useTheme } from './design/theme';
 import { useToast } from './design/states';
 export function AddToCalendar({ event }: { event: CityEvent }) {
   const [busy, setBusy] = useState(false);
@@ -42,14 +42,14 @@ export function AddToCalendar({ event }: { event: CityEvent }) {
   }
   if (event.status !== 'published' || event.registrationStatus === 'Cancelled') return null;
   return (
-    <View style={{ gap: 4 }}>
+    <View style={{ gap: space.xs }}>
       <Button
         title={busy ? 'Preparing calendar…' : 'Add to calendar'}
         secondary
         disabled={busy}
         onPress={() => void share()}
       />
-      <Text style={{ color: C.muted, fontSize: 13 }}>
+      <Text variant="footnote" style={{ color: C.muted }}>
         Choose your calendar app or save the .ics file. This does not register you.
         {!event.dateOnly && !event.endsAt ? ' End time is not confirmed.' : ''}
       </Text>

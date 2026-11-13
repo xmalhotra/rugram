@@ -14,14 +14,14 @@ import {
 } from '../../shared/hyderabad-tech';
 import { eventCost } from '../../shared/flow-connections';
 import { eventProvider, eventWebsite } from '../../shared/event-discovery';
-import { Badge, Button, Card, EmptyState } from './design/components';
+import { Badge, Button, Card, EmptyState, SectionHeader } from './design/components';
 import {
   eventInterests,
   defaultEventTopics,
   enabledEventInterests,
   eventMatchesInterest,
 } from '../../shared/event-interests';
-import { useTheme } from './design/theme';
+import { opacity, radius, space, stroke, useTheme } from './design/theme';
 import { Disclosure } from './Disclosure';
 import { EventHosts } from './EventHosts';
 import { FocusIllustration } from './FocusIllustration';
@@ -151,8 +151,7 @@ export function HyderabadEvents({
   } = useEventsView(data);
   // Category chips on the city page filter in place.
   const [filter, setFilter] = usePaneState<string | null>('eventFilter', null);
-  const copy = { color: C.muted, fontSize: 16, lineHeight: 24 } as const;
-  const sectionTitle = { color: C.text, fontSize: 22, fontWeight: '700' } as const;
+  const copy = { color: C.muted } as const;
   const row = (event: CityEvent, mark = markFor(event)) => (
     <EventRow key={event.id} event={event} mark={mark} showDate onPress={() => onSelect(event)} />
   );
@@ -177,12 +176,12 @@ export function HyderabadEvents({
       accessibilityLabel={`${selectedCity}. Change city`}
       onPress={() => setCity(null)}
       hitSlop={8}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 8, alignSelf: 'flex-start' }}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, alignSelf: 'flex-start' }}
     >
-      <Text style={{ color: C.text, fontSize: 22, lineHeight: 28, fontWeight: '700' }}>
+      <Text variant="heading" style={{ color: C.text }}>
         {selectedCity}
       </Text>
-      <Text style={{ color: C.muted, fontSize: 18 }}>⌄</Text>
+      <Text variant="body" style={{ color: C.muted }}>⌄</Text>
     </Pressable>
   );
   if (section === 'hosting') {
@@ -196,29 +195,17 @@ export function HyderabadEvents({
           ? ({ label: 'Not live', tone: 'muted' } as const)
           : ({ label: 'Live', tone: 'accent' } as const);
     return (
-      <View style={{ gap: 18 }}>
+      <View style={{ gap: space.md }}>
         {onHost ? (
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            title="+ Create event"
             accessibilityLabel="Create an event"
             onPress={onHost}
-            style={({ pressed }) => ({
-              minHeight: 52,
-              borderRadius: 26,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: C.lime,
-              opacity: pressed ? 0.75 : 1,
-            })}
-          >
-            <Text style={{ color: C.onAccent, fontSize: 16, fontWeight: '700' }}>+ Create event</Text>
-          </Pressable>
+          />
         ) : null}
         {hosted.length ? (
           <View>
-            <Text accessibilityRole="header" style={sectionTitle}>
-              Your hosted events
-            </Text>
+            <SectionHeader title="Your hosted events" />
             {hosted.map(event => row(event, stateMark(event)))}
           </View>
         ) : (
@@ -247,7 +234,7 @@ export function HyderabadEvents({
       .map(item => item.event)
       .reverse();
     return (
-      <View style={{ gap: 22 }}>
+      <View style={{ gap: space.xl }}>
         {upcoming.length === 0 && past.length === 0 ? (
           <EmptyState
             title="Nothing planned yet"
@@ -265,9 +252,7 @@ export function HyderabadEvents({
         ))}
         {past.length > 0 && (
           <View style={{ opacity: 0.55 }}>
-            <Text accessibilityRole="header" style={sectionTitle}>
-              Past
-            </Text>
+            <SectionHeader title="Past" />
             {past.map(event => (
               <EventRow
                 key={event.id}
@@ -286,9 +271,9 @@ export function HyderabadEvents({
   const chosen = categories.find(item => item.id === filter);
   const shown = events.filter(event => !chosen || eventMatchesInterest(event, chosen));
   return (
-    <View style={{ gap: 20 }}>
+    <View style={{ gap: space.lg }}>
       {cityHeader}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
         {categories.map(item => {
           const on = item.id === filter;
           return (
@@ -299,17 +284,17 @@ export function HyderabadEvents({
               accessibilityState={{ selected: on }}
               onPress={() => setFilter(on ? null : item.id)}
               style={({ pressed }) => ({
-                paddingHorizontal: 14,
+                paddingHorizontal: space.md,
                 height: 34,
-                borderRadius: 17,
+                borderRadius: radius.pill,
                 justifyContent: 'center',
                 backgroundColor: on ? C.lime : C.card,
-                borderWidth: 1,
+                borderWidth: stroke.line,
                 borderColor: on ? C.lime : C.line,
-                opacity: pressed ? 0.7 : 1,
+                opacity: pressed ? opacity.pressed : 1,
               })}
             >
-              <Text style={{ color: on ? C.onAccent : C.text, fontSize: 14, fontWeight: '600' }}>
+              <Text variant="subhead" style={{ color: on ? C.onAccent : C.text, fontWeight: '600' }}>
                 {item.title}
               </Text>
             </Pressable>
@@ -322,12 +307,12 @@ export function HyderabadEvents({
       ))}
       {shown.length === 0 && (
         <Card>
-          <Text style={copy}>
+          <Text variant="callout" style={copy}>
             {`No upcoming ${chosen ? `${chosen.title} ` : ''}events in ${selectedCity} yet.`}
           </Text>
         </Card>
       )}
-      <Text style={{ color: C.muted, fontSize: 12, textAlign: 'center' }}>
+      <Text variant="caption" style={{ color: C.muted, textAlign: 'center' }}>
         Curated, not a live feed · India time
       </Text>
     </View>
@@ -353,8 +338,8 @@ export function CuratedEventDetails({
 }) {
   const { colors: C } = useTheme();
   const [about, setAbout] = useState(false);
-  const text = { color: C.muted, fontSize: 16, lineHeight: 24 } as const;
-  const heading = { color: C.text, fontSize: 21, fontWeight: '600', lineHeight: 28 } as const;
+  const text = { color: C.muted } as const;
+  const heading = { color: C.text } as const;
   const provider = eventProvider(event.registrationUrl ?? '');
   const native = event.registrationMode === 'approval';
   const date = new Date(event.startsAt);
@@ -367,21 +352,21 @@ export function CuratedEventDetails({
   ];
   const saved = Boolean(data.profile.savedEventIds?.includes(event.id));
   return (
-    <View style={{ gap: 24, backgroundColor: C.bg }}>
+    <View style={{ gap: space.xl, backgroundColor: C.bg }}>
       <View
         style={{
-          borderRadius: 24,
-          padding: 24,
+          borderRadius: radius.card,
+          padding: space.xl,
           backgroundColor: C.card,
           overflow: 'hidden',
           minHeight: 154,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 16,
+          gap: space.md,
         }}
       >
-        <View style={{ flex: 1, minWidth: 0, gap: 10 }}>
+        <View style={{ flex: 1, minWidth: 0, gap: space.ms }}>
           <Badge>
             {event.topic ?? 'Community'} · {event.city}
           </Badge>
@@ -398,24 +383,25 @@ export function CuratedEventDetails({
             selected
           />
         </View>
-        <View style={{ alignItems: 'center', gap: 2 }}>
-          <Text style={{ color: C.muted, fontSize: 15, fontWeight: '600' }}>
+        <View style={{ alignItems: 'center', gap: space.xxs }}>
+          <Text variant="subhead" style={{ color: C.muted, fontWeight: '600' }}>
             {formatDate(date, { timeZone: 'Asia/Kolkata', month: 'short' }).toUpperCase()}
           </Text>
-          <Text style={{ color: C.lime, fontSize: 52, fontWeight: '700' }}>
+          <Text style={{ color: C.lime, fontSize: 52, fontWeight: '600' }}>
             {formatDate(date, { timeZone: 'Asia/Kolkata', day: 'numeric' })}
           </Text>
         </View>
       </View>
       <Text
         accessibilityRole="header"
-        style={{ color: C.text, fontSize: 29, lineHeight: 36, fontWeight: '700' }}
+        variant="title"
+        style={{ color: C.text }}
       >
         {event.title}
       </Text>
-      <View style={{ gap: 14 }}>
-        <View style={{ gap: 4 }}>
-          <Text style={heading}>
+      <View style={{ gap: space.md }}>
+        <View style={{ gap: space.xs }}>
+          <Text variant="section" style={heading}>
             {formatDate(date, {
               timeZone: 'Asia/Kolkata',
               weekday: 'long',
@@ -424,7 +410,7 @@ export function CuratedEventDetails({
               year: 'numeric',
             })}
           </Text>
-          <Text style={text}>
+          <Text variant="callout" style={text}>
             {formatDate(date, { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: '2-digit' })}
             {event.endsAt
               ? ' – ' +
@@ -437,9 +423,9 @@ export function CuratedEventDetails({
             IST
           </Text>
         </View>
-        <View style={{ gap: 4 }}>
-          <Text style={{ ...heading, fontSize: 18 }}>{event.venue}</Text>
-          <Text style={text}>
+        <View style={{ gap: space.xs }}>
+          <Text variant="headline" style={heading}>{event.venue}</Text>
+          <Text variant="callout" style={text}>
             {event.city}, {event.country === 'IN' ? 'India' : event.country}
           </Text>
           {eventMapsUrl(event) && (
@@ -447,7 +433,7 @@ export function CuratedEventDetails({
           )}
         </View>
         {event.scheduleNote && (
-          <Text style={{ ...text, color: C.danger }}>{event.scheduleNote}</Text>
+          <Text variant="callout" style={{ ...text, color: C.danger }}>{event.scheduleNote}</Text>
         )}
       </View>
       <EventHosts event={event} onLink={onLink} />
@@ -456,8 +442,8 @@ export function CuratedEventDetails({
       ) : (
         <Card>
           <Badge>REGISTRATION</Badge>
-          <Text style={heading}>{eventCost(event)}</Text>
-          <Text style={text}>
+          <Text variant="section" style={heading}>{eventCost(event)}</Text>
+          <Text variant="callout" style={text}>
             {registrationState(event) === 'Registration link available'
               ? 'Register with ' + provider
               : registrationState(event)}
@@ -476,28 +462,23 @@ export function CuratedEventDetails({
             disabled={!canOpenRegistration(event)}
             onPress={onRegister}
           />
-          <Text style={{ ...text, fontSize: 13 }}>
+          <Text variant="footnote" style={text}>
             Opens {provider}. Requests, approval and cancellation are handled there.
           </Text>
         </Card>
       )}
-      <View style={{ gap: 12 }}>
-        <Text accessibilityRole="header" style={heading}>
-          About this event
-        </Text>
-        <Text numberOfLines={about ? undefined : 4} style={text}>
+      <View style={{ gap: space.ms }}>
+        <SectionHeader title="About this event" />
+        <Text numberOfLines={about ? undefined : 4} variant="callout" style={text}>
           {event.description}
         </Text>
         {event.description.length > 200 && (
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            variant="text"
+            title={about ? 'Show less' : 'Read more'}
             accessibilityLabel={about?'Show less about this event':'Read more about this event'}
-            accessibilityState={{ expanded: about }}
             onPress={() => setAbout(value => !value)}
-            style={{ minHeight: 48, justifyContent: 'center' }}
-          >
-            <Text style={{ color: C.lime, fontSize: 16 }}>{about ? 'Show less' : 'Read more'}</Text>
-          </Pressable>
+          />
         )}
       </View>
       {isHyderabadTech(event, data.library?.settings) &&
@@ -512,18 +493,18 @@ export function CuratedEventDetails({
       <Disclosure title="Good to know">
         {event.audience && (
           <>
-            <Text style={heading}>Who it’s for</Text>
-            <Text style={text}>{event.audience}</Text>
+            <Text variant="section" style={heading}>Who it’s for</Text>
+            <Text variant="callout" style={text}>{event.audience}</Text>
           </>
         )}
         {event.outcomes?.map(item => (
-          <Text key={item} style={text}>
+          <Text key={item} variant="callout" style={text}>
             • {item}
           </Text>
         ))}
         <Badge>Expected benefits, not guaranteed outcomes.</Badge>
-        {event.feeNote && <Text style={text}>{event.feeNote}</Text>}
-        <Text style={text}>
+        {event.feeNote && <Text variant="callout" style={text}>{event.feeNote}</Text>}
+        <Text variant="callout" style={text}>
           {event.registrationClosesAt
             ? 'Registration closes ' + when(event.registrationClosesAt) + ' IST.'
             : 'No confirmed registration deadline. Availability may change.'}
@@ -533,7 +514,7 @@ export function CuratedEventDetails({
             <Badge>
               Editorial relevance · {event.editorialPriority.score}/5, not guest reviews
             </Badge>
-            <Text style={text}>{event.editorialPriority.reason}</Text>
+            <Text variant="callout" style={text}>{event.editorialPriority.reason}</Text>
           </>
         )}
       </Disclosure>
@@ -552,7 +533,7 @@ export function CuratedEventDetails({
             : 'Source check date unknown'}
         </Badge>
         {!native && (
-          <Text style={text}>
+          <Text variant="callout" style={text}>
             Guest names and registration counts are not imported from the provider.
           </Text>
         )}

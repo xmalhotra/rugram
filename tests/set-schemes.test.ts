@@ -169,9 +169,9 @@ test('a new scheme is only data and still plans the sets', () => {
 });
 
 test('back and biceps and push-ups use the seeded patterns', () => {
-  const back = gymFlowById('gym-back-biceps');
+  const back = gymFlowById('gym-supersets-back-biceps-beginner');
   assert.ok(back);
-  const second = back.items[1];
+  const second = back.items[0];
   assert.ok(second);
   assert.deepEqual(
     planWithScheme(move(second.exerciseId), second, schemeById(second.scheme), null).sets.map(set => set.reps),
@@ -287,6 +287,7 @@ test('scheme ids live only in the data, the seed and the tests', () => {
   const allowed = new Set([
     'shared/set-schemes-data.ts',
     'shared/gym-flows.ts',
+    'shared/gym-flow-sessions.ts',
     'shared/training-seed/index.ts',
     'tests/set-schemes.test.ts',
   ]);

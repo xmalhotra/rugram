@@ -1,15 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import type { HabitFlow } from '../../shared/mobile';
 import {
   catalogFlow,
+  catalogFlowLine,
   catalogRoots,
   catalogTile,
   sectionsInRoot,
   tilesInSection,
 } from '../../shared/flow-catalog';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { Button, SectionHeader } from './design/components';
+import { Glyph } from './design/Glyph';
+import { hit, opacity, radius, size, space, stroke, useTheme } from './design/theme';
 import { useToast } from './design/states';
 import { usePaneState } from './pane-state';
 import { useRootListInset } from './RootList';
@@ -27,28 +30,37 @@ import { resolveVisualFlow } from '../../shared/visual-flows';
 import { exercise } from '../../shared/exercises';
 import { flowMuscleMap, muscleAreas } from '../../shared/muscle-map';
 import { BodyMap } from './BodyMap';
+import { MapFlowAddition } from './PredictedBodyFlow';
 import { gymExerciseId, gymFlowById, gymFlowItem, gymTargetLabel } from '../../shared/gym-flows';
+import { supersetPartnerAreas } from '../../shared/exercise-alternatives';
+import { setsFromCards } from '../../shared/series-impact';
+import { splitSupersetLabels } from '../../shared/flow-run';
 import { schemeById } from '../../shared/set-schemes';
 import { useTrainingSchemes } from './training-api';
 import { ExerciseVisual } from './ExerciseVisual';
 import { flowInterestIds, unwantCatalogFlow, wantCatalogFlow } from './flow-interest';
 import { TrainingRoutes, TrainingSessionPreview, WeeklyPlanSection } from './TrainingPlans';
 import { useTrainingRoute } from './training-route';
-import { applyCustomflow } from '../../shared/customflows';
+import { customflowSlots } from '../../shared/customflows';
 import { isCustomOrder } from '../../shared/item-order';
+import { flowLevelOf, prioritySourceIds, withFinishers } from '../../shared/priority-finisher';
+import { saveCustomflowOrder, saveCustomflowRemoval, saveCustomflowSwap, useCustomflow } from './customflows';
+import { usePersonalMetrics } from './personal-metrics';
 import { DragList } from './DragList';
-import { resetCustomflow, saveCustomflowOrder, useCustomflow } from './customflows';
+import { SwapChooser, gearLabel } from './EquipmentCheck';
+import { SeriesSheet } from './SeriesSheet';
+import { localDate } from '../../shared/flow-habits';
 
-const gap = 10;
+const gap = space.ms;
 /** The space App leaves under the glass top bar, part of the list inset. */
-const rootListGap = 12;
+const rootListGap = space.ms;
 
 /** Flows from the community arrive later; Qram's own flows live under the first tab. */
 export function CommunityComingSoon() {
   const { colors: C } = useTheme();
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text accessibilityRole="header" style={{ color: C.text, fontSize: 24, fontWeight: '700' }}>
+      <Text accessibilityRole="header" variant="heading" style={{ color: C.text }}>
         Coming soon
       </Text>
     </View>
@@ -58,12 +70,15 @@ export function CommunityComingSoon() {
 export function FlowCatalogHome({
   ownedIds,
   library,
+  focusId,
   onAdd,
   onStart,
   onView,
 }: {
   ownedIds: string[];
   library: HabitFlow[];
+  /** The member's onboarding focus, when they picked one. */
+  focusId?: string;
   onAdd: (flowId: string) => Promise<boolean>;
   onStart: (flow: HabitFlow) => void;
   onView: (flow: HabitFlow) => void;
@@ -154,11 +169,12 @@ export function FlowCatalogHome({
     );
   }
   if (tileId && catalogSessionId)
-    return <TrainingSessionPreview id={catalogSessionId} onBack={() => setCatalogSessionId(null)} />;
+    return <TrainingSessionPreview id={catalogSessionId} library={library} onBack={() => setCatalogSessionId(null)} />;
   if (tileId && catalogTile(tileId))
     return (
       <FlowCatalogTile
         tileId={tileId}
+        focusId={focusId}
         onTile={id => {
           setCatalogSessionId(null);
           setTileId(id);
@@ -242,25 +258,50 @@ export function CatalogFlowPage({
   const contextInset = useRootListInset();
   const inset = topInset ?? contextInset;
   const [added, setAdded] = useState(false);
+  const [routine, setRoutine] = useState(false);
+  const [swapKey, setSwapKey] = useState<string | null>(null);
   const [exerciseId, setExerciseId] = useState<string | null>(null);
   const openedExercise = exerciseId ? exercise(exerciseId) : undefined;
   const gym = source ? gymFlowById(source.id) : undefined;
   const customflow = useCustomflow('qram-flow', gym?.id);
+  const priorities = usePersonalMetrics()['gym.priorities']?.areas ?? [];
   const [dragging, setDragging] = useState(false);
   const [orderError, setOrderError] = useState('');
+  const levelName = gym ? flowLevelOf(gym.level) : 'Beginner';
+  const personalised = gym ? withFinishers(gym.items, priorities, levelName) : [];
+  const priorityIds = new Set(gym ? prioritySourceIds(gym.items, priorities, levelName) : []);
+  const removed = new Set(customflow?.changes.removed ?? []);
+  const baseItems = personalised.filter(item => !removed.has(item.exerciseId));
   // As the member's Customflow when they've customised this flow; the run starts the same way.
-  const items = gym ? applyCustomflow(gym.items, customflow, entry => entry.exerciseId) : [];
-  const customOrder = Boolean(customflow);
+  const slots = gym ? customflowSlots(personalised, customflow) : [];
+  const customised = Boolean(customflow);
+  const defaultIds = baseItems.map(entry => entry.exerciseId);
+  const customOrder = Boolean(customflow?.changes.order?.length && isCustomOrder(defaultIds, customflow.changes.order));
+  const splitSupersets = gym
+    ? splitSupersetLabels(
+        baseItems.map(item => ({ exerciseId: item.exerciseId, superset: item.superset })),
+        slots.map(slot => ({ exerciseId: slot.sourceId, superset: slot.item.superset })),
+        item => item.exerciseId,
+      )
+    : [];
+  const removedPriorities = [...priorityIds].filter(id => removed.has(id));
   function reorder(keys: string[] | null) {
     if (!gym) return;
     setOrderError('');
-    const source = { kind: 'qram-flow' as const, id: gym.id, version: null };
-    // Dragging back to the original order clears it, rather than saving a copy of the original.
-    const save = keys && isCustomOrder(gym.items.map(entry => entry.exerciseId), keys) ? saveCustomflowOrder(source, keys) : resetCustomflow(source);
+    const flowSource = { kind: 'qram-flow' as const, id: gym.id, version: null };
+    // Dragging back to the personalised order clears only the order, so a swap or a removal stays.
+    const save =
+      keys && isCustomOrder(defaultIds, keys) ? saveCustomflowOrder(flowSource, keys) : saveCustomflowOrder(flowSource, null);
     void save.catch(() => setOrderError('Could not save the new order. Try again.'));
   }
+  function dropPriority(key: string, out: boolean) {
+    if (!gym) return;
+    setOrderError('');
+    const flowSource = { kind: 'qram-flow' as const, id: gym.id, version: null };
+    void saveCustomflowRemoval(flowSource, key, out).catch(() => setOrderError('Could not update that exercise. Try again.'));
+  }
   if (openedExercise) {
-    const schemeId = gym?.items.find(entry => entry.exerciseId === openedExercise.id)?.scheme;
+    const schemeId = slots.find(slot => slot.item.exerciseId === openedExercise.id)?.item.scheme;
     return (
         <ExercisePage
         item={openedExercise}
@@ -276,38 +317,40 @@ export function CatalogFlowPage({
     );
   }
   const cards = source ? resolveVisualFlow(source, library).cards : [];
-  const worked = gym ? flowMuscleMap(gym.items.map(entry => entry.exerciseId)) : null;
+  const openedCatalog = catalogFlowId ? catalogFlow(catalogFlowId) : undefined;
+  const worked = gym ? flowMuscleMap(slots.map(slot => slot.item.exerciseId)) : null;
   const button = (
     label: string,
     onPress: () => void,
     secondary = false,
     disabled = false,
   ) => (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        minHeight: 52,
-        paddingHorizontal: 8,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 26,
-        borderWidth: 1.5,
-        borderColor: secondary ? C.line : C.lime,
-        backgroundColor: secondary ? 'transparent' : C.lime,
-        opacity: disabled ? 0.5 : pressed ? 0.75 : 1,
-      })}
-    >
-      <Text
-        numberOfLines={1}
-        style={{ color: secondary ? C.text : C.onAccent, fontSize: 15, fontWeight: '700' }}
+    secondary ? (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{ disabled }}
+        disabled={disabled}
+        onPress={onPress}
+        style={({ pressed }) => ({
+          minHeight: size.button,
+          paddingHorizontal: space.sm,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: radius.pill,
+          borderWidth: stroke.line,
+          borderColor: C.line,
+          backgroundColor: 'transparent',
+          opacity: disabled ? opacity.disabled : pressed ? opacity.pressed : 1,
+        })}
       >
-        {label}
-      </Text>
-    </Pressable>
+        <Text numberOfLines={1} variant="subhead" style={{ color: C.text, fontWeight: '600' }}>
+          {label}
+        </Text>
+      </Pressable>
+    ) : (
+      <Button title={label} accessibilityLabel={label} disabled={disabled} onPress={onPress} />
+    )
   );
   return (
     <View style={{ flex: 1, paddingTop: Math.max(0, inset - rootListGap) }}>
@@ -316,30 +359,46 @@ export function CatalogFlowPage({
         style={{ flex: 1 }}
         scrollEnabled={!dragging}
         contentContainerStyle={{
-          paddingHorizontal: 16,
-          paddingTop: 8,
+          paddingHorizontal: space.md,
+          paddingTop: space.sm,
           paddingBottom: 128,
-          gap: 16,
+          gap: space.md,
         }}
       >
         {/* The picture stays small: these icons are made for this size, and the buttons stay in view. */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-          <View style={{ width: 88, height: 88, borderRadius: 14, overflow: 'hidden', backgroundColor: C.card }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+          <View style={{ width: 88, height: 88, borderRadius: radius.control, overflow: 'hidden', backgroundColor: C.card }}>
             <CatalogCover tileId={tileId} flowId={catalogFlowId} iconSize={40} square />
           </View>
-          <View style={{ flex: 1, gap: 2 }}>
-            <Text accessibilityRole="header" style={{ color: C.text, fontSize: 22, fontWeight: '700' }}>
+          <View style={{ flex: 1, gap: space.xxs }}>
+            <Text accessibilityRole="header" variant="heading" style={{ color: C.text }}>
               {title}
             </Text>
-            <Text style={{ color: C.muted, fontSize: 15 }}>{level}</Text>
+            <Text variant="subhead" style={{ color: C.muted }}>
+              {openedCatalog
+                ? catalogFlowLine(
+                    openedCatalog,
+                    slots.some(slot => priorityIds.has(slot.sourceId)) || removed.size
+                      ? slots.map(slot => slot.item)
+                      : undefined,
+                  )
+                : level}
+            </Text>
+            {customised ? (
+              <Text variant="footnote" style={{ color: C.lime, fontWeight: '600' }}>
+                Customised
+              </Text>
+            ) : null}
           </View>
         </View>
         {source ? (
           <>
             {!!source.description && (
-              <Text style={{ color: C.text, fontSize: 16, lineHeight: 23 }}>{source.description}</Text>
+              <Text variant="callout" style={{ color: C.text }}>
+                {source.description}
+              </Text>
             )}
-            <View style={{ flexDirection: 'row', gap: 10 }}>
+            <View style={{ flexDirection: 'row', gap: space.ms }}>
               <View style={{ flex: 1 }}>
                 {button(
                   owned || added ? '✓ On flow map' : 'Add to flow map',
@@ -354,66 +413,131 @@ export function CatalogFlowPage({
               </View>
               <View style={{ flex: 1 }}>{button('Start this flow', () => onStart(source))}</View>
             </View>
+            {button('Add to Daily flow', () => setRoutine(true), true)}
+            {routine ? (
+              <SeriesSheet
+                mode="create"
+                title={source.title}
+                itemKind="flow"
+                itemId={source.id}
+                start={localDate(new Date())}
+                onClose={() => setRoutine(false)}
+              />
+            ) : null}
+            <MapFlowAddition
+              flowId={source.id}
+              items={gym ? undefined : setsFromCards(cards.map(card => ({ cardId: card.id })))}
+            />
             {worked ? (
-              <View style={{ alignItems: 'center', gap: 6 }}>
-                <Text style={{ alignSelf: 'stretch', color: C.text, fontSize: 18, fontWeight: '700' }}>
+              <View style={{ alignItems: 'center', gap: space.sm }}>
+                <Text variant="headline" style={{ alignSelf: 'stretch', color: C.text }}>
                   What this works
                 </Text>
                 <BodyMap width={180} main={worked.main} helpers={worked.helpers} />
-                <Text style={{ alignSelf: 'stretch', color: C.muted, fontSize: 15 }}>
+                <Text variant="subhead" style={{ alignSelf: 'stretch', color: C.muted }}>
                   {worked.main.map(area => muscleAreas.find(item => item.id === area)?.title ?? area).join(', ')}
                 </Text>
               </View>
             ) : null}
             <View>
-              <Text style={{ color: C.text, fontSize: 18, fontWeight: '700', paddingBottom: 6 }}>
+              <Text variant="headline" style={{ color: C.text, paddingBottom: space.sm }}>
                 {gym
-                  ? `${gym.items.length} ${gym.items.length === 1 ? 'exercise' : 'exercises'}`
+                  ? `${slots.length} ${slots.length === 1 ? 'exercise' : 'exercises'}`
                   : `${cards.length} ${cards.length === 1 ? 'card' : 'cards'}`}
               </Text>
               {gym ? (
                 <DragList
-                  items={items}
-                  keyOf={entry => entry.exerciseId}
-                  labelOf={entry => exercise(entry.exerciseId)?.name ?? entry.exerciseId}
+                  items={slots}
+                  keyOf={slot => slot.sourceId}
+                  labelOf={slot => exercise(slot.item.exerciseId)?.name ?? slot.sourceId}
                   onDragging={setDragging}
-                  onReorder={next => reorder(next.map(entry => entry.exerciseId))}
-                  renderItem={(entry, index) => {
+                  onReorder={next => reorder(next.map(slot => slot.sourceId))}
+                  renderItem={(slot, index) => {
+                    const entry = slot.item;
                     const move = exercise(entry.exerciseId);
                     const name = move?.name ?? entry.exerciseId;
+                    const swapped = slot.sourceId !== entry.exerciseId ? exercise(slot.sourceId)?.name : null;
+                    const priority = priorityIds.has(slot.sourceId);
                     return (
-                      <Pressable
-                        accessibilityRole="button"
-                        accessibilityLabel={`Open ${name}`}
-                        onPress={() => move && setExerciseId(move.id)}
-                        style={({ pressed }) => ({
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                          gap: 12,
-                          paddingVertical: 8,
-                          borderBottomWidth: 0.5,
-                          borderColor: C.line,
-                          opacity: pressed ? 0.6 : 1,
-                        })}
-                      >
-                        <View
-                          style={{
-                            width: 48,
-                            height: 48,
-                            borderRadius: 10,
-                            overflow: 'hidden',
-                            backgroundColor: C.card,
-                          }}
+                      <View style={{ flexDirection: 'row', alignItems: 'center', borderBottomWidth: StyleSheet.hairlineWidth, borderColor: C.line }}>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`Open ${name}`}
+                          onPress={() => move && setExerciseId(move.id)}
+                          style={({ pressed }) => ({
+                            flex: 1,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: space.ms,
+                            paddingVertical: space.sm,
+                            minHeight: hit,
+                            opacity: pressed ? opacity.pressed : 1,
+                          })}
                         >
-                          <ExerciseVisual exerciseId={move?.id} cover />
-                        </View>
-                        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                          <Text style={{ color: C.text, fontSize: 16 }}>
-                            {index + 1}. {name}
+                          <View
+                            style={{
+                              width: 48,
+                              height: 48,
+                              borderRadius: radius.small,
+                              overflow: 'hidden',
+                              backgroundColor: C.card,
+                            }}
+                          >
+                            <ExerciseVisual exerciseId={move?.id} cover />
+                          </View>
+                          <View style={{ flex: 1, minWidth: 0, gap: space.xxs }}>
+                            <Text variant="callout" style={{ color: C.text }}>
+                              {index + 1}. {name}
+                            </Text>
+                            <Text variant="footnote" style={{ color: C.muted }}>
+                              {[gymTargetLabel(entry), move?.equipment ? gearLabel(move.equipment) : ''].filter(Boolean).join(' · ')}
+                            </Text>
+                            {priority ? (
+                              <Text variant="footnote" style={{ color: C.lime, fontWeight: '600' }}>
+                                Your priority
+                              </Text>
+                            ) : null}
+                            {swapped ? (
+                              <Text variant="footnote" style={{ color: C.muted }}>
+                                Swapped from {swapped}
+                              </Text>
+                            ) : null}
+                          </View>
+                        </Pressable>
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={slot.sourceId === entry.exerciseId ? `Swap ${name}` : `Undo swap of ${name}`}
+                          onPress={() => {
+                            if (!gym) return;
+                            if (slot.sourceId === entry.exerciseId) {
+                              setSwapKey(slot.sourceId);
+                              return;
+                            }
+                            void saveCustomflowSwap({ kind: 'qram-flow', id: gym.id, version: null }, slot.sourceId, null).catch(() =>
+                              setOrderError('Could not undo that swap. Try again.'),
+                            );
+                          }}
+                          style={({ pressed }) => ({
+                            minHeight: hit,
+                            justifyContent: 'center',
+                            paddingHorizontal: space.sm,
+                            opacity: pressed ? opacity.pressed : 1,
+                          })}
+                        >
+                          <Text variant="subhead" style={{ color: C.muted }}>
+                            {slot.sourceId === entry.exerciseId ? 'Swap' : 'Undo'}
                           </Text>
-                          <Text style={{ color: C.muted, fontSize: 13 }}>{gymTargetLabel(entry)}</Text>
-                        </View>
-                      </Pressable>
+                        </Pressable>
+                        {priority ? (
+                          <Button
+                            variant="text"
+                            size="regular"
+                            title="Remove"
+                            accessibilityLabel={`Remove ${name}`}
+                            onPress={() => dropPriority(slot.sourceId, true)}
+                          />
+                        ) : null}
+                      </View>
                     );
                   }}
                 />
@@ -424,9 +548,9 @@ export function CatalogFlowPage({
                       style={{
                         flexDirection: 'row',
                         alignItems: 'center',
-                        gap: 12,
-                        paddingVertical: 8,
-                        borderBottomWidth: 0.5,
+                        gap: space.ms,
+                        paddingVertical: space.sm,
+                        borderBottomWidth: StyleSheet.hairlineWidth,
                         borderColor: C.line,
                       }}
                     >
@@ -434,37 +558,73 @@ export function CatalogFlowPage({
                         style={{
                           width: 56,
                           height: 56,
-                          borderRadius: 12,
+                          borderRadius: radius.small,
                           overflow: 'hidden',
                           backgroundColor: C.card,
                         }}
                       >
                         <FlowIllustration flow={card} cover />
                       </View>
-                      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                        <Text style={{ color: C.text, fontSize: 16 }}>{card.title}</Text>
+                      <View style={{ flex: 1, minWidth: 0, gap: space.xxs }}>
+                        <Text variant="callout" style={{ color: C.text }}>
+                          {card.title}
+                        </Text>
                         {!!gymCardDetail(source.id, card.id) && (
-                          <Text style={{ color: C.muted, fontSize: 13 }}>{gymCardDetail(source.id, card.id)}</Text>
+                          <Text variant="footnote" style={{ color: C.muted }}>
+                            {gymCardDetail(source.id, card.id)}
+                          </Text>
                         )}
                       </View>
                     </View>
                   ))
               )}
-              {customOrder || orderError ? (
-                <View style={{ gap: 4, paddingTop: 6 }}>
-                  {orderError ? <Text style={{ color: C.danger, fontSize: 14 }}>{orderError}</Text> : null}
-                  {customOrder ? (
-                    <Text style={{ color: C.muted, fontSize: 14 }}>Customflow: you changed the order.</Text>
+              {removedPriorities.map(id => {
+                const name = exercise(id)?.name ?? id;
+                return (
+                  <Button
+                    key={id}
+                    variant="text"
+                    size="regular"
+                    title={`Put ${name} back`}
+                    accessibilityLabel={`Put ${name} back`}
+                    onPress={() => dropPriority(id, false)}
+                  />
+                );
+              })}
+              {customOrder || splitSupersets.length > 0 || orderError ? (
+                <View style={{ gap: space.xs, paddingTop: space.sm }}>
+                  {orderError ? (
+                    <Text variant="subhead" style={{ color: C.danger }}>
+                      {orderError}
+                    </Text>
                   ) : null}
-                  {customOrder ? (
-                    <Pressable
-                      accessibilityRole="button"
+                  {splitSupersets.map(label => (
+                    <Text key={label} variant="subhead" style={{ color: C.muted }}>
+                      Superset {label} split by your order
+                    </Text>
+                  ))}
+                  {customOrder && splitSupersets.length === 0 ? (
+                    <Text variant="subhead" style={{ color: C.muted }}>
+                      Customflow: you changed the order.
+                    </Text>
+                  ) : null}
+                  {splitSupersets.length > 0 ? (
+                    <Button
+                      variant="text"
+                      size="regular"
+                      title="Undo order"
+                      accessibilityLabel="Undo order"
+                      onPress={() => reorder(null)}
+                    />
+                  ) : null}
+                  {customOrder && splitSupersets.length === 0 ? (
+                    <Button
+                      variant="text"
+                      size="regular"
+                      title="Back to the original"
                       accessibilityLabel="Back to the original order"
                       onPress={() => reorder(null)}
-                      style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}
-                    >
-                      <Text style={{ color: C.lime, fontSize: 15, fontWeight: '600' }}>Back to the original</Text>
-                    </Pressable>
+                    />
                   ) : null}
                 </View>
               ) : null}
@@ -473,22 +633,43 @@ export function CatalogFlowPage({
         ) : (
           <View
             style={{
-              gap: 12,
-              padding: 16,
-              borderRadius: 16,
-              borderWidth: 1,
+              gap: space.ms,
+              padding: space.md,
+              borderRadius: radius.control,
+              borderWidth: stroke.line,
               borderColor: C.line,
               backgroundColor: C.card,
             }}
           >
-            <Text style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>Show your interest</Text>
-            <Text style={{ color: C.muted, fontSize: 15, lineHeight: 21 }}>
+            <Text variant="headline" style={{ color: C.text }}>
+              Show your interest
+            </Text>
+            <Text variant="subhead" style={{ color: C.muted }}>
               We're curating this flow. Request it and we'll tell you when it's ready.
             </Text>
             {button(requested ? '✓ Requested' : 'Request this flow', onRequest, requested, !ready)}
           </View>
         )}
       </ScrollView>
+      {swapKey && gym && source ? (
+        <SwapChooser
+          sourceId={slots.find(slot => slot.sourceId === swapKey)?.item.exerciseId ?? swapKey}
+          avoidMainAreas={supersetPartnerAreas(
+            slots.map(slot => ({ key: slot.sourceId, exerciseId: slot.item.exerciseId, superset: slot.item.superset })),
+            swapKey,
+          )}
+          library={library}
+          onClose={() => setSwapKey(null)}
+          onChoose={async exerciseId => {
+            await saveCustomflowSwap({ kind: 'qram-flow', id: gym.id, version: null }, swapKey, exerciseId);
+            setSwapKey(null);
+          }}
+          onView={flow => {
+            setSwapKey(null);
+            if (flow.id !== source.id) onView(flow);
+          }}
+        />
+      ) : null}
     </View>
   );
 }
@@ -548,14 +729,12 @@ function CatalogSections({
       onScroll={event => {
         if (!restore.current) setOffset(event.nativeEvent.contentOffset.y);
       }}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingTop: inset, paddingBottom: 128, gap: 24 }}
+      contentContainerStyle={{ paddingHorizontal: space.md, paddingTop: inset, paddingBottom: 128, gap: space.xl }}
     >
       <PersonaliseRow onOpen={onPersonalise} />
       {catalogRoots.map(root => (
-        <View key={root.id} style={{ gap: 12 }}>
-          <Text accessibilityRole="header" style={{ color: C.text, fontSize: 22, fontWeight: '700' }}>
-            {root.title}
-          </Text>
+        <View key={root.id} style={{ gap: space.ms }}>
+          <SectionHeader title={root.title} />
           <View
             onLayout={event => setWidth(event.nativeEvent.layout.width)}
             style={{ flexDirection: 'row', flexWrap: 'wrap', gap }}
@@ -568,12 +747,13 @@ function CatalogSections({
                     accessibilityRole="button"
                     accessibilityLabel={section.title}
                     onPress={() => onOpen(section.id)}
-                    style={{ width: column, gap: 6 }}
+                    style={{ width: column, gap: space.sm }}
                   >
                     <CatalogSectionCover sectionId={section.id} />
                     <Text
                       numberOfLines={2}
-                      style={{ color: C.text, fontSize: 13, fontWeight: '500', lineHeight: 17, textAlign: 'center' }}
+                      variant="footnote"
+                      style={{ color: C.text, textAlign: 'center' }}
                     >
                       {section.title}
                     </Text>
@@ -586,11 +766,9 @@ function CatalogSections({
         onLayout={event => {
           routineY.current = event.nativeEvent.layout.y;
         }}
-        style={{ gap: 12 }}
+        style={{ gap: space.ms }}
       >
-        <Text accessibilityRole="header" style={{ color: C.text, fontSize: 22, fontWeight: '700' }}>
-          Routine
-        </Text>
+        <SectionHeader title="Daily flow" />
         <View
           onLayout={event => setWidth(event.nativeEvent.layout.width)}
           style={{ flexDirection: 'row', flexWrap: 'wrap', gap }}
@@ -602,13 +780,10 @@ function CatalogSections({
                 accessibilityRole="button"
                 accessibilityLabel={checkpoint}
                 onPress={() => onRoutine(checkpoint)}
-                style={{ width: column, gap: 6 }}
+                style={{ width: column, gap: space.sm }}
               >
                 <RoutineCheckpointCover checkpoint={checkpoint} />
-                <Text
-                  numberOfLines={2}
-                  style={{ color: C.text, fontSize: 13, fontWeight: '500', lineHeight: 17, textAlign: 'center' }}
-                >
+                <Text numberOfLines={2} variant="footnote" style={{ color: C.text, textAlign: 'center' }}>
                   {checkpoint}
                 </Text>
               </Pressable>
@@ -624,18 +799,20 @@ function CatalogSections({
           minHeight: 72,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 12,
-          padding: 12,
-          borderRadius: 14,
+          gap: space.ms,
+          padding: space.ms,
+          borderRadius: radius.control,
           backgroundColor: C.card,
-          opacity: pressed ? 0.7 : 1,
+          opacity: pressed ? opacity.pressed : 1,
         })}
       >
-        <View style={{ width: 48, height: 48, borderRadius: 10, overflow: 'hidden' }}>
+        <View style={{ width: 48, height: 48, borderRadius: radius.small, overflow: 'hidden' }}>
           <CatalogSectionCover sectionId="all-exercises" />
         </View>
-        <Text style={{ flex: 1, color: C.text, fontSize: 17, fontWeight: '600' }}>All Exercises</Text>
-        <Text style={{ color: C.muted, fontSize: 20 }}>›</Text>
+        <Text variant="headline" style={{ flex: 1, color: C.text }}>
+          All Exercises
+        </Text>
+        <Glyph name={{ ios: 'chevron.right', android: 'chevron_right' }} fallback="›" color={C.muted} size={space.lg} />
       </Pressable>
       <RequestedFlows refreshKey={requestsKey} onOpen={onFlow} />
     </ScrollView>

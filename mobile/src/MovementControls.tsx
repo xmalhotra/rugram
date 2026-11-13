@@ -4,7 +4,7 @@ import { SymbolView } from 'expo-symbols';
 import type { Demonstrator } from '../../shared/movement-viewer';
 import { usePaneState } from './pane-state';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { hit, radius, size, space, stroke, useTheme } from './design/theme';
 
 export function MovementControls({
   controlMode,
@@ -28,16 +28,16 @@ export function MovementControls({
   return (
     <View
       style={{
-        height: 56,
+        height: size.button,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: 8,
+        gap: space.sm,
       }}
     >
       {/* Always shown so the bar never jumps between cards; greyed out where a card is a still. */}
       <View
-        style={{ flexDirection: 'row', gap: 4, opacity: appearance ? 1 : 0.35 }}
+        style={{ flexDirection: 'row', gap: space.xs, opacity: appearance ? 1 : 0.35 }}
         accessibilityRole="radiogroup"
         accessibilityLabel="Demonstrator appearance"
         accessibilityState={{ disabled: !appearance }}
@@ -55,17 +55,17 @@ export function MovementControls({
                 if (value !== gender) setGender(value);
               }}
               style={{
-                minHeight: 44,
-                minWidth: 48,
+                minHeight: hit,
+                minWidth: hit,
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: 14,
-                borderWidth: 1,
+                borderRadius: radius.control,
+                borderWidth: stroke.line,
                 borderColor: on ? C.lime : C.line,
                 backgroundColor: on ? C.lime : 'transparent',
               }}
             >
-              <Text style={{ color: on ? C.onAccent : C.muted, fontSize: 24 }}>
+              <Text variant="heading" style={{ color: on ? C.onAccent : C.muted }}>
                 {value === 'male' ? '♂' : '♀'}
               </Text>
             </Pressable>
@@ -79,12 +79,12 @@ export function MovementControls({
         style={{
           opacity: playback ? 1 : 0.35,
           flexDirection: 'row',
-          gap: 4,
+          gap: space.xs,
           backgroundColor: C.card,
-          borderWidth: 1,
+          borderWidth: stroke.line,
           borderColor: C.line,
-          borderRadius: 14,
-          padding: 4,
+          borderRadius: radius.control,
+          padding: space.xs,
         }}
       >
         {(['tilt', 'slider'] as const).map(mode => {
@@ -100,16 +100,16 @@ export function MovementControls({
             disabled={!playback}
             onPress={() => setControlMode(mode)}
             style={{
-              minHeight: 44,
-              paddingHorizontal: 12,
+              minHeight: hit,
+              paddingHorizontal: space.ms,
               justifyContent: 'center',
-              borderRadius: 10,
-              borderWidth: 1,
+              borderRadius: radius.small,
+              borderWidth: stroke.line,
               borderColor: lit ? C.lime : C.line,
               backgroundColor: lit ? C.lime : 'transparent',
             }}
           >
-            <View style={{ alignItems: 'center', gap: 2 }}>
+            <View style={{ alignItems: 'center', gap: space.xxs }}>
               {Platform.OS === 'ios' ? (
                 <SymbolView
                   name={mode === 'tilt' ? 'rotate.3d' : 'slider.horizontal.3'}
@@ -117,15 +117,14 @@ export function MovementControls({
                   style={{ width: 18, height: 18 }}
                 />
               ) : (
-                <Text style={{ color: lit ? C.onAccent : C.muted, fontSize: 16 }}>
+                <Text variant="callout" style={{ color: lit ? C.onAccent : C.muted }}>
                   {mode === 'tilt' ? '↻' : '≡'}
                 </Text>
               )}
               <Text
+                variant="caption"
                 style={{
                   color: lit ? C.onAccent : C.muted,
-                  fontSize: 12,
-                  lineHeight: 14,
                   fontWeight: lit ? '600' : '400',
                 }}
               >

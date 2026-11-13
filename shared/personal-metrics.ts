@@ -5,6 +5,10 @@
  * else is here. Each metric names its category, says why it's asked, and validates its own value.
  */
 import { z } from 'zod';
+import { muscleAreas, type MuscleArea } from './muscle-map';
+import { restFactorMax, restFactorMin } from './rest-factor';
+
+const muscleAreaIds = muscleAreas.map(area => area.id) as [MuscleArea, ...MuscleArea[]];
 
 export const personalCategories = [
   { id: 'gym', title: 'Gym' },
@@ -28,6 +32,25 @@ export const personalMetricSchemas = {
   'run.weekly': z.object({ km: z.number().min(0).max(250) }).strict(),
   /** A 400 m swim time: swim pace for triathlon flows. */
   'swim.400': z.object({ seconds: z.number().int().min(180).max(1800) }).strict(),
+  /** Where a gym session happens. Optional, and only used once they answer. */
+  'gym.place': z.object({ place: z.enum(['gym', 'dumbbells', 'bodyweight']) }).strict(),
+  /** Minutes they have for a workout. "Varies" clears this. Optional. */
+  'gym.minutes': z.object({ minutes: z.union([z.literal(30), z.literal(45), z.literal(60)]) }).strict(),
+  /** Up to three muscle areas that get a short finisher when a nearby flow is trained. */
+  'gym.priorities': z
+    .object({
+      areas: z
+        .array(z.enum(muscleAreaIds))
+        .min(1)
+        .max(3)
+        .refine(areas => new Set(areas).size === areas.length),
+    })
+    .strict(),
+  /**
+   * How far this member's rest sits from the class time. 1 leaves it alone.
+   * Learned from "harder" and "easier", not asked on a form. Demo memory and `personal_metrics`.
+   */
+  'gym.restFactor': z.object({ factor: z.number().min(restFactorMin).max(restFactorMax) }).strict(),
 } as const;
 
 export type PersonalMetricKey = keyof typeof personalMetricSchemas;
@@ -38,6 +61,10 @@ export const personalMetricInfo: Record<PersonalMetricKey, { category: PersonalC
   'run.recent': { category: 'running', question: 'A recent run you went hard on: distance and time', essential: true },
   'run.weekly': { category: 'running', question: 'About how many km you run in a week', essential: false },
   'swim.400': { category: 'running', question: 'Your 400 m swim time (for triathlon)', essential: false },
+  'gym.place': { category: 'gym', question: 'Where do you train?', essential: false },
+  'gym.minutes': { category: 'gym', question: 'Time for a workout', essential: false },
+  'gym.priorities': { category: 'gym', question: 'Priority areas', essential: false },
+  'gym.restFactor': { category: 'gym', question: 'Rest, from your harder and easier taps', essential: false },
 };
 
 export const personalMetricKeys = Object.keys(personalMetricSchemas) as [PersonalMetricKey, ...PersonalMetricKey[]];

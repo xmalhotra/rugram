@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useRef } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { opacity, radius, size, space, stroke, useTheme } from './design/theme';
 
 const cardWidth = 144;
-const gap = 8;
+const gap = space.sm;
 
 /** Card navigation is separate from the pose/frame progress inside the viewer. */
 export function FlowCardRail({
@@ -28,18 +28,22 @@ export function FlowCardRail({
   return (
     <View
       style={{
-        paddingTop: showHeading ? 8 : 0,
-        borderTopWidth: showHeading ? 0.5 : 0,
+        paddingTop: showHeading ? space.sm : 0,
+        borderTopWidth: showHeading ? StyleSheet.hairlineWidth : 0,
         borderColor: C.line,
-        gap: showHeading ? 8 : 0,
+        gap: showHeading ? space.sm : 0,
       }}
     >
       {showHeading && (
         <View
           style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
         >
-          <Text style={{ color: C.text, fontSize: 12, fontWeight: '600' }}>In this flow</Text>
-          <Text style={{ color: C.muted, fontSize: 12 }}>Swipe or tap a card</Text>
+          <Text variant="caption" style={{ color: C.text, fontWeight: '600' }}>
+            In this flow
+          </Text>
+          <Text variant="caption" style={{ color: C.muted }}>
+            Swipe or tap a card
+          </Text>
         </View>
       )}
       <ScrollView
@@ -49,7 +53,7 @@ export function FlowCardRail({
         accessibilityRole="tablist"
         accessibilityLabel="Cards in this flow"
         onContentSizeChange={reveal}
-        contentContainerStyle={{ gap, paddingRight: 16, paddingBottom: 4 }}
+        contentContainerStyle={{ gap, paddingRight: space.md, paddingBottom: space.xs }}
       >
         {cards.map((card, index) => (
           <Pressable
@@ -60,36 +64,34 @@ export function FlowCardRail({
             onPress={() => onSelect(index)}
             style={({ pressed }) => ({
               width: cardWidth,
-              height: 52,
-              paddingHorizontal: 10,
-              borderRadius: 14,
-              borderWidth: 1,
+              height: size.button,
+              paddingHorizontal: space.ms,
+              borderRadius: radius.control,
+              borderWidth: stroke.line,
               borderColor: current === index ? C.lime : C.line,
               backgroundColor: C.card,
-              opacity: pressed ? 0.65 : 1,
+              opacity: pressed ? opacity.pressed : 1,
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 8,
+              gap: space.sm,
             })}
           >
             <Text
+              variant="footnote"
               style={{
                 color: current === index ? C.lime : C.muted,
-                fontSize: 13,
-                fontWeight: '700',
+                fontWeight: '600',
               }}
             >
               {index + 1}
             </Text>
             <Text
+              variant="footnote"
               numberOfLines={2}
               style={{
                 flex: 1,
                 color: current === index ? C.text : C.muted,
-                fontSize: 13,
-                lineHeight: 17,
                 // One weight for every state, so selecting a card never re-wraps its title.
-                fontWeight: '500',
               }}
             >
               {card.title}

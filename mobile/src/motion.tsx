@@ -3,7 +3,7 @@ import { AccessibilityInfo, Animated, Easing, Pressable, View } from 'react-nati
 import * as SecureStore from 'expo-secure-store';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { opacity as fade, radius, size as controlSize, space, stroke, useTheme } from './design/theme';
 import { BrandMark } from './design/BrandMark';
 
 const storageKey = 'qram-animations';
@@ -76,19 +76,19 @@ export function AnimationSettings() {
       accessibilityState={{ checked: on }}
       onPress={() => setAnimationsEnabled(!on)}
       style={({ pressed }) => ({
-        minHeight: 56,
+        minHeight: controlSize.button,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: 12,
-        opacity: pressed ? 0.6 : 1,
+        gap: space.ms,
+        opacity: pressed ? fade.pressed : 1,
       })}
     >
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text style={{ color: C.text, fontSize: 16, fontWeight: '500' }}>Enable animations</Text>
-        <Text style={{ color: C.muted, fontSize: 13 }}>Login and loading</Text>
+      <View style={{ flex: 1, gap: space.xxs }}>
+        <Text variant="callout" style={{ color: C.text }}>Enable animations</Text>
+        <Text variant="footnote" style={{ color: C.muted }}>Login and loading</Text>
       </View>
-      <Text style={{ color: on ? C.lime : C.muted, fontSize: 15, fontWeight: '600' }}>
+      <Text variant="subhead" style={{ color: on ? C.lime : C.muted, fontWeight: '600' }}>
         {on ? 'On' : 'Off'}
       </Text>
     </Pressable>
@@ -195,8 +195,8 @@ export function LogoLoader({ size = 64, label = 'Loading' }: { size?: number; la
           position: 'absolute',
           width: ring,
           height: ring,
-          borderRadius: ring / 2,
-          borderWidth: 1.5,
+          borderRadius: radius.pill,
+          borderWidth: stroke.line,
           borderColor: C.lime,
           opacity: ripple.interpolate({ inputRange: [0, 0.1, 1], outputRange: [0, 0.45, 0] }),
           transform: [{ scale: ripple.interpolate({ inputRange: [0, 1], outputRange: [0.6, 1.4] }) }],

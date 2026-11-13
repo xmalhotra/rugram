@@ -9,7 +9,7 @@ import {
   Pressable,
   ScrollView,
   View,
-  useWindowDimensions,
+  useWindowDimensions
 } from 'react-native';
 import { Text } from './design/Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,7 +17,7 @@ import type { StoryCard, StoryGroup, StoryTarget } from '../../shared/home-feed'
 import { stepStory, storyIndex, storyReadKey } from '../../shared/home-feed';
 import { storySwipe, swipeStoryGroup } from '../../shared/story-playback';
 import { Button } from './design/components';
-import { useTheme } from './design/theme';
+import { useTheme, space, radius, hit } from './design/theme';
 import { FocusIllustration } from './FocusIllustration';
 import { ScreenBackground } from './design/ScreenBackground';
 export function StoryViewer({
@@ -25,7 +25,7 @@ export function StoryViewer({
   groups,
   onOpen,
   onSeen,
-  onClose,
+  onClose
 }: {
   onSeen: (card: StoryCard, groupId: string) => void;
   group: StoryGroup;
@@ -134,7 +134,7 @@ export function StoryViewer({
       onPanResponderTerminate: () => {
         setDragging(false);
         setHeld(false);
-      },
+      }
     }),
   ).current;
   function imageFinished(failed = false) {
@@ -142,13 +142,13 @@ export function StoryViewer({
   }
   return (
     <Modal visible animationType="fade" presentationStyle="fullScreen" onRequestClose={close}>
-      <SafeAreaView style={{ flex: 1, backgroundColor: C.bg, paddingHorizontal: 16 }}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: C.bg, paddingHorizontal: space.md }}>
         <ScreenBackground />
         <View
           accessibilityRole="progressbar"
           accessibilityLabel="Story progress"
           accessibilityValue={{ min: 1, max: current?.cards.length ?? 1, now: index + 1 }}
-          style={{ flexDirection: 'row', gap: 4, paddingTop: 8 }}
+          style={{ flexDirection: 'row', gap: space.xs, paddingTop: space.sm }}
         >
           {current?.cards.map((item, at) => (
             <View
@@ -158,7 +158,7 @@ export function StoryViewer({
                 flex: 1,
                 borderRadius: 3,
                 backgroundColor: C.line,
-                overflow: 'hidden',
+                overflow: 'hidden'
               }}
             >
               <Animated.View
@@ -170,23 +170,23 @@ export function StoryViewer({
                       ? '100%'
                       : at === index
                         ? progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] })
-                        : '0%',
+                        : '0%'
                 }}
               />
             </View>
           ))}
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 }}>
-          <Text style={{ flex: 1, color: C.text, fontSize: 16, fontWeight: '600' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: space.sm }}>
+          <Text variant="callout" style={{ flex: 1, color: C.text, fontWeight: '600' }}>
             {current?.title ?? 'Story'}
           </Text>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Close story"
             onPress={close}
-            style={{ width: 44, height: 48, alignItems: 'center', justifyContent: 'center' }}
+            style={{ width: hit, height: hit, alignItems: 'center', justifyContent: 'center' }}
           >
-            <Text style={{ color: C.text, fontSize: 28 }}>×</Text>
+            <Text variant="title" style={{ color: C.text }}>×</Text>
           </Pressable>
         </View>
         {card ? (
@@ -243,10 +243,10 @@ export function StoryViewer({
                     flexGrow: 1,
                     minHeight: Math.max(320, height * 0.65),
                     backgroundColor: C.card,
-                    borderRadius: 24,
-                    padding: 24,
+                    borderRadius: radius.card,
+                    padding: space.xl,
                     justifyContent: 'center',
-                    gap: 24,
+                    gap: space.xl
                   }}
                 >
                   {card.imageUrl && !(image.key === key && image.failed) ? (
@@ -258,7 +258,7 @@ export function StoryViewer({
                       style={{
                         height: Math.min(260, height * 0.3),
                         width: '100%',
-                        borderRadius: 16,
+                        borderRadius: radius.control
                       }}
                       resizeMode="cover"
                     />
@@ -278,17 +278,17 @@ export function StoryViewer({
                       </View>
                     </View>
                   )}
-                  <Text style={{ color: C.lime, fontSize: 12, fontWeight: '600' }}>
+                  <Text variant="caption" style={{ color: C.lime, fontWeight: '600' }}>
                     {card.eyebrow}
                   </Text>
-                  <Text style={{ color: C.text, fontSize: 30, lineHeight: 38, fontWeight: '700' }}>
+                  <Text variant="display" style={{ color: C.text }}>
                     {card.title}
                   </Text>
-                  <Text style={{ color: C.muted, fontSize: 18, lineHeight: 28 }}>{card.body}</Text>
+                  <Text variant="body" style={{ color: C.muted }}>{card.body}</Text>
                 </Pressable>
               </ScrollView>
             </View>
-            <View style={{ paddingVertical: 12 }}>
+            <View style={{ paddingVertical: space.ms }}>
               <Button
                 title={card.action}
                 onPress={() => {
@@ -299,7 +299,7 @@ export function StoryViewer({
           </>
         ) : (
           <View style={{ flex: 1, justifyContent: 'center' }}>
-            <Text style={{ color: C.muted, fontSize: 17 }}>This story is no longer available.</Text>
+            <Text variant="body" style={{ color: C.muted }}>This story is no longer available.</Text>
           </View>
         )}
       </SafeAreaView>

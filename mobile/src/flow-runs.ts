@@ -1,3 +1,4 @@
+import type { GraduationResult } from '../../shared/graduation';
 import type { HistoryRun } from '../../shared/flow-history';
 import type { FlowRunState } from '../../shared/flow-run';
 import type { SetDetail } from '../../shared/set-detail';
@@ -43,13 +44,17 @@ export function recentRuns() {
   );
 }
 
+export function loadGraduation(flowId: string) {
+  return api<GraduationResult>(`/api/mobile/graduation?flowId=${encodeURIComponent(flowId)}`);
+}
+
 export function flowRunHistory(kind: 'flow' | 'personal', id: string) {
   return api<{ runs: HistoryRun[] }>(
     `/api/mobile/runs?history=${encodeURIComponent(id)}&kind=${kind}`,
   );
 }
 
-export function startFlowRun(input: { kind: 'flow' | 'personal'; id: string; level: RunLevel }) {
+export function startFlowRun(input: { kind: 'flow' | 'personal'; id: string; level: RunLevel; version?: number }) {
   return api<{ run: FlowRunRecord; resumed: boolean }>('/api/mobile/runs', { action: 'start', ...input });
 }
 

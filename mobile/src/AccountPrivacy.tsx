@@ -5,7 +5,7 @@ import { useSession } from './session';
 import { Button, Sheet } from './design/components';
 import { useToast } from './design/states';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { hit, opacity, radius, space, useTheme } from './design/theme';
 import { accountRetention } from '../../shared/account';
 
 export function AccountPrivacy() {
@@ -72,7 +72,7 @@ export function AccountPrivacy() {
                 Transfer admin access and change this account to a member first.
               </Text>
             ) : (
-              <View style={{ gap: 18 }}>
+              <View style={{ gap: space.md }}>
                 <Text style={{ color: C.muted }}>
                   {accountRetention.publicContent} This cannot be undone. Export your data first.
                 </Text>
@@ -85,11 +85,11 @@ export function AccountPrivacy() {
                   autoCorrect={false}
                   maxLength={6}
                   style={{
-                    minHeight: 48,
+                    minHeight: hit,
                     borderWidth: 1,
                     borderColor: C.line,
-                    borderRadius: 12,
-                    padding: 14,
+                    borderRadius: radius.small,
+                    padding: space.md,
                     color: C.text,
                   }}
                 />
@@ -133,12 +133,12 @@ function PressableRow({
       disabled={disabled}
       onPress={onPress}
       style={({ pressed }) => ({
-        minHeight: 48,
+        minHeight: hit,
         justifyContent: 'center',
-        opacity: disabled ? 0.5 : pressed ? 0.6 : 1,
+        opacity: disabled ? 0.5 : pressed ? opacity.pressed : 1,
       })}
     >
-      <Text style={{ color: destructive ? C.danger : C.text, fontSize: 16 }}>{title}</Text>
+      <Text variant="callout" style={{ color: destructive ? C.danger : C.text }}>{title}</Text>
     </Pressable>
   );
 }

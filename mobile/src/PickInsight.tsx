@@ -5,7 +5,7 @@ import { Text } from './design/Text';
 import type { MobilePayload, Product } from '../../shared/mobile';
 import { alternativePicks, comparisonRows } from '../../shared/pick-comparison';
 import { Badge, Button, Card } from './design/components';
-import { useTheme } from './design/theme';
+import { radius, space, useTheme } from './design/theme';
 import { Disclosure } from './Disclosure';
 export function PickInsight({
   product,
@@ -19,8 +19,8 @@ export function PickInsight({
   onLink: (url: string) => void;
 }) {
   const { colors: C } = useTheme();
-  const text = { color: C.muted, fontSize: 15, lineHeight: 23 } as const;
-  const title = { color: C.text, fontSize: 22, fontWeight: '600' } as const;
+  const text = { color: C.muted } as const;
+  const title = { color: C.text } as const;
   const alternatives = alternativePicks(product, [
     ...data.products,
     ...data.flowResources.products,
@@ -29,9 +29,9 @@ export function PickInsight({
   const rows = comparisonRows(columns);
   const references = product.recommendations ?? [];
   return (
-    <View style={{ gap: 16 }}>
+    <View style={{ gap: space.md }}>
       {product.imageUrl && (
-        <View style={{ borderRadius: 20, backgroundColor: C.photoMat, padding: 12 }}>
+        <View style={{ borderRadius: radius.card, backgroundColor: C.photoMat, padding: space.ms }}>
           <Image
             source={{ uri: product.imageUrl }}
             accessibilityLabel={product.title}
@@ -40,26 +40,26 @@ export function PickInsight({
           />
         </View>
       )}
-      <View style={{ gap: 5 }}>
-        <Text style={title}>{product.title}</Text>
-        {product.variantLabel && <Text style={text}>{product.variantLabel}</Text>}
+      <View style={{ gap: space.xs }}>
+        <Text variant="heading" style={title}>{product.title}</Text>
+        {product.variantLabel && <Text variant="subhead" style={text}>{product.variantLabel}</Text>}
         {product.packLabel && <Badge>{product.packLabel}</Badge>}
       </View>
       {product.demo && <Badge>Simulated listing · not verified buying advice</Badge>}
       <Card>
-        <Text style={{ ...title, fontSize: 17 }}>Why we picked it</Text>
-        <Text style={{ ...text, color: C.text }}>
+        <Text variant="headline" style={title}>Why we picked it</Text>
+        <Text variant="subhead" style={{ ...text, color: C.text }}>
           {product.assessment?.whyChosen ?? product.summary}
         </Text>
       </Card>
       <Disclosure title="Is it right for me?">
-        <Text style={text}>{product.summary}</Text>
+        <Text variant="subhead" style={text}>{product.summary}</Text>
         {product.assessment && (
           <>
-            <Text style={text}>Fits: {product.assessment.bestFor}</Text>
-            <Text style={text}>Skip it: {product.assessment.notFor}</Text>
+            <Text variant="subhead" style={text}>Fits: {product.assessment.bestFor}</Text>
+            <Text variant="subhead" style={text}>Skip it: {product.assessment.notFor}</Text>
             {product.assessment.tradeoffs.map(point => (
-              <Text key={point} style={text}>
+              <Text key={point} variant="subhead" style={text}>
                 • {point}
               </Text>
             ))}
@@ -72,20 +72,20 @@ export function PickInsight({
             <View
               key={`${spec.label}-${index}`}
               style={{
-                gap: 3,
-                paddingVertical: 10,
+                gap: space.xs,
+                paddingVertical: space.ms,
                 borderBottomWidth: 1,
                 borderBottomColor: C.line,
               }}
             >
-              <Text style={{ ...text, color: C.text, fontWeight: '600' }}>{spec.label}</Text>
-              <Text style={text}>{spec.value}</Text>
+              <Text variant="subhead" style={{ ...text, color: C.text, fontWeight: '600' }}>{spec.label}</Text>
+              <Text variant="subhead" style={text}>{spec.value}</Text>
             </View>
           ))
         ) : (
-          <Text style={text}>Specifications haven’t been verified yet.</Text>
+          <Text variant="subhead" style={text}>Specifications haven’t been verified yet.</Text>
         )}
-        <Text style={{ ...text, fontSize: 12 }}>
+        <Text variant="caption" style={text}>
           Manufacturer information, not independent batch testing. Confirm the current pack label.
         </Text>
         {[...new Set((product.specifications ?? []).map(spec => spec.sourceUrl))].map(url => (
@@ -102,23 +102,23 @@ export function PickInsight({
               onPress={() => onAlternative(alternative)}
               style={{
                 minHeight: 64,
-                paddingVertical: 12,
+                paddingVertical: space.ms,
                 borderBottomWidth: 1,
                 borderBottomColor: C.line,
-                gap: 5,
+                gap: space.xs,
               }}
             >
-              <Text style={{ ...title, fontSize: 18 }}>{alternative.title} →</Text>
-              <Text style={text}>{alternative.assessment?.whyChosen ?? alternative.summary}</Text>
-              <Text style={{ ...text, fontSize: 13 }}>{alternative.packLabel}</Text>
+              <Text variant="headline" style={title}>{alternative.title} →</Text>
+              <Text variant="subhead" style={text}>{alternative.assessment?.whyChosen ?? alternative.summary}</Text>
+              <Text variant="footnote" style={text}>{alternative.packLabel}</Text>
             </Pressable>
           ))}
           <Disclosure title="Side-by-side details">
             {rows.map(row => (
-              <View key={row.label} style={{ gap: 6, paddingVertical: 8 }}>
-                <Text style={{ ...text, color: C.text, fontWeight: '600' }}>{row.label}</Text>
+              <View key={row.label} style={{ gap: space.sm, paddingVertical: space.sm }}>
+                <Text variant="subhead" style={{ ...text, color: C.text, fontWeight: '600' }}>{row.label}</Text>
                 {columns.map((column, index) => (
-                  <Text key={column.id} style={text}>
+                  <Text key={column.id} variant="subhead" style={text}>
                     {column.title}: {row.values[index]}
                   </Text>
                 ))}
@@ -131,12 +131,12 @@ export function PickInsight({
         <Disclosure title={`Who recommends it? · ${references.length}`}>
           {references.map((reference, index) => (
             <Card key={`${reference.profileUrl}-${index}`}>
-              <Text style={title}>{reference.name}</Text>
+              <Text variant="heading" style={title}>{reference.name}</Text>
               <Badge>
                 {reference.claim} · {reference.verified ? 'Source checked' : 'Unverified'}
               </Badge>
-              <Text style={text}>{reference.context}</Text>
-              <Text style={text}>{reference.disclosure}</Text>
+              <Text variant="subhead" style={text}>{reference.context}</Text>
+              <Text variant="subhead" style={text}>{reference.disclosure}</Text>
               <Button
                 title="See original reference ↗"
                 secondary
@@ -153,8 +153,8 @@ export function PickInsight({
       )}
       {product.assessment && (
         <Disclosure title="How we chose it">
-          <Text style={text}>{product.assessment.criteria.join(' · ')}</Text>
-          <Text style={text}>
+          <Text variant="subhead" style={text}>{product.assessment.criteria.join(' · ')}</Text>
+          <Text variant="subhead" style={text}>
             Editorial selection, not a universal quality ranking. Checked{' '}
             {formatDate(new Date(product.assessment.checkedAt))}.
           </Text>

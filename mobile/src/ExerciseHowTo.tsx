@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AccessibilityInfo, Animated, Image, Pressable, ScrollView, View } from 'react-native';
+import { AccessibilityInfo, Animated, Image, ScrollView, View } from 'react-native';
 import type { ExerciseHowTo } from '../../shared/exercise-how-to';
 import { exerciseUsage } from '../../shared/exercise-usage';
 import type { GymExercise } from '../../shared/exercises';
 import type { SetScheme } from '../../shared/set-schemes';
 import { Text } from './design/Text';
-import { Sheet } from './design/components';
-import { useTheme } from './design/theme';
+import { Button, Sheet } from './design/components';
+import { radius, space, useTheme } from './design/theme';
 import { ExerciseInfo } from './ExerciseInfo';
 import { isEndFrame, loopOrder } from '../../shared/loop-order';
 import { ExerciseNumbers } from './ExerciseNumbers';
@@ -120,14 +120,14 @@ export function HowToLoop({ exerciseId, size }: { exerciseId: string; size: numb
   }, [frames.length, opacities, reduce]);
   if (!frames.length) {
     return (
-      <View style={{ width: size, height: size, alignSelf: 'center', borderRadius: 16, overflow: 'hidden', backgroundColor: C.card }}>
+      <View style={{ width: size, height: size, alignSelf: 'center', borderRadius: radius.control, overflow: 'hidden', backgroundColor: C.card }}>
         <ExerciseVisual exerciseId={exerciseId} cover />
       </View>
     );
   }
   if (reduce) {
     return (
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm }}>
         {frames.map((source, index) => (
           <Image
             key={`${exerciseId}-${index}`}
@@ -135,7 +135,7 @@ export function HowToLoop({ exerciseId, size }: { exerciseId: string; size: numb
             accessible={false}
             resizeMode="cover"
             fadeDuration={0}
-            style={{ width: size, height: size, borderRadius: 16, backgroundColor: C.card }}
+            style={{ width: size, height: size, borderRadius: radius.control, backgroundColor: C.card }}
           />
         ))}
       </ScrollView>
@@ -144,7 +144,7 @@ export function HowToLoop({ exerciseId, size }: { exerciseId: string; size: numb
   return (
     <View
       accessibilityLabel="Exercise positions"
-      style={{ width: size, height: size, alignSelf: 'center', borderRadius: 16, overflow: 'hidden', backgroundColor: C.card }}
+      style={{ width: size, height: size, alignSelf: 'center', borderRadius: radius.control, overflow: 'hidden', backgroundColor: C.card }}
     >
       {frames.map((source, index) => (
         <Animated.Image
@@ -177,22 +177,22 @@ export function ExerciseHowToSheet({
     <Sheet title={item.name} navigation="back" fullScreen presentation="modal" onClose={onClose}>
       <HowToLoop exerciseId={item.id} size={280} />
       {howTo ? (
-        <View style={{ gap: 12 }}>
+        <View style={{ gap: space.ms }}>
           {howTo.steps.map((step, index) => (
-            <Text key={`${item.id}-step-${index}`} style={{ color: C.text, fontSize: 17, lineHeight: 24 }}>
+            <Text key={`${item.id}-step-${index}`} variant="body" style={{ color: C.text }}>
               {index + 1}. {step}
             </Text>
           ))}
-          <View style={{ gap: 4 }}>
-            <Text style={{ color: C.text, fontSize: 17, fontWeight: '700' }}>Feel it in</Text>
-            <Text style={{ color: C.text, fontSize: 17, lineHeight: 24 }}>{howTo.feel}</Text>
+          <View style={{ gap: space.xs }}>
+            <Text variant="headline" style={{ color: C.text }}>Feel it in</Text>
+            <Text variant="body" style={{ color: C.text }}>{howTo.feel}</Text>
           </View>
-          <View style={{ gap: 4 }}>
-            <Text style={{ color: C.text, fontSize: 17, fontWeight: '700' }}>Common mistake</Text>
-            <Text style={{ color: C.text, fontSize: 17, lineHeight: 24 }}>{howTo.mistake}</Text>
+          <View style={{ gap: space.xs }}>
+            <Text variant="headline" style={{ color: C.text }}>Common mistake</Text>
+            <Text variant="body" style={{ color: C.text }}>{howTo.mistake}</Text>
           </View>
-          {howTo.note ? <Text style={{ color: C.text, fontSize: 17, lineHeight: 24 }}>{howTo.note}</Text> : null}
-          {guide.general ? <Text style={{ color: C.muted, fontSize: 15, lineHeight: 21 }}>{guide.general}</Text> : null}
+          {howTo.note ? <Text variant="body" style={{ color: C.text }}>{howTo.note}</Text> : null}
+          {guide.general ? <Text variant="subhead" style={{ color: C.muted }}>{guide.general}</Text> : null}
         </View>
       ) : null}
       <ExerciseNumbers item={item} />
@@ -208,8 +208,8 @@ export function ExerciseUsedIn({ exerciseId }: { exerciseId: string }) {
   const used = exerciseUsage(exerciseId);
   if (!used.length) return null;
   return (
-    <View style={{ gap: 4 }}>
-      <Text style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>Used in</Text>
+    <View style={{ gap: space.xs }}>
+      <Text variant="headline" style={{ color: C.text }}>Used in</Text>
       {used.map(entry => {
         const kind = entry.kind === 'flow' ? 'Flow' : 'Session';
         return (
@@ -218,10 +218,10 @@ export function ExerciseUsedIn({ exerciseId }: { exerciseId: string }) {
             accessible
             accessibilityRole="text"
             accessibilityLabel={`${kind}, ${entry.title}`}
-            style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+            style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: space.ms }}
           >
-            <Text style={{ flex: 1, color: C.text, fontSize: 16 }}>{entry.title}</Text>
-            <Text style={{ color: C.muted, fontSize: 13 }}>{kind}</Text>
+            <Text variant="callout" style={{ flex: 1, color: C.text }}>{entry.title}</Text>
+            <Text variant="footnote" style={{ color: C.muted }}>{kind}</Text>
           </View>
         );
       })}
@@ -230,16 +230,5 @@ export function ExerciseUsedIn({ exerciseId }: { exerciseId: string }) {
 }
 
 export function HowToLink({ label, onPress }: { label: string; onPress: () => void }) {
-  const { colors: C } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      hitSlop={6}
-      style={{ minHeight: 44, justifyContent: 'center' }}
-    >
-      <Text style={{ color: C.lime, fontSize: 13, fontWeight: '600' }}>{label}</Text>
-    </Pressable>
-  );
+  return <Button variant="text" size="regular" title={label} accessibilityLabel={label} onPress={onPress} />;
 }

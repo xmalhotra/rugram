@@ -10,7 +10,7 @@ import {
   type QuickLoginAccount,
 } from '../../shared/auth';
 import { Button, Card, Heading } from './design/components';
-import { useTheme } from './design/theme';
+import { radius, size, space, textRoles, useTheme } from './design/theme';
 import { useSession } from './session';
 import { ScreenBackground } from './design/ScreenBackground';
 import { BrandMark } from './design/BrandMark';
@@ -66,16 +66,16 @@ export function PhoneSignIn() {
   }, [challenge]);
   const seconds = challenge ? Math.max(0, Math.ceil((challenge.resendAt - now) / 1000)) : 0;
   const expired = Boolean(challenge && now >= challenge.expiresAt);
-  const text = { color: C.muted, fontSize: 15, lineHeight: 22 } as const;
+  const text = { color: C.muted } as const;
   const input = {
-    minHeight: 54,
-    borderRadius: 12,
+    minHeight: size.button,
+    borderRadius: radius.small,
     borderColor: C.line,
     borderWidth: 1,
     backgroundColor: C.card,
     color: C.text,
-    padding: 14,
-    fontSize: 20,
+    padding: space.md,
+    fontSize: textRoles.section.fontSize,
   } as const;
   async function request(target = indianMobilePhone(phone)) {
     if (!target) return;
@@ -96,11 +96,11 @@ export function PhoneSignIn() {
       >
         <ScrollView
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ padding: 24, paddingTop: 40, gap: 18 }}
+          contentContainerStyle={{ padding: space.xl, paddingTop: 40, gap: space.md }}
         >
           <Animated.View
             style={{
-              gap: 18,
+              gap: space.md,
               opacity: enter,
               transform: [
                 {
@@ -123,13 +123,13 @@ export function PhoneSignIn() {
           />
           {!challenge ? (
             <>
-              <Text style={text}>Mobile number</Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <Text variant="subhead" style={text}>Mobile number</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.ms }}>
                 <View
                   accessibilityLabel="India country code, plus 91"
                   style={[input, { justifyContent: 'center' }]}
                 >
-                  <Text style={{ color: C.text, fontSize: 20 }}>+91</Text>
+                  <Text variant="section" style={{ color: C.text }}>+91</Text>
                 </View>
                 <TextInput
                   accessibilityLabel="10-digit Indian mobile number"
@@ -147,7 +147,7 @@ export function PhoneSignIn() {
                   style={[input, { flex: 1, minWidth: 0 }]}
                 />
               </View>
-              <Text style={text}>Enter your 10-digit Indian mobile number.</Text>
+              <Text variant="subhead" style={text}>Enter your 10-digit Indian mobile number.</Text>
               <Button
                 title={busy ? 'Requesting code…' : 'Get code'}
                 disabled={busy || !indianMobilePhone(phone)}
@@ -155,10 +155,10 @@ export function PhoneSignIn() {
               />
               {quick.length > 0 && (
                 <Card>
-                  <Text style={{ color: C.text, fontSize: 17, fontWeight: '600' }}>
+                  <Text variant="headline" style={{ color: C.text }}>
                     Simulated accounts
                   </Text>
-                  <Text style={text}>
+                  <Text variant="subhead" style={text}>
                     Local demo only. Tap to sign in without a code. They already publish, follow,
                     upvote and repost each other.
                   </Text>
@@ -175,10 +175,10 @@ export function PhoneSignIn() {
               )}
               {__DEV__ && process.env.EXPO_PUBLIC_DEMO_MODE === 'true' && (
                 <Card>
-                  <Text style={{ color: C.text, fontSize: 17, fontWeight: '600' }}>
+                  <Text variant="headline" style={{ color: C.text }}>
                     Local test accounts
                   </Text>
-                  <Text style={text}>
+                  <Text variant="subhead" style={text}>
                     Development shortcuts only. These fictional accounts do not receive SMS.
                   </Text>
                   {mockPhoneAccounts.map(account => (
@@ -200,22 +200,23 @@ export function PhoneSignIn() {
             <>
               {challenge.mockCode && (
                 <Card>
-                  <Text style={{ color: C.text, fontSize: 17, fontWeight: '600' }}>
+                  <Text variant="headline" style={{ color: C.text }}>
                     Mock SMS · nothing was sent
                   </Text>
-                  <Text style={text}>Use this test code:</Text>
+                  <Text variant="subhead" style={text}>Use this test code:</Text>
                   <Text
                     selectable
-                    style={{ color: C.lime, fontSize: 32, fontWeight: '600', letterSpacing: 6 }}
+                    variant="display"
+                    style={{ color: C.lime, letterSpacing: 6 }}
                   >
                     {challenge.mockCode}
                   </Text>
-                  <Text style={text}>
+                  <Text variant="subhead" style={text}>
                     For local testing only. This does not verify ownership of a real phone number.
                   </Text>
                 </Card>
               )}
-              <Text style={text}>Verification code</Text>
+              <Text variant="subhead" style={text}>Verification code</Text>
               <OtpCodeInput
                 length={challenge.otpLength ?? 6}
                 key={challenge.challengeId}
@@ -223,7 +224,7 @@ export function PhoneSignIn() {
                 onChange={setCode}
                 disabled={busy || expired}
               />
-              <Text accessibilityLiveRegion="polite" style={text}>
+              <Text accessibilityLiveRegion="polite" variant="subhead" style={text}>
                 {expired
                   ? 'This code has expired. Request a new one.'
                   : 'Code expires after 5 minutes. Each code can be used once.'}
@@ -254,7 +255,8 @@ export function PhoneSignIn() {
           {error ? (
             <Text
               accessibilityRole="alert"
-              style={{ color: C.danger, fontSize: 15, lineHeight: 22 }}
+              variant="subhead"
+              style={{ color: C.danger }}
             >
               {error}
             </Text>

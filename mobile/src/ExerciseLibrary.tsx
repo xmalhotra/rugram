@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from './design/Text';
 import type { Exercise } from '../../shared/exercises';
 import { Badge, Button, Choice } from './design/components';
 import { ExerciseThumbnail } from './ExerciseThumbnail';
-import { useTheme } from './design/theme';
+import { space, useTheme } from './design/theme';
 export function ExerciseLibrary({
   library,
   onLink,
@@ -16,7 +16,7 @@ export function ExerciseLibrary({
   const [category, setCategory] = useState('All');
   const [expanded, setExpanded] = useState<string | null>(null);
   return (
-    <View style={{ gap: 12 }}>
+    <View style={{ gap: space.ms }}>
       <Choice
         label="Exercise category"
         value={category}
@@ -28,24 +28,24 @@ export function ExerciseLibrary({
         .map(exercise => (
           <View
             key={exercise.id}
-            style={{ paddingVertical: 12, borderTopWidth: 0.5, borderColor: C.line, gap: 12 }}
+            style={{ paddingVertical: space.ms, borderTopWidth: StyleSheet.hairlineWidth, borderColor: C.line, gap: space.ms }}
           >
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`${exercise.name}. Technique details`}
               accessibilityState={{ expanded: expanded === exercise.id }}
               onPress={() => setExpanded(value => (value === exercise.id ? null : exercise.id))}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 68 }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, minHeight: 68 }}
             >
               <ExerciseThumbnail icon={exercise.icon} />
-              <View style={{ flex: 1, gap: 6 }}>
-                <Text style={{ color: C.text, fontSize: 18, fontWeight: '600' }}>
+              <View style={{ flex: 1, gap: space.sm }}>
+                <Text variant="headline" style={{ color: C.text }}>
                   {exercise.name}
                 </Text>
                 <Badge>
                   {exercise.category} · {exercise.muscles.join(', ')}
                 </Badge>
-                <Text style={{ color: C.lime, fontSize: 15 }}>
+                <Text variant="subhead" style={{ color: C.lime }}>
                   Technique details {expanded === exercise.id ? '−' : '+'}
                 </Text>
               </View>
@@ -54,14 +54,14 @@ export function ExerciseLibrary({
               <>
                 <Badge>{exercise.equipment}</Badge>
                 {exercise.instructions.map((instruction, index) => (
-                  <Text key={instruction} style={{ color: C.muted, fontSize: 16, lineHeight: 24 }}>
+                  <Text key={instruction} variant="callout" style={{ color: C.muted }}>
                     {index + 1}. {instruction}
                   </Text>
                 ))}
-                <Text style={{ color: C.muted, fontSize: 16, lineHeight: 24 }}>
+                <Text variant="callout" style={{ color: C.muted }}>
                   Easier option: {exercise.easier}
                 </Text>
-                <Text style={{ color: C.muted, fontSize: 16, lineHeight: 24 }}>
+                <Text variant="callout" style={{ color: C.muted }}>
                   {exercise.watchFor}
                 </Text>
                 <Button
@@ -73,7 +73,7 @@ export function ExerciseLibrary({
             )}
           </View>
         ))}
-      <Text style={{ color: C.muted, fontSize: 13, lineHeight: 20 }}>
+      <Text variant="footnote" style={{ color: C.muted }}>
         Icons are original schematic position reminders, not complete technique demonstrations. Read
         the instructions and seek coaching where needed.
       </Text>

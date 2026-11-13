@@ -4,11 +4,14 @@ import type { HabitFlow, MobilePayload, Product, CityEvent } from '../../shared/
 import type { Exercise } from '../../shared/exercises';
 import { searchCatalogue, recentSearches } from '../../shared/search';
 import { flowsForFocus } from '../../shared/focus';
+import { defaultFlowView } from '../../shared/flow-defaults';
+import { describedGymSession, useFlowMember } from './flow-member';
 import { formatEventTime, formatInr, checkedAgo } from '../../shared/format';
 import { loadSearches, saveSearches, clearSearches } from './local-searches';
 import { usePaneState } from './pane-state';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { hit, radius, size, space, stroke, textRoles, useTheme } from './design/theme';
+import { Button } from './design/components';
 import { EmptyState,Banner } from './design/states';
 import { api } from './api';
 type SearchRow = {
@@ -32,6 +35,7 @@ export function SearchScreen({
   onExercise: (value: Exercise) => void;
 }) {
   const { colors: C } = useTheme();
+  const { member } = useFlowMember(data.profile.focusId);
   const [query, setQuery] = usePaneState('searchQuery', '');
   const [debounced, setDebounced] = useState(query);
   const [recent, setRecent] = useState<string[]>([]);
@@ -59,13 +63,28 @@ export function SearchScreen({
   },[debounced,retry]);
   const completeData=remote?.query===debounced?{...data,products:[...new Map([...data.products,...remote.products].map(item=>[item.id,item])).values()],events:[...new Map([...data.events,...remote.events].map(item=>[item.id,item])).values()]}:data;
   const result = searchCatalogue(completeData, debounced);
+  const gymFacts = result.flows.flatMap(flow => {
+    const described = describedGymSession(flow.id);
+    return described ? [described] : [];
+  });
+  const gymView = defaultFlowView(gymFacts, member);
+  const gymRank = new Map(gymView.map((item, index) => [item.id, index]));
+  const gymNote = new Map(gymView.map(item => [item.id, [item.reason, ...item.labels].filter(Boolean).join(' · ')]));
+  const gymFlows = result.flows
+    .filter(flow => !gymFacts.some(item => item.id === flow.id) || gymRank.has(flow.id))
+    .sort((a, b) => {
+      const left = gymRank.get(a.id);
+      const right = gymRank.get(b.id);
+      if (left == null || right == null) return 0;
+      return left - right;
+    });
   const sections: { title: string; data: SearchRow[] }[] = [
     {
       title: 'Flows',
-      data: result.flows.map(value => ({
+      data: gymFlows.map(value => ({
         id: value.id,
         title: value.title,
-        detail: `${value.steps.length} steps · ${value.goal}`,
+        detail: [`${value.steps.length} steps · ${value.goal}`, gymNote.get(value.id)].filter(Boolean).join(' · '),
         kind: 'flow',
         open: () => onFlow(value),
       })),
@@ -120,7 +139,7 @@ export function SearchScreen({
     .filter(flow => !data.profile.flowIds.includes(flow.id))
     .slice(0, 4);
   return (
-    <View style={{ flex: 1, gap: 16 }}>
+    <View style={{ flex: 1, gap: space.md }}>
       <TextInput
         autoFocus
         accessibilityLabel="Search flows, picks, events and exercises"
@@ -131,18 +150,18 @@ export function SearchScreen({
         placeholderTextColor={C.muted}
         returnKeyType="search"
         style={{
-          minHeight: 52,
-          borderWidth: 1,
+          minHeight: size.button,
+          borderWidth: stroke.line,
           borderColor: C.line,
-          borderRadius: 14,
+          borderRadius: radius.control,
           color: C.text,
-          fontSize: 17,
-          padding: 14,
+          fontSize: textRoles.body.fontSize,
+          padding: space.md,
         }}
       />
       {searchError&&<Banner kind="error" message={searchError} action={{label:'Retry full search',onPress:()=>setRetry(value=>value+1)}}/>}
       {!query.trim() ? (
-        <View style={{ gap: 12 }}>
+        <View style={{ gap: space.ms }}>
           {recent.length > 0 && (
             <>
               <Text style={{ color: C.muted }}>Recent searches</Text>
@@ -152,22 +171,20 @@ export function SearchScreen({
                   accessibilityRole="button"
                   accessibilityLabel={`Search for ${value}`}
                   onPress={() => setQuery(value)}
-                  style={{ minHeight: 48, justifyContent: 'center' }}
+                  style={{ minHeight: hit, justifyContent: 'center' }}
                 >
                   <Text style={{ color: C.text }}>{value}</Text>
                 </Pressable>
               ))}
-              <Pressable
-                accessibilityRole="button"
+              <Button
+                variant="text"
+                title="Clear recent searches"
                 accessibilityLabel="Clear recent searches"
                 onPress={() => {
                   setRecent([]);
                   void clearSearches(data.user.id).catch(() => undefined);
                 }}
-                style={{ minHeight: 48, justifyContent: 'center' }}
-              >
-                <Text style={{ color: C.lime }}>Clear recent searches</Text>
-              </Pressable>
+              />
             </>
           )}
           <Text style={{ color: C.muted }}>
@@ -187,7 +204,7 @@ export function SearchScreen({
                   open: () => onFlow(flow),
                 })
               }
-              style={{ minHeight: 48, justifyContent: 'center' }}
+              style={{ minHeight: hit, justifyContent: 'center' }}
             >
               <Text style={{ color: C.text }}>{flow.title} →</Text>
             </Pressable>
@@ -202,7 +219,8 @@ export function SearchScreen({
           renderSectionHeader={({ section }) => (
             <Text
               accessibilityRole="header"
-              style={{ backgroundColor: C.bg, color: C.lime, fontSize: 18, paddingVertical: 12 }}
+              variant="section"
+              style={{ backgroundColor: C.bg, color: C.lime, paddingVertical: space.ms }}
             >
               {section.title}
             </Text>
@@ -214,14 +232,14 @@ export function SearchScreen({
               onPress={() => open(item)}
               style={{
                 minHeight: 64,
-                paddingVertical: 12,
-                borderBottomWidth: 1,
+                paddingVertical: space.ms,
+                borderBottomWidth: stroke.line,
                 borderColor: C.line,
-                gap: 6,
+                gap: space.sm,
               }}
             >
-              <Text style={{ color: C.text, fontSize: 17 }}>{item.title}</Text>
-              <Text style={{ color: C.muted, fontSize: 13 }}>{item.detail}</Text>
+              <Text variant="body" style={{ color: C.text }}>{item.title}</Text>
+              <Text variant="footnote" style={{ color: C.muted }}>{item.detail}</Text>
             </Pressable>
           )}
           ListEmptyComponent={

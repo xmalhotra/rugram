@@ -1,3 +1,4 @@
+import { designMock, designTokens } from './support/design-mocks';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -66,7 +67,7 @@ function loadComponent(file: string, extra: (name: string) => unknown) {
           useCallback: (callback: unknown) => callback,
         };
       if (name === 'react-native') return { View: 'View', Pressable: 'Pressable', Image: 'Image' };
-      if (name === './design/theme') return { useTheme: () => ({ colors: {} }) };
+      if (name === './design/theme') return { ...designTokens, useTheme: () => ({ colors: {} }) };
       if (name === './design/components') return { Sheet: 'Sheet', Button: 'Button' };
       if (name === './design/Text') return { Text: 'Text' };
       return extra(name);
@@ -83,6 +84,7 @@ test('Benefits panel shows only the movement name and benefit summaries, with wo
     if (name.startsWith('../../shared/')) return require(`../shared/${name.split('/').at(-1)}`);
     if (name === './AnimalMovementStory') return { AnimalMovementStory: 'AnimalMovementStory' };
     if (name === './Disclosure') return { Disclosure: 'Disclosure' };
+    { const mock = designMock(name); if (mock) return mock; }
     throw new Error(`Unexpected import ${name}`);
   });
   let closed = 0;
@@ -90,9 +92,11 @@ test('Benefits panel shows only the movement name and benefit summaries, with wo
   const tree = Component({ flow, onClose: () => closed++ });
   assert.equal(tree.props.title, 'Benefits');
   assert.equal(tree.props.navigation, 'back');
+  // Words on screen: Text children, plus titles handed to shared parts such as SectionHeader.
   const text = nodes(tree)
-    .filter(node => node.type === 'Text')
-    .map(node => node.props.children)
+    .flatMap(node =>
+      node.type === 'Text' ? [node.props.children] : typeof node.props.title === 'string' ? [node.props.title] : [],
+    )
     .join(' ');
   assert.match(text, /Air squat.*Leg strength.*Lower-body control.*Everyday movement/);
   assert.doesNotMatch(

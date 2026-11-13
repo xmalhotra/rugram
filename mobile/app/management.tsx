@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { Alert, RefreshControl, ScrollView, View } from 'react-native';
+import { Alert, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '../src/design/Text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect, useRouter } from 'expo-router';
 import { AdminWorkspace } from '../src/AdminWorkspace';
 import { Button, Sheet } from '../src/design/components';
-import { useTheme } from '../src/design/theme';
+import { space, useTheme } from '../src/design/theme';
 import { useSession } from '../src/session';
 import { ScreenBackground } from '../src/design/ScreenBackground';
 import { api } from '../src/api';
@@ -49,15 +49,15 @@ export default function ManagementScreen() {
       <ScreenBackground />
       <View
         style={{
-          paddingHorizontal: 20,
-          paddingVertical: 12,
-          borderBottomWidth: 0.5,
+          paddingHorizontal: space.lg,
+          paddingVertical: space.ms,
+          borderBottomWidth: StyleSheet.hairlineWidth,
           borderColor: C.line,
-          gap: 8,
+          gap: space.sm,
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Text style={{ fontSize: 20, fontWeight: '600', color: C.text, flex: 1, minWidth: 0 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.ms }}>
+          <Text variant="section" style={{ color: C.text, flex: 1, minWidth: 0 }}>
             Qram · Admin
           </Text>
           <NotificationCentre
@@ -69,7 +69,7 @@ export default function ManagementScreen() {
             }}
           />
         </View>
-        <View style={{ gap: 8 }}>
+        <View style={{ gap: space.sm }}>
           <Text style={{ color: C.muted }}>
             {data.user.name} · @{data.user.handle}
           </Text>
@@ -101,7 +101,7 @@ export default function ManagementScreen() {
         </Sheet>
       )}
       <ScrollView
-        contentContainerStyle={{ padding: 20, paddingBottom: 40, gap: 16 }}
+        contentContainerStyle={{ padding: space.lg, paddingBottom: 40, gap: space.md }}
         keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl refreshing={busy} onRefresh={() => void refresh()} tintColor={C.lime} />

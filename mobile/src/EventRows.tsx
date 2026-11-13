@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import type { CityEvent } from '../../shared/mobile';
 import { formatDate } from '../../shared/format';
@@ -7,8 +7,9 @@ import { eventProvider } from '../../shared/event-discovery';
 import { registrationState } from '../../shared/hyderabad-tech';
 import type { EventDay } from '../../shared/event-timeline';
 import { FocusIllustration } from './FocusIllustration';
+import { Button } from './design/components';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { opacity, radius, space, stroke, useTheme } from './design/theme';
 
 export function eventFocus(event: CityEvent) {
   return event.topic === 'Tech'
@@ -48,14 +49,14 @@ function Pill({ mark }: { mark: EventMark }) {
   return (
     <View
       style={{
-        paddingHorizontal: 8,
-        paddingVertical: 3,
-        borderRadius: 8,
-        borderWidth: 1,
+        paddingHorizontal: space.sm,
+        paddingVertical: space.xs,
+        borderRadius: radius.small,
+        borderWidth: stroke.line,
         borderColor: color,
       }}
     >
-      <Text style={{ color, fontSize: 12, fontWeight: '600' }}>{mark.label}</Text>
+      <Text variant="caption" style={{ color, fontWeight: '600' }}>{mark.label}</Text>
     </View>
   );
 }
@@ -118,19 +119,19 @@ export function EventRow({
       onPress={onPress}
       style={({ pressed }) => ({
         flexDirection: 'row',
-        gap: 14,
-        paddingVertical: 12,
-        opacity: pressed ? 0.7 : 1,
+        gap: space.md,
+        paddingVertical: space.ms,
+        opacity: pressed ? opacity.pressed : 1,
       })}
     >
       <View
         style={{
           width: 84,
           height: 84,
-          borderRadius: 14,
+          borderRadius: radius.control,
           overflow: 'hidden',
           backgroundColor: C.card,
-          borderWidth: 1,
+          borderWidth: stroke.line,
           borderColor: C.line,
           alignItems: 'center',
           justifyContent: 'center',
@@ -138,57 +139,56 @@ export function EventRow({
       >
         <FocusIllustration focusId={eventFocus(event)} />
       </View>
-      <View style={{ flex: 1, minWidth: 0, gap: 5 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      <View style={{ flex: 1, minWidth: 0, gap: space.xs }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
           <View
             style={{
               width: 18,
               height: 18,
               borderRadius: 5,
               backgroundColor: C.card,
-              borderWidth: 1,
+              borderWidth: stroke.line,
               borderColor: C.line,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <Text style={{ color: C.text, fontSize: 10, fontWeight: '700' }}>
+            <Text variant="caption" style={{ color: C.text, fontWeight: '600' }}>
               {host.charAt(0).toUpperCase()}
             </Text>
           </View>
-          <Text numberOfLines={1} style={{ flex: 1, color: C.muted, fontSize: 14 }}>
+          <Text numberOfLines={1} variant="subhead" style={{ flex: 1, color: C.muted }}>
             {host}
           </Text>
           {mark && <Pill mark={mark} />}
         </View>
         <Text
           numberOfLines={2}
-          style={{ color: C.text, fontSize: 17, lineHeight: 22, fontWeight: '600' }}
+          variant="headline"
+          style={{ color: C.text }}
         >
           {event.simulation ? `${event.title} · Demo` : event.title}
         </Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: 12, rowGap: 2 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: space.ms, rowGap: space.xxs }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs }}>
             <Glyph kind="clock" />
-            <Text style={{ color: C.muted, fontSize: 14 }}>{time}</Text>
+            <Text variant="subhead" style={{ color: C.muted }}>{time}</Text>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 1 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs, flexShrink: 1 }}>
             <Glyph kind="pin" />
-            <Text numberOfLines={1} style={{ flexShrink: 1, color: C.muted, fontSize: 14 }}>
+            <Text numberOfLines={1} variant="subhead" style={{ flexShrink: 1, color: C.muted }}>
               {event.venue}
             </Text>
           </View>
         </View>
         {onCity && (
-          <Pressable
-            accessibilityRole="link"
+          <Button
+            variant="text"
+            size="regular"
+            title={`${event.city} ›`}
             accessibilityLabel={`See events in ${event.city}`}
             onPress={() => onCity(event.city)}
-            hitSlop={8}
-            style={{ alignSelf: 'flex-start' }}
-          >
-            <Text style={{ color: C.lime, fontSize: 13, fontWeight: '600' }}>{event.city} ›</Text>
-          </Pressable>
+          />
         )}
       </View>
     </Pressable>
@@ -210,14 +210,14 @@ export function EventDayGroup({
   const { colors: C } = useTheme();
   return (
     <View>
-      <Text accessibilityRole="header" style={{ fontSize: 18, fontWeight: '600', color: C.text }}>
+      <Text accessibilityRole="header" variant="section" style={{ color: C.text }}>
         {day.title}
         <Text style={{ color: C.muted, fontWeight: '400' }}> / {day.weekday}</Text>
       </Text>
       {day.events.map((event, index) => (
         <View
           key={event.id}
-          style={index ? { borderTopWidth: 0.5, borderColor: C.line, marginLeft: 98 } : undefined}
+          style={index ? { borderTopWidth: StyleSheet.hairlineWidth, borderColor: C.line, marginLeft: 98 } : undefined}
         >
           <View style={index ? { marginLeft: -98 } : undefined}>
             <EventRow

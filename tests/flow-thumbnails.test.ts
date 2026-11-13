@@ -1,3 +1,4 @@
+import { designMock, designTokens } from './support/design-mocks';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -24,9 +25,10 @@ function load(file: string) {
       if (name === './FlowIllustration') return { FlowIllustration: 'FlowIllustration' };
       if (name === './design/Text') return { Text: 'Text' };
       if (name === './design/theme')
-        return { useTheme: () => ({ colors: { bg: '#000', card: '#101710' } }) };
+        return { ...designTokens, useTheme: () => ({ colors: { bg: '#000', card: '#101710' } }) };
       if (name.startsWith('../../shared/'))
         return localRequire(`../shared/${name.split('/').at(-1)}`);
+      { const mock = designMock(name); if (mock) return mock; }
       throw new Error(name);
     },
     loaded,

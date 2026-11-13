@@ -19,7 +19,7 @@ test('creator and admin both have a durable foreground inbox linking to event ap
 });
 test('invite header control is a fixed-size icon rather than a full-width native button',()=>{
  const source=readFileSync('mobile/src/EventInviteNotifications.tsx','utf8');
- assert.match(source,/width:44,height:44,flexShrink:0/);
+ assert.match(source,/width:hit,height:hit,flexShrink:0/);
  assert.match(source,/<SymbolView name="bell"/);
  assert.match(source,/inbox.total>0&&<View/);
  assert.doesNotMatch(source,/<Button title=\{`Invites/);

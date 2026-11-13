@@ -1,13 +1,13 @@
 import React,{useState} from 'react';
-import {Pressable,View} from 'react-native';
+import {Pressable,StyleSheet,View} from 'react-native';
 import {Text} from './design/Text';
-import {useTheme} from './design/theme';
+import {opacity,size,space,useTheme} from './design/theme';
 export function Disclosure({title,children,initiallyOpen=false}:{title:string;children:React.ReactNode;initiallyOpen?:boolean}){
   const [open,setOpen]=useState(initiallyOpen);const {colors:C}=useTheme();
-  return <View style={{borderTopWidth:0.5,borderColor:C.line,gap:open?12:0}}>
-    <Pressable accessibilityRole="button" accessibilityState={{expanded:open}} accessibilityLabel={title} onPress={()=>setOpen(value=>!value)} style={({pressed})=>({minHeight:52,paddingVertical:12,flexDirection:'row',gap:12,alignItems:'center',opacity:pressed?0.6:1})}>
-      <Text style={{flex:1,minWidth:0,fontSize:17,fontWeight:'600',color:C.text}}>{title}</Text><Text accessibilityElementsHidden style={{fontSize:22,color:C.lime}}>{open?'−':'+'}</Text>
+  return <View style={{borderTopWidth:StyleSheet.hairlineWidth,borderColor:C.line,gap:open?space.ms:0}}>
+    <Pressable accessibilityRole="button" accessibilityState={{expanded:open}} accessibilityLabel={title} onPress={()=>setOpen(value=>!value)} style={({pressed})=>({minHeight:size.button,paddingVertical:space.ms,flexDirection:'row',gap:space.ms,alignItems:'center',opacity:pressed?opacity.pressed:1})}>
+      <Text variant="headline" style={{flex:1,minWidth:0,color:C.text}}>{title}</Text><Text accessibilityElementsHidden variant="heading" style={{color:C.lime}}>{open?'−':'+'}</Text>
     </Pressable>
-    {open&&<View style={{gap:12,paddingBottom:12}}>{children}</View>}
+    {open&&<View style={{gap:space.ms,paddingBottom:space.ms}}>{children}</View>}
   </View>;
 }

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { localDay, memberOffsetMinutes } from './local-day';
 import { exercise } from '../../shared/exercises';
 import { flows } from '../../shared/mobile';
 import { trainingCatalog } from '../../shared/training-seed';
@@ -25,7 +26,9 @@ import {
 } from '../../shared/training';
 import { howToGeneral, parseHowTo, seededHowTos, type ExerciseHowTo } from '../../shared/exercise-how-to';
 import { parseScheme, seededSchemes, type SetScheme } from '../../shared/set-scheme-math';
+import { customflowKey } from '../../shared/customflows';
 import { demoModeEnabled } from './runtime-config';
+import { readCustomflows } from './customflow-store';
 import type { PublicUser } from './types';
 import { assertRecordedTime } from '../../shared/set-detail';
 import { ExerciseLogError, logExerciseSets, readExerciseSessions, setDetailSchema, type ExerciseLogInput } from './exercise-log-store';
@@ -46,6 +49,8 @@ const blockInput = z
   .object({
     id: slug,
     skipped: z.boolean().optional(),
+    /** The exercise these sets were done as. Omitted means the member's swap, or the block's own exercise. */
+    exerciseId: slug.optional(),
     sets: z.array(setInput).max(30).optional(),
   })
   .strict();
@@ -432,17 +437,69 @@ function catalogCard(session: TrainingSession) {
   };
 }
 
+type MarkedRun = { userId: string; status: string; updatedAt: string; flowId: string; state?: unknown };
+
+/**
+ * The flow a run counts as. A Customflow or a swap keeps the source on every card,
+ * and that id is the one on the routine. Mixed sources (a personal flow) stay on the run's own id.
+ */
+function flowIdForMark(flowId: string, state: unknown) {
+  // A community run is that published flow, even when every card names one source.
+  if (flowId.startsWith('community-')) return flowId;
+  let parsed = state;
+  if (typeof parsed === 'string') {
+    try {
+      parsed = JSON.parse(parsed) as unknown;
+    } catch {
+      return flowId;
+    }
+  }
+  if (!parsed || typeof parsed !== 'object') return flowId;
+  const cards = (parsed as { cards?: unknown }).cards;
+  if (!Array.isArray(cards)) return flowId;
+  const sources = new Set<string>();
+  for (const card of cards) {
+    if (!card || typeof card !== 'object') continue;
+    const id = (card as { sourceFlowId?: unknown }).sourceFlowId;
+    if (typeof id === 'string' && id.length > 0) sources.add(id);
+  }
+  if (sources.size !== 1) return flowId;
+  return [...sources][0] ?? flowId;
+}
+
 async function flowMarks(userId: string, demo: boolean): Promise<LogMark[]> {
+  const offset = await memberOffsetMinutes(userId, demo);
   if (demo) {
-    const runs =
-      (globalThis as { qramFlowRuns?: { runs: { userId: string; status: string; updatedAt: string; flowId: string }[] } }).qramFlowRuns?.runs ?? [];
+    const runs = (globalThis as { qramFlowRuns?: { runs: MarkedRun[] } }).qramFlowRuns?.runs ?? [];
     return runs
       .filter(run => run.userId === userId && (run.status === 'finished' || run.status === 'posted'))
-      .map(run => ({ planDate: run.updatedAt.slice(0, 10), itemId: run.flowId, status: 'done' as const }));
+      .map(run => ({ planDate: localDay(run.updatedAt, offset), itemId: flowIdForMark(run.flowId, run.state), status: 'done' as const }));
   }
   const { database } = await import('./database');
-  const rows = await database()`SELECT flow_id, updated_at FROM flow_runs WHERE user_id=${userId} AND status IN ('finished', 'posted')`;
-  return rows.map(row => ({ planDate: new Date(String(row.updated_at)).toISOString().slice(0, 10), itemId: String(row.flow_id), status: 'done' as const }));
+  const rows = await database()`SELECT flow_id, updated_at, state FROM flow_runs WHERE user_id=${userId} AND status IN ('finished', 'posted')`;
+  return rows.map(row => ({
+    planDate: localDay(new Date(String(row.updated_at)), offset),
+    itemId: flowIdForMark(String(row.flow_id), row.state),
+    status: 'done' as const,
+  }));
+}
+
+/** Finished or posted flow runs, and done training logs, inside an inclusive date range. */
+export async function routineCompletions(userId: string, demo: boolean, from: string, to: string) {
+  const [marks, state] = await Promise.all([flowMarks(userId, demo), stateOf(demo)]);
+  const inRange = (date: string) => date >= from && date <= to;
+  return [
+    ...marks
+      .filter(mark => mark.status === 'done' && inRange(mark.planDate))
+      .map(mark => ({
+        itemKind: mark.itemId.startsWith('community-') ? ('community' as const) : ('flow' as const),
+        itemId: mark.itemId,
+        date: mark.planDate,
+      })),
+    ...state.logs
+      .filter(log => log.userId === userId && log.status === 'done' && inRange(log.planDate))
+      .map(log => ({ itemKind: 'session' as const, itemId: log.sessionId, date: log.planDate })),
+  ];
 }
 
 function weekBody(plan: UserPlan | null, date: string, logs: StoredLog[], sessions: TrainingSession[], marks: LogMark[]) {
@@ -547,6 +604,37 @@ async function memberWeight(userId: string, demo: boolean) {
   const { database } = await import('./database');
   const [row] = await database()`SELECT weight_kg FROM user_metrics WHERE user_id=${userId}`;
   return row?.weight_kg == null ? null : Number(row.weight_kg);
+}
+
+async function sessionSwaps(user: PublicUser, sessionId: string) {
+  const flows = await readCustomflows(user);
+  return flows[customflowKey('qram-session', sessionId)]?.changes.swaps ?? {};
+}
+
+function loggedExerciseId(block: { exerciseId?: string }, swap: string | undefined, requested: string | undefined) {
+  const original = block.exerciseId;
+  const replacement = swap && original && swap !== original ? swap : undefined;
+  if (!requested) return replacement ?? original;
+  if (!original) throw new TrainingError('That block has no exercise.');
+  if (requested !== original && requested !== replacement) throw new TrainingError('That exercise is not this block.');
+  return requested;
+}
+
+/** The session with each block's exercise set to the one the member actually did. */
+function withLoggedExercises<T extends TrainingSession>(
+  session: T,
+  swaps: Record<string, string>,
+  blocks: { id: string; exerciseId?: string }[],
+): T {
+  return {
+    ...session,
+    blocks: session.blocks.map(block => {
+      const incoming = blocks.find(item => item.id === block.id);
+      const exerciseId = loggedExerciseId(block, swaps[block.id], incoming?.exerciseId);
+      if (!exerciseId || exerciseId === block.exerciseId) return block;
+      return { ...block, exerciseId };
+    }),
+  };
 }
 
 async function writeExerciseRecords(
@@ -753,7 +841,17 @@ export async function trainingGet(url: string, deps: { user: PublicUser | null; 
       const ownLogs = state.logs.filter(log => log.userId === person.id && log.sessionId === session.id && log.status === 'done');
       const latest = ownLogs.sort((a, b) => (b.finishedAt ?? '').localeCompare(a.finishedAt ?? ''))[0] ?? null;
       const lastSets = latest ? state.sets.filter(set => set.logId === latest.id) : [];
-      const exerciseIds = session.blocks.flatMap(block => (block.exerciseId ? [block.exerciseId] : []));
+      const swaps = await sessionSwaps(person, session.id);
+      const exerciseIds = [
+        ...new Set(
+          session.blocks.flatMap(block => {
+            if (!block.exerciseId) return [];
+            const swap = swaps[block.id];
+            const shown = swap && swap !== block.exerciseId ? swap : block.exerciseId;
+            return shown === block.exerciseId ? [block.exerciseId] : [block.exerciseId, shown];
+          }),
+        ),
+      ];
       const records = exerciseIds.length ? (await readExerciseSessions(person, exerciseIds.slice(0, 50), { demo })).sessions : [];
       return {
         status: 200 as const,
@@ -895,7 +993,9 @@ async function apply(
     const type = state.types.find(item => item.id === session.typeId);
     if (!type) throw new TrainingError('Unknown training type.');
     const sessionValues = validateLogValues(type, action.sessionValues ?? {}, 'session');
-    assertComplete(session, type, action.blocks, sessionValues);
+    const swaps = await sessionSwaps(user, session.id);
+    const performed = withLoggedExercises(session, swaps, action.blocks);
+    assertComplete(performed, type, action.blocks, sessionValues);
     const log: StoredLog = {
       id: crypto.randomUUID(),
       userId: user.id,
@@ -926,7 +1026,7 @@ async function apply(
     }
     await saveLog(log, sets, demo);
     try {
-      await writeExerciseRecords(user, session, type, action.blocks, demo);
+      await writeExerciseRecords(user, performed, type, action.blocks, demo);
     } catch (error) {
       if (demo) {
         const rows = memory();
@@ -960,7 +1060,16 @@ async function apply(
         })),
       };
     });
-    assertComplete(session, type, blocks, log.sessionValues);
+    const swaps = await sessionSwaps(user, session.id);
+    const performed = withLoggedExercises(session, swaps, blocks);
+    const changed = performed.blocks.some((block, index) => block.exerciseId !== session.blocks[index]?.exerciseId);
+    try {
+      assertComplete(performed, type, blocks, log.sessionValues);
+    } catch (error) {
+      if (!changed || !(error instanceof TrainingError)) throw error;
+      // A set ticked before the swap was logged on the block's own exercise.
+      assertComplete(session, type, blocks, log.sessionValues);
+    }
     if (log.activityId) return { activityId: log.activityId };
     if (!recordActivity) throw new TrainingError('Service temporarily unavailable. Please try again.', 503);
     const activity = await recordActivity(user, { sessionId: session.id, title: session.title, note: action.note ?? '' });

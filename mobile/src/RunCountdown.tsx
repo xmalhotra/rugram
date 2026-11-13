@@ -3,7 +3,7 @@ import { Animated, Easing, Pressable, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Svg, { Circle } from 'react-native-svg';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { space, useTheme } from './design/theme';
 import { playRunSound } from './run-sound';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -78,12 +78,12 @@ export function RunCountdown({ name, onDone }: { name?: string; onDone?: () => v
         zIndex: 60,
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 24,
+        gap: space.xl,
         backgroundColor: C.bg,
       }}
     >
       {name ? (
-        <Text style={{ color: C.text, fontSize: 22, fontWeight: '700', textAlign: 'center', paddingHorizontal: 24 }}>
+        <Text variant="heading" style={{ color: C.text, textAlign: 'center', paddingHorizontal: space.xl }}>
           {name}
         </Text>
       ) : null}

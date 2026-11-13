@@ -1,14 +1,22 @@
 # Qram native UI
 
+> How screens are drawn and put together (tokens, shared parts, page layout, colour, navigation and
+> floating layers) is set in `docs/design-consistency.md`, Part 2. This page summarises what is built.
+
 The mobile interface follows Apple’s Human Interface Guidelines on iPhone and uses native Android controls on Android. It is an app-specific design system built with Expo UI, not an Apple certification or a web UI kit.
 
 ## Foundations
 
 `src/design/theme.ts` exposes semantic light/dark palettes from `tokens.ts`, a restrained green action colour, spacing, corner radii and text roles. Device appearance is followed automatically. Text uses the bundled Inter family when loaded, otherwise the platform font. React Native text scales with device text size, and native fields/buttons use their platform font defaults. Primary text and accent foreground colours have separate tokens so dark-mode buttons retain contrast.
 
-- Large title: 34; title: 22; body: 17; footnote: 13; caption: 12.
-- Spacing scale: 4 / 8 / 16 / 20 / 24 / 32.
-- Card radius: 20; form control radius: 14 (the shared code tokens are authoritative).
+- Text roles (`<Text variant="…">`): display 34 bold, title 28, heading 22, section 20, headline 17
+  semibold, body 17, callout 16, subhead 15, footnote 13, caption 12. Nothing smaller than 12.
+- Spacing (`space`): 2 / 4 / 8 / 12 / 16 / 20 / 24 / 32 as xxs / xs / sm / ms / md / lg / xl / xxl.
+  Page layout (`layout`): margin 16, section 24, cards 12, inset 16, inner 12, lines 8.
+- Corners (`radius`): small 10, control 14, card 20, pill 999. Borders (`stroke`): line 1, active 2.
+- Heights: `hit` 44 on iPhone / 48 on Android; `size.button` 52. Pressed opacity 0.6, disabled 0.45.
+- One glass recipe (`GlassSurface`): blur 30, background at 15%, 1 point line.
+- `tests/design-literals.test.ts` counts hand-typed values outside `src/design/` and fails if any count grows.
 
 ## Foundation update
 
@@ -53,7 +61,15 @@ remain outstanding; a successful typecheck is not a visual accessibility test.
 - `Avatar`: image with failure fallback to initials.
 - `Stepper`: bounded wizard progress and spoken step number.
 - `ReasonLine`: one compact explanation.
-- `IconButton`: label required by its TypeScript props; loading/disabled states.
+- `Button`: the one button. primary (green fill), secondary (green outline) or text; large 52 or
+  regular 44; `fit`, `busy`, `destructive`. Drawn in React Native on both platforms.
+- `IconButton`: SF Symbol on iPhone, Material symbol on Android; plain or outlined; text colour by
+  default. Label required by its TypeScript props; loading/disabled states.
+- `SectionHeader`, `Row`, `RowGroup`: a section title with an optional line and action; list rows that
+  show a chevron only when they can be tapped, in one card with hairlines.
+- `GlassSurface`, `TimerBar`, `ProgressSteps`: the glass recipe; a clock that always carries its word
+  (Rest, Hold, Elapsed); a segmented step bar.
+- `Card` takes `onPress`, so a tappable card is one button.
 - `Field`: explicit keyboard type, multiline and maximum length; no label-based
   heuristics. Product/seller fields supply their server-matching limits.
 - `BarChart`, `LineChart`, `Sparkline`: installed SVG rendering, token colours,
@@ -69,8 +85,7 @@ prompts; existing screens have not all been migrated yet.
 | Component | Implementation |
 | --- | --- |
 | Tabs | Expo Router native tabs, SF Symbols on iPhone and Material symbols on Android |
-| iPhone buttons | SwiftUI Button with native bordered/bordered-prominent styles |
-| Android buttons | Expo UI native Compose button |
+| Buttons | `Button` in React Native on both platforms (green fill, outline or text) |
 | Fields | Expo UI TextInput, backed by SwiftUI TextField/SecureField and Compose on Android |
 | Selection | Native menu pickers for goals, category and budget tier |
 | Habit completion | Controlled native toggles, sending explicit desired state to the API |

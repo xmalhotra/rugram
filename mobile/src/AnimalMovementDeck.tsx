@@ -14,7 +14,7 @@ import { gymExerciseId } from '../../shared/gym-flows';
 import { GymCardFace } from './GymCardFace';
 import { deckPage } from '../../shared/swipe-deck';
 import { Text } from './design/Text';
-import { space, useTheme } from './design/theme';
+import { hit, opacity, radius, space, stroke, useTheme } from './design/theme';
 import { morningDrinksFlowId } from '../../shared/morning-drinks';
 import { trainingSupplementFlowIds } from '../../shared/training-supplements';
 import { FlowCardRail } from './FlowCardRail';
@@ -107,12 +107,13 @@ export function AnimalMovementDeck({
   if (!movements.length)
     return <Text style={{ color: C.muted }}>No published cards in this flow yet.</Text>;
   return (
-    <View style={{ flex: 1, minHeight: 0, gap: 8 }}>
+    <View style={{ flex: 1, minHeight: 0, gap: space.sm }}>
       {(flow.id === morningDrinksFlowId || supplementGuide) && (
         <Text
           accessibilityRole="header"
           numberOfLines={2}
-          style={{ color: C.text, fontSize: 21, lineHeight: 28, fontWeight: '600' }}
+          variant="section"
+          style={{ color: C.text }}
         >
           {flow.sessionGuide?.label}
         </Text>
@@ -136,7 +137,7 @@ export function AnimalMovementDeck({
           flexDirection: 'row',
           justifyContent: 'space-between',
           alignItems: 'center',
-          gap: 8,
+          gap: space.sm,
           minHeight: onAddCard || aside
             ? 44
             : movements.length > 1
@@ -152,15 +153,8 @@ export function AnimalMovementDeck({
             numberOfLines={
               onAddCard || uniformHeader || codingGuide || movements[current].visualCard ? 2 : 1
             }
-            style={{
-              flex: 1,
-              fontSize:
-                onAddCard || uniformHeader || codingGuide || movements[current].visualCard
-                  ? 18
-                  : 20,
-              fontWeight: '600',
-              color: C.text,
-            }}
+            variant="section"
+            style={{ flex: 1, color: C.text }}
           >
             {movements[current].title}
           </Text>
@@ -168,7 +162,7 @@ export function AnimalMovementDeck({
         {aside ? (
           <View style={{ flex: 1, minWidth: 0 }}>{aside}</View>
         ) : flow.id === morningDrinksFlowId ? (
-          <Text numberOfLines={2} style={{ flex: 1, color: C.muted, fontSize: 13, lineHeight: 18 }}>
+          <Text numberOfLines={2} variant="footnote" style={{ flex: 1, color: C.muted }}>
             {movements[current].sources?.[0]?.title ?? 'Published guidance'}
           </Text>
         ) : (
@@ -182,25 +176,25 @@ export function AnimalMovementDeck({
             disabled={busy}
             onPress={() => onAddCard(movements[current])}
             style={({ pressed }) => ({
-              minHeight: 44,
+              minHeight: hit,
               alignSelf: 'flex-end',
               justifyContent: 'center',
-              paddingHorizontal: 14,
-              borderRadius: 12,
-              borderWidth: 1,
+              paddingHorizontal: space.md,
+              borderRadius: radius.small,
+              borderWidth: stroke.line,
               borderColor: C.line,
               backgroundColor: C.card,
-              opacity: busy ? 0.4 : pressed ? 0.7 : 1,
+              opacity: busy ? opacity.disabled : pressed ? opacity.pressed : 1,
             })}
           >
-            <Text style={{ color: C.text, fontWeight: '600', fontSize: 14 }}>＋ Add to Flow</Text>
+            <Text variant="subhead" style={{ color: C.text, fontWeight: '600' }}>＋ Add to Flow</Text>
           </Pressable>
         )}
       </View>
       )}
       {supplementGuide && (
-        <View style={{ minHeight: 54, justifyContent: 'center', paddingHorizontal: 2 }}>
-          <Text numberOfLines={3} style={{ color: C.muted, fontSize: 13, lineHeight: 18 }}>
+        <View style={{ minHeight: 54, justifyContent: 'center', paddingHorizontal: space.xxs }}>
+          <Text numberOfLines={3} variant="footnote" style={{ color: C.muted }}>
             {movements[current].description}
           </Text>
         </View>

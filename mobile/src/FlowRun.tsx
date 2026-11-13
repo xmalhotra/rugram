@@ -1,56 +1,78 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Animated, AppState, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, AppState, Pressable, ScrollView, View } from 'react-native';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import * as Haptics from 'expo-haptics';
 import type { HabitFlow, MobilePayload } from '../../shared/mobile';
 import { findFlowCard } from '../../shared/personal-flows';
 import { resolveVisualFlow } from '../../shared/visual-flows';
 import { catalogFlows } from '../../shared/flow-catalog';
+import { localDate } from '../../shared/flow-habits';
 import {
   benchmarkFor,
-  nextFlowSuggestion,
   restFor,
-  startingLevel,
   targetLoadKg,
   type RunLevel,
   type UserMetrics,
 } from '../../shared/flow-benchmarks';
 import {
   beginCardClock,
+  completeCard,
   doneCard,
   elapsedSeconds,
   endRest,
+  finishRunIfDone,
+  gymSetOrder,
+  nextAfterSet,
   pauseRun,
   remainingSeconds,
   resumeRun,
+  showCard,
   skipCard,
+  supersetCaption,
   tick,
   type FlowRunState,
+  type GymSetInput,
 } from '../../shared/flow-run';
 import { exercise, type GymExercise, type LoadType } from '../../shared/exercises';
-import { runFooterState } from '../../shared/run-footer';
-import { gymExerciseId, gymFlowById, gymFlowItem, gymTargetLabel, resolveTarget, setTargetText, type GymFlowItem } from '../../shared/gym-flows';
+import { canMoveOn, plannedLine } from '../../shared/set-rows';
+import { bestAtLoad, restHint, type RestHintSet } from '../../shared/rest-hint';
+import { nextRestFactor, type RestFactorTap } from '../../shared/rest-factor';
+import { gymCardId, gymExerciseId, gymFlowById, gymHabitCard, gymRestSeconds, gymTargetLabel, resolveTarget, type GymFlowItem } from '../../shared/gym-flows';
+import { focusLevelFor, runLevelFor } from '../../shared/member-level';
+import { areaPicture, bodyFlow } from '../../shared/body-flow';
+import { targetBand, type FocusLevel } from '../../shared/focus-targets';
 import { effortNote, formatKg, type LoggedSet } from '../../shared/progression';
-import { nextSetAfterTick, planWithScheme, schemeById, schemeLine, type SetScheme } from '../../shared/set-schemes';
-import { estimateLine, estimateStart, loadStrength } from './strength';
-import { applyCustomflow, type Customflow } from '../../shared/customflows';
-import { useCustomflow } from './customflows';
+import { planWithScheme, schemeById, type SetScheme } from '../../shared/set-schemes';
+import { estimateLine, estimateStart, loadStrength, noEstimateLine } from './strength';
+import { supersetPartnerAreas } from '../../shared/exercise-alternatives';
+import { applyCustomflow, swappedFrom, type Customflow } from '../../shared/customflows';
+import { flowLevelOf, memberGymItems, prioritySourceIds } from '../../shared/priority-finisher';
+import type { MuscleArea } from '../../shared/muscle-map';
+import { saveCustomflowSwap, useCustomflow } from './customflows';
+import { savePersonalMetric, usePersonalMetrics } from './personal-metrics';
+import { useCommunityFlow } from './community';
+import { SwapChooser } from './EquipmentCheck';
 import { buildSetDetail, setsForProgression, type SetDetail } from '../../shared/set-detail';
 import { useTrainingSchemes } from './training-api';
-import { communityLimits } from '../../shared/community-flows';
+import { BodyPicture } from './BodyMap';
 import { Text } from './design/Text';
-import { Sheet } from './design/components';
-import { useTheme } from './design/theme';
-import { useAnimations } from './motion';
+import { ReasonLine } from './design/states';
+import { InlineWheels, WheelEntry, adjustLabel, durationColumns, repsColumn, weightColumn, type NumberWheelProps } from './design/NumberWheels';
+import { Button, Sheet, Skeleton } from './design/components';
+import { Glyph } from './design/Glyph';
+import { hit, opacity, radius, size, space, stroke, useTheme } from './design/theme';
 import { FlowIllustration } from './FlowIllustration';
 import { AboutYouForm } from './AboutYou';
+import { reloadBodyFlow } from './body-flow';
+import { reloadFlowSeries, useFlowSeries } from './flow-series';
+import { useFlowMember } from './flow-member';
+import { usePaneState } from './pane-state';
 import { useFlowHabits } from './flow-habits';
 import {
   exerciseSessions,
   finishFlowRun,
   flowRunHome,
   logExerciseSets,
-  postFlowRun,
   saveFlowRun,
   startFlowRun,
   flowRunHistory,
@@ -68,9 +90,38 @@ import { setActiveRun, setRunScreenOpen } from './active-run';
 import { RunCountdown } from './RunCountdown';
 import { SoundToggle } from './SoundToggle';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { space } from './design/tokens';
 
 const levels: RunLevel[] = ['Beginner', 'Regular', 'Trained'];
+
+/** Areas this workout just trained, for the figure on the finish screen. Untouched stays quiet. */
+function workedToday(
+  cards: readonly { cardId: string }[],
+  drafts: Readonly<Record<string, readonly { ticked: boolean; skipped: boolean }[] | undefined>>,
+  date: string,
+  level: FocusLevel,
+) {
+  const sets: { date: string; exerciseId: string }[] = [];
+  for (const card of cards) {
+    const exerciseId = gymExerciseId(card.cardId);
+    if (!exerciseId) continue;
+    const count = (drafts[card.cardId] ?? []).filter(row => row.ticked && !row.skipped).length;
+    for (let index = 0; index < count; index += 1) sets.push({ date, exerciseId });
+  }
+  if (!sets.length) return null;
+  const result = bodyFlow(sets, [], { from: date, to: date });
+  const areas = result.areas.map(area => {
+    const picture = areaPicture({
+      sets: area.sets,
+      band: targetBand(area.area, level),
+      weeks: result.weeks,
+      priority: false,
+      large: false,
+      planned: false,
+    });
+    return { area: area.area, state: picture.state, step: picture.step };
+  });
+  return areas.some(area => area.state === 'worked') ? areas : null;
+}
 
 function clock(total: number) {
   const seconds = Math.max(0, Math.round(total));
@@ -108,11 +159,6 @@ type SetDraft = {
   edited: boolean;
 };
 
-function riseNote(from: number, to: number) {
-  const delta = Math.round((to - from) * 100) / 100;
-  if (delta === 0) return null;
-  return `${delta > 0 ? '+' : '−'}${formatKg(Math.abs(delta))} kg`;
-}
 type PendingLog = {
   runId?: string;
   exerciseId: string;
@@ -161,19 +207,20 @@ function openSet(row: SetDraft, at: number): SetDraft {
   return { ...frozen, startedAt: frozen.startedAt ?? at };
 }
 
-function markSkipped(row: SetDraft, at: number): SetDraft {
-  if (row.ticked) return row;
-  const opened = openSet(row, at);
-  return { ...opened, skipped: true, ticked: false, holdRunning: false, holdStartedAt: null, completedAt: row.completedAt ?? at };
-}
-
-function draftRows(move: GymExercise, item: GymFlowItem, last?: LoggedSet[] | null, openedAt?: number | null): SetDraft[] {
+function draftRows(
+  move: GymExercise,
+  item: GymFlowItem,
+  last?: LoggedSet[] | null,
+  openedAt?: number | null,
+): SetDraft[] {
   const target = resolveTarget(item);
   const schemeId = schemeById(item.scheme).id;
   const history = setsForProgression(last);
-  // Never done before: start from our estimate of the member's strength, when we have one.
+  // First row only: last time, then the estimate, then the flow. Later rows copy what was just logged.
   const start = history.length ? null : (estimateStart(move, item)?.weightKg ?? null);
-  const rows = planWithScheme(move, item, schemeById(item.scheme), history, start).sets.map(set => ({
+  const set = planWithScheme(move, item, schemeById(item.scheme), history, start).sets[0];
+  if (!set) return [];
+  const row: SetDraft = {
     weight: set.weightKg == null ? '' : formatKg(set.weightKg),
     reps: target.kind === 'reps' && set.reps != null ? String(set.reps) : '',
     ticked: false,
@@ -184,15 +231,9 @@ function draftRows(move: GymExercise, item: GymFlowItem, last?: LoggedSet[] | nu
     seconds: target.kind === 'hold' && set.seconds != null ? String(set.seconds) : '',
     ...freshDetail,
     schemeId,
-    restPlannedSeconds: item.restSeconds ?? null,
-  }));
-  // Each set starts from the rest you used after it last time; the flow's default otherwise.
-  rows.forEach((row, index) => {
-    const lastRest = last?.find(set => set.setIndex === index + 1)?.restSeconds;
-    if (lastRest != null) row.restPlannedSeconds = lastRest;
-  });
-  if (openedAt == null || !rows[0]) return rows;
-  return rows.map((row, index) => (index === 0 ? openSet(row, openedAt) : row));
+    restPlannedSeconds: gymRestSeconds(item),
+  };
+  return openedAt == null ? [row] : [openSet(row, openedAt)];
 }
 
 function isHoldTarget(item: GymFlowItem) {
@@ -226,117 +267,44 @@ function extraSet(previous: SetDraft): SetDraft {
 }
 
 function restoreRows(rows: SetDraft[], saved: HistorySet[] | undefined): SetDraft[] {
-  if (!saved?.length) return rows;
-  // Sets added beyond the plan come back too.
-  const highest = Math.max(rows.length, ...saved.map(set => set.setIndex));
-  while (rows.length < highest && rows.length > 0) rows = [...rows, extraSet(rows[rows.length - 1])];
-  return rows.map((row, index) => {
-    const set = saved.find(item => item.setIndex === index + 1);
-    if (!set) return row;
-    if (set.status === 'skipped') return { ...row, skipped: true, ticked: false, restPlannedSeconds: set.restPlannedSeconds ?? row.restPlannedSeconds };
-    return {
-      ...row,
-      ticked: true,
-      skipped: false,
-      touched: true,
-      weight: set.weightKg == null ? row.weight : formatKg(set.weightKg),
-      reps: set.reps == null ? row.reps : String(set.reps),
-      seconds: set.durationSeconds == null ? row.seconds : String(set.durationSeconds),
-      restPlannedSeconds: set.restPlannedSeconds ?? row.restPlannedSeconds,
-    };
-  });
-}
-
-const restClock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
-
-/** The rest after a set: shown between sets, and adjustable in 15-second steps. */
-function RestStepper({
-  seconds,
-  label,
-  flowDefault,
-  onChange,
-}: {
-  seconds: number;
-  label: string;
-  /** The flow's own rest, shown when yours differs. */
-  flowDefault: number | null;
-  onChange: (seconds: number) => void;
-}) {
-  const { colors: C } = useTheme();
-  const step = (delta: number) => onChange(Math.max(0, Math.min(600, seconds + delta)));
-  const button = (text: string, delta: number, name: string) => (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={name}
-      onPress={() => step(delta)}
-      hitSlop={6}
-      style={({ pressed }) => ({
-        width: 36,
-        height: 32,
-        borderRadius: 16,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: C.line,
-        opacity: pressed ? 0.6 : 1,
-      })}
-    >
-      <Text style={{ color: C.text, fontSize: 18, fontWeight: '600' }}>{text}</Text>
-    </Pressable>
-  );
-  return (
-    <View
-      accessibilityLabel={`${label} ${restClock(seconds)}`}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingLeft: 32 }}
-    >
-      <Text style={{ flex: 1, color: C.muted, fontSize: 13 }}>
-        {label} <Text variant="numeric" style={{ color: C.text, fontSize: 13, fontWeight: '600' }}>{restClock(seconds)}</Text>
-        {flowDefault != null && flowDefault !== seconds ? ` (flow: ${restClock(flowDefault)})` : ''}
-      </Text>
-      {button('−', -15, `Shorter ${label.toLowerCase()}`)}
-      {button('+', 15, `Longer ${label.toLowerCase()}`)}
-    </View>
-  );
-}
-
-function tickedRows(
-  rows: SetDraft[],
-  setIndex: number,
-  move: GymExercise,
-  item: GymFlowItem,
-  logged: { weightKg: number | null; reps: number | null; durationSeconds: number | null },
-  at = Date.now(),
-) {
-  const open = rows.map((row, index) => ({
-    weightKg: index === setIndex ? logged.weightKg : row.weight.trim() === '' ? null : Number(row.weight),
-    reps: index === setIndex ? logged.reps : row.reps.trim() === '' ? null : Number(row.reps),
-    seconds: index === setIndex ? logged.durationSeconds : row.seconds.trim() === '' ? null : Number(row.seconds),
-    ticked: row.ticked || row.skipped,
-    touched: row.touched || row.skipped,
+  const seed = rows[0];
+  if (!seed) return rows;
+  const done = (saved ?? []).filter(set => set.status !== 'skipped').sort((left, right) => left.setIndex - right.setIndex);
+  if (!done.length) return rows;
+  const logged = done.map(set => ({
+    ...seed,
+    ticked: true,
+    skipped: false,
+    touched: true,
+    weight: set.weightKg == null ? seed.weight : formatKg(set.weightKg),
+    reps: set.reps == null ? '' : String(set.reps),
+    seconds: set.durationSeconds == null ? '' : String(set.durationSeconds),
+    restPlannedSeconds: set.restPlannedSeconds ?? seed.restPlannedSeconds,
+    planFrozen: true,
   }));
-  const updated = nextSetAfterTick(move, item, schemeById(item.scheme), open, setIndex);
-  const targetIndex = rows.findIndex((row, index) => index > setIndex && !row.ticked && !row.skipped);
-  return rows.map((row, index) => {
-    if (index === setIndex) {
-      const completed = { ...row, ticked: true, skipped: false, completedAt: row.completedAt ?? at };
-      return logged.durationSeconds != null
-        ? { ...completed, ...emptyHold, seconds: String(logged.durationSeconds) }
-        : completed;
-    }
-    if (index !== targetIndex || row.touched || row.ticked) return row;
-    const next = updated[index];
-    if (!next) return row;
-    const used = open[setIndex]?.weightKg;
-    const weight = next.weightKg == null ? '' : formatKg(next.weightKg);
-    return {
-      ...row,
-      weight,
-      reps: next.reps == null ? '' : String(next.reps),
-      seconds: next.seconds == null ? '' : String(next.seconds),
-      bump: next.weightKg != null && used != null && next.weightKg !== used ? riseNote(used, next.weightKg) : null,
-    };
-  });
+  return [...logged, extraSet(logged[logged.length - 1])];
 }
+
+/** Marks the logged row and adds one next row copied from it. */
+function loggedRows(rows: SetDraft[], setIndex: number, patch: Partial<SetDraft>, at: number): SetDraft[] {
+  const updated = rows.map((row, index) =>
+    index === setIndex
+      ? {
+          ...openSet(row, at),
+          ...patch,
+          ticked: true,
+          skipped: false,
+          holdRunning: false,
+          holdStartedAt: null,
+          completedAt: row.completedAt ?? at,
+        }
+      : row,
+  );
+  if (updated.some(row => !row.ticked && !row.skipped)) return updated;
+  const done = updated[setIndex];
+  return done ? [...updated, extraSet(done)] : updated;
+}
+
 
 function parseLogged(row: SetDraft, load: LoadType, item: GymFlowItem) {
   if (isHoldTarget(item)) {
@@ -355,7 +323,7 @@ function parseLogged(row: SetDraft, load: LoadType, item: GymFlowItem) {
   return { weightKg, reps, durationSeconds: null as number | null };
 }
 
-function previewCards(data: MobilePayload, kind: 'flow' | 'personal', id: string, customflow?: Customflow): PreviewCard[] {
+function previewCards(data: MobilePayload, kind: 'flow' | 'personal', id: string, customflow?: Customflow, priorities: readonly MuscleArea[] = []): PreviewCard[] {
   if (kind === 'personal') {
     const flow = data.profile.personalFlows?.find(item => item.id === id);
     return (flow?.cards ?? []).map(reference => ({
@@ -365,52 +333,20 @@ function previewCards(data: MobilePayload, kind: 'flow' | 'personal', id: string
   }
   const flow = data.flows.find(item => item.id === id);
   if (!flow) return [];
-  // Same order the server starts the run in: the member's Customflow, when they have one.
+  const gym = gymFlowById(flow.id);
+  // Same exercises the server starts the run with, including a swap.
+  if (gym) {
+    return memberGymItems(gym.items, priorities, flowLevelOf(gym.level), customflow).map(item => {
+      const card = gymHabitCard(gym, item);
+      return { cardId: card.id, sourceFlowId: flow.id, title: card.title, card };
+    });
+  }
   return applyCustomflow(resolveVisualFlow(flow, data.flows).cards, customflow, card => gymExerciseId(card.id) ?? card.id).map(card => ({
     cardId: card.id,
     sourceFlowId: flow.id,
     title: card.title,
     card,
   }));
-}
-
-function Confetti({ play }: { play: boolean }) {
-  const { colors: C } = useTheme();
-  const pieces = useRef(Array.from({ length: 16 }, () => new Animated.Value(0))).current;
-  useEffect(() => {
-    if (!play) return;
-    pieces.forEach(value => value.setValue(0));
-    const group = Animated.stagger(
-      40,
-      pieces.map(value =>
-        Animated.timing(value, { toValue: 1, duration: 1400, useNativeDriver: true }),
-      ),
-    );
-    group.start();
-    return () => group.stop();
-  }, [play, pieces]);
-  return (
-    <View style={{ height: 110 }} pointerEvents="none">
-      {pieces.map((value, index) => (
-        <Animated.View
-          key={index}
-          style={{
-            position: 'absolute',
-            left: 8 + ((index * 23) % 300),
-            top: play ? 0 : 16 + (index % 4) * 18,
-            width: 8,
-            height: 14,
-            borderRadius: 2,
-            backgroundColor: index % 2 === 0 ? C.lime : C.text,
-            opacity: play ? value.interpolate({ inputRange: [0, 0.2, 1], outputRange: [0, 1, 0.35] }) : 0.85,
-            transform: play
-              ? [{ translateY: value.interpolate({ inputRange: [0, 1], outputRange: [-12, 96] }) }]
-              : [{ translateY: 0 }],
-          }}
-        />
-      ))}
-    </View>
-  );
 }
 
 function FlowStartScreen({
@@ -447,6 +383,8 @@ function FlowStartScreen({
   onStart: () => void;
 }) {
   const customflow = useCustomflow('qram-flow', gym ? id : undefined);
+  const priorities = usePersonalMetrics()['gym.priorities']?.areas ?? [];
+  const priorityIds = new Set(gym ? prioritySourceIds(gym.items, priorities, flowLevelOf(gym.level)) : []);
   const { colors: C } = useTheme();
   const estimates = cards.map(card => benchmarkFor(id, card.cardId, level, card.card));
   const rest = restFor(id, level);
@@ -456,10 +394,10 @@ function FlowStartScreen({
     <View style={{ flex: 1, marginHorizontal: -space.lg, marginBottom: -safeBottomInset }}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ gap: 16, paddingHorizontal: space.lg, paddingTop: 4, paddingBottom: 130 + safeBottomInset }}
+        contentContainerStyle={{ gap: space.md, paddingHorizontal: space.lg, paddingTop: space.xs, paddingBottom: 130 + safeBottomInset }}
       >
         {gym ? null : (
-          <View style={{ flexDirection: 'row', gap: 8 }}>
+          <View style={{ flexDirection: 'row', gap: space.sm }}>
             {levels.map(option => {
               const selected = option === level;
               return (
@@ -471,12 +409,12 @@ function FlowStartScreen({
                   onPress={() => onLevel(option)}
                   style={{
                     flex: 1,
-                    minHeight: 44,
-                    borderRadius: 22,
+                    minHeight: hit,
+                    borderRadius: radius.pill,
                     alignItems: 'center',
                     justifyContent: 'center',
                     backgroundColor: selected ? C.lime : C.card,
-                    borderWidth: 1,
+                    borderWidth: stroke.line,
                     borderColor: selected ? C.lime : C.line,
                   }}
                 >
@@ -486,22 +424,27 @@ function FlowStartScreen({
             })}
           </View>
         )}
-        {gym ? null : <Text style={{ color: C.muted, fontSize: 15 }}>About {clock(estimateSeconds)} with rests</Text>}
+        {gym ? null : <Text variant="subhead" style={{ color: C.muted }}>About {clock(estimateSeconds)} with rests</Text>}
         {gym
-          ? applyCustomflow(gym.items, customflow, item => item.exerciseId).map(item => {
+          ? memberGymItems(gym.items, priorities, flowLevelOf(gym.level), customflow).map(item => {
               const move = exercise(item.exerciseId);
               const lastWeight = sessions[item.exerciseId]?.sets.at(-1)?.weightKg;
+              const origin = swappedFrom(customflow?.changes, item.exerciseId);
+              const sourceId = origin ?? item.exerciseId;
+              const priority = priorityIds.has(sourceId);
               return (
-                <View key={item.exerciseId} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <View style={{ width: 48, height: 48, borderRadius: 10, overflow: 'hidden', backgroundColor: C.card }}>
+                <View key={item.exerciseId} style={{ flexDirection: 'row', alignItems: 'center', gap: space.ms }}>
+                  <View style={{ width: 48, height: 48, borderRadius: radius.small, overflow: 'hidden', backgroundColor: C.card }}>
                     <ExerciseVisual exerciseId={move?.id} cover />
                   </View>
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <Text style={{ color: C.text, fontSize: 16 }}>{move?.name ?? item.exerciseId}</Text>
-                    <Text style={{ color: C.muted, fontSize: 13 }}>
+                  <View style={{ flex: 1, gap: space.xxs }}>
+                    <Text variant="callout" style={{ color: C.text }}>{move?.name ?? item.exerciseId}</Text>
+                    <Text variant="footnote" style={{ color: C.muted }}>
                       {gymTargetLabel(item)}
                       {lastWeight != null ? ` · Last ${formatKg(lastWeight)} kg` : ''}
                     </Text>
+                    {priority ? <Text variant="footnote" style={{ color: C.lime, fontWeight: '600' }}>Your priority</Text> : null}
+                    {origin ? <Text variant="footnote" style={{ color: C.lime, fontWeight: '600' }}>Your swap</Text> : null}
                   </View>
                 </View>
               );
@@ -520,31 +463,26 @@ function FlowStartScreen({
                 .filter(Boolean)
                 .join(' · ');
               return (
-                <View key={card.cardId} style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <View style={{ width: 48, height: 48, borderRadius: 10, overflow: 'hidden', backgroundColor: C.card }}>
+                <View key={card.cardId} style={{ flexDirection: 'row', alignItems: 'center', gap: space.ms }}>
+                  <View style={{ width: 48, height: 48, borderRadius: radius.small, overflow: 'hidden', backgroundColor: C.card }}>
                     {card.card ? <FlowIllustration flow={card.card} cover /> : null}
                   </View>
-                  <View style={{ flex: 1, gap: 2 }}>
-                    <Text style={{ color: C.text, fontSize: 16 }}>{card.title}</Text>
-                    <Text style={{ color: C.muted, fontSize: 13 }}>{detail}</Text>
+                  <View style={{ flex: 1, gap: space.xxs }}>
+                    <Text variant="callout" style={{ color: C.text }}>{card.title}</Text>
+                    <Text variant="footnote" style={{ color: C.muted }}>{detail}</Text>
                   </View>
                 </View>
               );
             })}
       </ScrollView>
-      <GlassBar bottom={safeBottomInset + 8}>
+      <GlassBar bottom={safeBottomInset + space.sm}>
         {error ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Try again"
-            onPress={onRetry}
-            style={{ flex: 1, minHeight: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: C.lime }}
-          >
-            <Text style={{ color: C.onAccent, fontSize: 18, fontWeight: '700' }}>Try again</Text>
-          </Pressable>
+          <View style={{ flex: 1 }}>
+            <Button title="Try again" onPress={onRetry} />
+          </View>
         ) : loading ? (
-          <View style={{ flex: 1, minHeight: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: C.card }}>
-            <Text style={{ color: C.muted, fontSize: 16 }}>Loading…</Text>
+          <View style={{ flex: 1 }}>
+            <Button title="Start" busy onPress={onStart} />
           </View>
         ) : (
           <>
@@ -552,30 +490,24 @@ function FlowStartScreen({
               accessibilityRole="button"
               accessibilityLabel={inProgress ? 'History, one flow in progress' : 'History'}
               onPress={onHistory}
-              style={{ minHeight: 56, paddingHorizontal: 4, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              style={({ pressed }) => ({
+                minHeight: hit,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: space.sm,
+                opacity: pressed ? opacity.pressed : 1,
+              })}
             >
               {inProgress ? (
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: C.lime }} />
+                <View style={{ width: space.sm, height: space.sm, borderRadius: radius.pill, backgroundColor: C.lime }} />
               ) : null}
-              <Text style={{ color: C.text, fontSize: 15, fontWeight: '600' }}>History</Text>
+              <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>
+                History
+              </Text>
             </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Start"
-              disabled={busy || cards.length === 0}
-              onPress={onStart}
-              style={{
-                flex: 1,
-                minHeight: 56,
-                borderRadius: 16,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: C.lime,
-                opacity: busy || cards.length === 0 ? 0.5 : 1,
-              }}
-            >
-              <Text style={{ color: C.onAccent, fontSize: 18, fontWeight: '700' }}>Start</Text>
-            </Pressable>
+            <View style={{ flex: 1 }}>
+              <Button title="Start" disabled={busy || cards.length === 0} onPress={onStart} />
+            </View>
           </>
         )}
       </GlassBar>
@@ -592,8 +524,8 @@ export function FlowRun({
   onNext,
   onTry,
   onClose,
-  onPosted,
   resumeOnOpen = false,
+  version,
 }: {
   kind: 'flow' | 'personal';
   id: string;
@@ -606,41 +538,96 @@ export function FlowRun({
   onPosted?: () => void;
   /** Opened from a workout in progress: carry straight on with it. */
   resumeOnOpen?: boolean;
+  /** The published version a community flow keeps running. */
+  version?: number;
 }) {
   const { colors: C } = useTheme();
-  const animations = useAnimations();
   const { completed } = useFlowHabits(data.user.id);
   const customflow = useCustomflow('qram-flow', kind === 'flow' ? id : undefined);
-  const cards = useMemo(() => previewCards(data, kind, id, customflow), [data, kind, id, customflow]);
+  const personal = usePersonalMetrics();
+  const priorities = personal['gym.priorities']?.areas;
+  // A tap updates this at once, so two taps in a row build on each other before the saved metric reloads.
+  const [tappedFactor, setTappedFactor] = useState<number | null>(null);
+  const restFactor = tappedFactor ?? personal['gym.restFactor']?.factor;
+  const today = localDate(new Date());
+  const todaySeries = useFlowSeries(today, today);
+  const community = useCommunityFlow(id.startsWith('community-') ? id : null);
+  const cards = useMemo(() => {
+    if (!id.startsWith('community-')) return previewCards(data, kind, id, customflow, priorities ?? []);
+    const pinned = version != null ? community.value?.versions.find(row => row.version === version) : undefined;
+    const source = pinned ?? community.value?.flow;
+    return (source?.cards ?? []).map(reference => ({
+      ...reference,
+      card: findFlowCard(data.flows, reference.sourceFlowId, reference.cardId),
+    }));
+  }, [community.value, customflow, data, id, kind, priorities, version]);
   const [metrics, setMetrics] = useState<UserMetrics | null | undefined>(undefined);
   const [existing, setExisting] = useState<FlowRunRecord | null | undefined>(undefined);
   const [live, setLive] = useState<FlowRunRecord | null>(null);
   const [state, setState] = useState<FlowRunState | null>(null);
-  const [level, setLevel] = useState<RunLevel>('Regular');
-  const [note, setNote] = useState('');
+  const { member } = useFlowMember();
+  // A level chosen on this flow stays. Otherwise the picker follows the member's level.
+  const [pickedLevel, setPickedLevel] = usePaneState<RunLevel | null>(`runLevel:${kind}:${id}`, null, 'account');
+  const level = pickedLevel ?? runLevelFor(member.level);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [historyOpen, setHistoryOpen] = useState(false);
   const safeBottomInset = useSafeAreaInsets().bottom;
   const [now, setNow] = useState(() => Date.now());
-  const posted = useRef(false);
   const suppressBuzz = useRef(false);
   const seen = useRef<string | null>(null);
   const saved = useRef<string | null>(null);
   const seenPhase = useRef<FlowRunState['phase'] | null>(null);
   const gym = gymFlowById(id);
+  const priorityIds = new Set(gym ? prioritySourceIds(gym.items, priorities ?? [], flowLevelOf(gym.level)) : []);
+  const appliedItems = useMemo(
+    () => (gym ? memberGymItems(gym.items, priorities ?? [], flowLevelOf(gym.level), customflow) : []),
+    [gym, customflow, priorities],
+  );
+  const appliedKey = appliedItems.map(item => item.exerciseId).join('|');
+  const cardKey = state?.cards.map(card => card.cardId).join('|') ?? '';
+  // A run keeps the exercises on its cards. A swap saved halfway through still resolves the card
+  // that already started, and the next start uses the replacement.
+  const plannedItem = useCallback(
+    (exerciseId: string | null | undefined) => {
+      if (!exerciseId) return undefined;
+      return appliedItems.find(item => item.exerciseId === exerciseId) ?? gym?.items.find(item => item.exerciseId === exerciseId);
+    },
+    [appliedItems, gym],
+  );
+  const setOrder = useMemo(() => {
+    if (!gym) return [];
+    const source = state?.cards.length
+      ? state.cards.flatMap(card => {
+          const exerciseId = gymExerciseId(card.cardId);
+          const item = exerciseId ? plannedItem(exerciseId) : undefined;
+          return item ? [item] : [];
+        })
+      : appliedItems;
+    return gymSetOrder(
+      source.map(item => ({
+        exerciseId: item.exerciseId,
+        sets: item.sets,
+        restSeconds: item.restSeconds,
+        superset: item.superset,
+      })),
+    );
+    // `state` is read only for its card ids (`cardKey`). The clock replaces `state` every second.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gym, appliedItems, cardKey]);
   const [sessions, setSessions] = useState<Record<string, ExerciseSession>>({});
-  const [sessionsReady, setSessionsReady] = useState(gym == null);
+  const [sessionKey, setSessionKey] = useState('');
+  const sessionsReady = !gym || sessionKey === appliedKey;
+  const [swapFor, setSwapFor] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, SetDraft[]>>({});
   const [runSaved, setRunSaved] = useState<{ runId: string; sets: Record<string, HistorySet[]> } | null>(null);
   const savedSets = live && runSaved?.runId === live.id ? runSaved.sets : undefined;
-  const [effort, setEffort] = useState<number | null>(null);
   const openedAt = useRef<Record<string, number>>({});
   const schemesReady = useTrainingSchemes();
   const [restUntil, setRestUntil] = useState<number | null>(null);
-  // Which set's rest is counting down, so changing that rest changes the countdown.
-  const [restFor, setRestFor] = useState<{ cardId: string; setIndex: number; at: number } | null>(null);
+  const [restReason, setRestReason] = useState('');
+  const [restCardId, setRestCardId] = useState<string | null>(null);
   const pendingLogs = useRef<PendingLog[]>([]);
   const restBuzzed = useRef<number | null>(null);
 
@@ -652,7 +639,6 @@ export function FlowRun({
         if (cancel) return;
         setMetrics(home.metrics);
         setExisting(home.running.find(run => run.kind === kind && run.flowId === id) ?? null);
-        if (home.metrics) setLevel(startingLevel(home.metrics, Date.now()));
       })
       .catch(reason => {
         if (!cancel) setError(reason instanceof Error ? reason.message : 'Try again.');
@@ -670,21 +656,23 @@ export function FlowRun({
   useEffect(() => {
     if (!gym) return;
     let cancel = false;
-    void exerciseSessions(gym.items.map(item => item.exerciseId))
+    const ids = appliedItems.map(item => item.exerciseId);
+    const key = ids.join('|');
+    void exerciseSessions(ids)
       .then(result => {
         if (cancel) return;
         const next: Record<string, ExerciseSession> = {};
         for (const session of result.sessions) next[session.exerciseId] = session;
         setSessions(next);
-        setSessionsReady(true);
+        setSessionKey(key);
       })
       .catch(() => {
-        if (!cancel) setSessionsReady(true);
+        if (!cancel) setSessionKey(key);
       });
     return () => {
       cancel = true;
     };
-  }, [gym]);
+  }, [gym, appliedItems]);
 
   useEffect(() => {
     if (!gym || !sessionsReady || !schemesReady || !state || state.phase !== 'card') return;
@@ -693,7 +681,7 @@ export function FlowRun({
     // Wait for this run's saved sets when resuming, so finished sets come back ticked.
     if (live && savedSets === undefined) return;
     const exerciseId = gymExerciseId(card.cardId);
-    const entry = exerciseId ? gymFlowItem(id, exerciseId) : undefined;
+    const entry = exerciseId ? plannedItem(exerciseId) : undefined;
     const move = exerciseId ? exercise(exerciseId) : undefined;
     if (!exerciseId || !entry || !move) return;
     setDrafts(previous =>
@@ -707,7 +695,7 @@ export function FlowRun({
             ),
           },
     );
-  }, [gym, sessionsReady, schemesReady, state, drafts, sessions, id, live, savedSets]);
+  }, [gym, sessionsReady, schemesReady, state, drafts, sessions, id, live, savedSets, plannedItem]);
 
   // Sets this run already saved, read once when the run is picked up again.
   useEffect(() => {
@@ -736,7 +724,7 @@ export function FlowRun({
     const card = state.cards[state.index];
     if (!card?.manual) return;
     const exerciseId = gymExerciseId(card.cardId);
-    const entry = exerciseId ? gymFlowItem(id, exerciseId) : undefined;
+    const entry = exerciseId ? plannedItem(exerciseId) : undefined;
     if (!entry) return;
     const target = resolveTarget(entry);
     if (target.kind !== 'hold') return;
@@ -767,7 +755,7 @@ export function FlowRun({
         };
       });
     }
-  }, [drafts, id, now, state]);
+  }, [drafts, now, plannedItem, state]);
 
   useEffect(() => {
     if (restUntil == null || state?.pausedAt != null || now < restUntil) return;
@@ -775,21 +763,20 @@ export function FlowRun({
       restBuzzed.current = restUntil;
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
       void playRestEnd();
-      const card = state?.cards[state.index];
-      if (card) stampNextOpen(card.cardId, Date.now());
-      // Every set dealt with: the rest was the last thing on this exercise, so move on by itself.
-      const cardRows = card ? drafts[card.cardId] : undefined;
-      const allDealtWith = cardRows?.length ? runFooterState(cardRows.map(row => ({ ticked: row.ticked, skipped: row.skipped, running: row.holdRunning }))).ready : false;
-      const isLast = state ? state.index + 1 >= state.cards.length : true;
-      if (card?.manual && allDealtWith && !isLast) void leaveManual(card.cardId, 'next');
     }
     setRestUntil(null);
-    // `drafts` and `leaveManual` are read at the moment rest ends.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setRestReason('');
   }, [now, restUntil, state?.pausedAt]);
 
   useEffect(() => {
-    if (state?.phase !== 'finished' || pendingLogs.current.length === 0) return;
+    if (!state || state.phase !== 'rest') return;
+    apply(current => (current.phase === 'rest' ? endRest(current, Date.now()) : current));
+  }, [state]);
+
+  useEffect(() => {
+    if (state?.phase !== 'finished' || !live) return;
+    let cancel = false;
+    const snapshot = state;
     const queued = pendingLogs.current.splice(0);
     void (async () => {
       for (const body of queued) {
@@ -799,8 +786,20 @@ export function FlowRun({
           pendingLogs.current.push(body);
         }
       }
+      if (!gym) return;
+      try {
+        await saveFlowRun(live.id, snapshot);
+      } catch {
+        // The last saved cards still answer.
+      }
+      if (cancel) return;
     })();
-  }, [state?.phase]);
+    return () => {
+      cancel = true;
+    };
+    // `live` and `state` are the run at the moment it finishes. A finished run does not tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state?.phase, id, gym]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -847,7 +846,12 @@ export function FlowRun({
 
   useEffect(() => {
     if (!state) return;
-    if (seenPhase.current && seenPhase.current !== 'finished' && state.phase === 'finished') completed(id);
+    if (seenPhase.current && seenPhase.current !== 'finished' && state.phase === 'finished') {
+      completed(id);
+      // The sets just logged belong on the Body flow map, and this flow is done on the routine.
+      void reloadBodyFlow();
+      void reloadFlowSeries();
+    }
     seenPhase.current = state.phase;
   }, [state, id, completed]);
 
@@ -871,7 +875,7 @@ export function FlowRun({
   function loggedSets(cardId: string, rows: SetDraft[]) {
     const exerciseId = gymExerciseId(cardId);
     const move = exerciseId ? exercise(exerciseId) : undefined;
-    const entry = exerciseId ? gymFlowItem(id, exerciseId) : undefined;
+    const entry = exerciseId ? plannedItem(exerciseId) : undefined;
     if (!exerciseId || !move || !entry) return null;
     let previous: number | null = null;
     const sets = rows.flatMap((row, index) => {
@@ -907,14 +911,81 @@ export function FlowRun({
     return sets.length ? { runId: live?.id, exerciseId, sets } : null;
   }
 
-  function stampNextOpen(cardId: string, at: number) {
-    setDrafts(previous => {
-      const rows = previous[cardId];
-      if (!rows) return previous;
-      const index = rows.findIndex(row => !row.ticked && !row.skipped && row.startedAt == null);
-      if (index < 0) return previous;
-      return { ...previous, [cardId]: rows.map((row, rowIndex) => (rowIndex === index ? openSet(row, at) : row)) };
+  function openItems(): GymSetInput[] {
+    return (state?.cards ?? []).flatMap(card => {
+      const exerciseId = gymExerciseId(card.cardId);
+      const item = exerciseId ? plannedItem(exerciseId) : undefined;
+      if (!exerciseId || !item) return [];
+      return [{ exerciseId, sets: item.sets, restSeconds: item.restSeconds, superset: item.superset }];
     });
+  }
+
+  function hintSet(row: SetDraft): RestHintSet {
+    return { weightKg: numberOrNull(row.weight), reps: numberOrNull(row.reps), durationSeconds: numberOrNull(row.seconds) };
+  }
+
+  /** Puts the rest hint on the next row and, for a superset, moves to the partner at once. */
+  function afterSet(exerciseId: string, cardId: string, rows: SetDraft[], setIndex: number, at: number) {
+    const entry = plannedItem(exerciseId);
+    const move = exercise(exerciseId);
+    const loggedRow = rows[setIndex];
+    if (!entry || !move || !loggedRow) return rows;
+    const target = resolveTarget(entry);
+    const range =
+      target.kind === 'hold'
+        ? { min: target.minSeconds, max: target.maxSeconds }
+        : target.kind === 'reps'
+          ? { min: target.min, max: target.max }
+          : null;
+    const earlier = rows.slice(0, setIndex).filter(row => row.ticked).map(hintSet);
+    const logged = hintSet(loggedRow);
+    const history = (sessions[exerciseId]?.sets ?? []).map(set => ({
+      weightKg: set.weightKg,
+      reps: set.reps,
+      durationSeconds: set.durationSeconds,
+    }));
+    const estimate = estimateStart(move, entry);
+    const hint = restHint({
+      exerciseId,
+      set: logged,
+      earlierSets: earlier,
+      range,
+      best: bestAtLoad(exerciseId, [...history, ...earlier, logged], logged.weightKg),
+      estimate: estimate ? { weightKg: estimate.weightKg } : null,
+      memberFactor: restFactor,
+    });
+    const counts: Record<string, number> = {};
+    for (const card of state?.cards ?? []) {
+      const key = gymExerciseId(card.cardId);
+      if (!key) continue;
+      const list = drafts[card.cardId];
+      counts[key] = list
+        ? list.filter(row => row.ticked).length
+        : (savedSets?.[key] ?? []).filter(set => set.status !== 'skipped').length;
+    }
+    counts[exerciseId] = rows.filter(row => row.ticked).length;
+    const closed = (state?.cards ?? []).flatMap(card => {
+      if (card.status === 'pending') return [];
+      const key = gymExerciseId(card.cardId);
+      return key ? [key] : [];
+    });
+    const step = nextAfterSet(openItems(), counts, exerciseId, closed);
+    const rested = rows.map((row, index) => (index === setIndex ? { ...row, restPlannedSeconds: step.rest ? hint.seconds : 0 } : row));
+    if (step.rest) {
+      setRestUntil(at + hint.seconds * 1000);
+      setRestReason(hint.reason);
+      const destination = (state?.cards ?? []).find(card => gymExerciseId(card.cardId) === step.exerciseId);
+      setRestCardId(destination?.cardId ?? cardId);
+    } else {
+      setRestUntil(null);
+      setRestReason('');
+      setRestCardId(null);
+    }
+    if (step.exerciseId !== exerciseId) {
+      const index = (state?.cards ?? []).findIndex(card => gymExerciseId(card.cardId) === step.exerciseId);
+      if (index >= 0) apply(current => showCard(current, index, at));
+    }
+    return rested;
   }
 
   function onExerciseReady(cardId: string) {
@@ -923,9 +994,19 @@ export function FlowRun({
     apply(currentState => beginCardClock(currentState, at));
     setDrafts(previous => {
       const rows = previous[cardId];
-      if (!rows?.[0]) return previous;
-      return { ...previous, [cardId]: rows.map((row, index) => (index === 0 ? openSet(row, at) : row)) };
+      if (!rows) return previous;
+      const index = rows.findIndex(row => !row.ticked && !row.skipped);
+      if (index < 0) return previous;
+      return { ...previous, [cardId]: rows.map((row, rowIndex) => (rowIndex === index ? openSet(row, at) : row)) };
     });
+  }
+
+  function patchDraft(cardId: string, setIndex: number, patch: Partial<SetDraft>) {
+    const rows = (drafts[cardId] ?? []).map((row, index) =>
+      index === setIndex ? { ...row, ...patch, touched: true, edited: row.ticked ? true : row.edited } : row,
+    );
+    setDrafts(previous => ({ ...previous, [cardId]: rows }));
+    if (rows[setIndex]?.ticked) void persistCard(cardId, rows);
   }
 
   async function persistCard(cardId: string, rows: SetDraft[]) {
@@ -938,12 +1019,35 @@ export function FlowRun({
     }
   }
 
-  async function leaveManual(cardId: string, kind: 'next' | 'skip', rows?: SetDraft[]) {
-    await persistCard(cardId, rows ?? drafts[cardId] ?? []);
+  async function leaveExercise(cardId: string, kind: 'next' | 'skip') {
+    if (kind === 'next') await persistCard(cardId, drafts[cardId] ?? []);
     setRestUntil(null);
-    apply(currentState =>
-      kind === 'skip' ? skipCard(currentState, Date.now()) : doneCard(currentState, Date.now()),
-    );
+    setRestReason('');
+    setRestCardId(null);
+    const at = Date.now();
+    apply(current => {
+      const marked =
+        kind === 'skip'
+          ? current.phase === 'card' && current.cards[current.index]?.status === 'pending'
+            ? {
+                ...current,
+                cards: current.cards.map((card, index) =>
+                  index === current.index ? { ...card, status: 'skipped' as const, seconds: null, closedAt: at } : card,
+                ),
+              }
+            : current
+          : completeCard(current, current.index, at);
+      const pending = marked.cards.findIndex(card => card.status === 'pending');
+      if (pending < 0) return finishRunIfDone(marked, at);
+      return showCard(marked, pending, at);
+    });
+  }
+
+  function nudgeRest(tap: RestFactorTap) {
+    const next = nextRestFactor(restFactor, tap);
+    setTappedFactor(next);
+    void savePersonalMetric('gym.restFactor', { factor: next }).catch(() => setError('Could not save that. Try again.'));
+    setRestUntil(current => (current == null ? current : current + (tap === 'harder' ? 30_000 : -30_000)));
   }
 
   async function begin(replace: boolean) {
@@ -952,13 +1056,12 @@ export function FlowRun({
     setError('');
     try {
       if (replace && existing) await finishFlowRun(existing.id, existing.state);
-      const result = await startFlowRun({ kind, id, level });
+      const result = await startFlowRun({ kind, id, level, ...(version != null ? { version } : {}) });
       saved.current = null;
       seen.current = null;
       setHistoryOpen(false);
       setExisting(null);
       setLive(result.run);
-      setEffort(result.run.effort ?? null);
       setState(tick(result.run.state, Date.now()));
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Try again.');
@@ -992,7 +1095,6 @@ export function FlowRun({
     saved.current = null;
     seen.current = null;
     setLive(existing);
-    setEffort(existing.effort ?? null);
     setState(tick(existing.state, Date.now()));
   }
 
@@ -1000,7 +1102,7 @@ export function FlowRun({
     if (busy) return;
     setBusy(true);
     try {
-      if (live && state && !posted.current) await finishFlowRun(live.id, state, effort ?? undefined);
+      if (live && state) await finishFlowRun(live.id, state);
     } catch {
       // Leaving still keeps the last saved cards.
     }
@@ -1009,35 +1111,18 @@ export function FlowRun({
     else onClose();
   }
 
-  async function post() {
-    if (!live || !state || busy) return;
-    setBusy(true);
-    setError('');
-    try {
-      await saveFlowRun(live.id, state, effort ?? undefined);
-      await postFlowRun(live.id, note.trim() || undefined);
-      posted.current = true;
-      onPosted?.();
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : 'Try again.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
   const activeLevel = live?.level ?? level;
   const estimates = cards.map(card => benchmarkFor(id, card.cardId, activeLevel, card.card));
   const running = state && live ? state : null;
   const current = running?.cards[running.index];
   const manualExerciseId = current?.manual ? gymExerciseId(current.cardId) : null;
   const manualMove = manualExerciseId ? exercise(manualExerciseId) : undefined;
-  const manualItem = manualExerciseId ? gymFlowItem(id, manualExerciseId) : undefined;
+  const manualItem = plannedItem(manualExerciseId);
   const manualLast = manualExerciseId ? sessions[manualExerciseId] : undefined;
   const manualEstimate = manualMove && manualItem && !manualLast ? estimateStart(manualMove, manualItem) : null;
   const manualPlan = manualMove && manualItem
     ? planWithScheme(manualMove, manualItem, schemeById(manualItem.scheme), manualLast?.sets ?? null, manualEstimate?.weightKg ?? null)
     : null;
-  const manualPattern = manualItem?.scheme && manualPlan ? schemeLine(schemeById(manualItem.scheme), manualPlan) : null;
   const manualNote = !current?.manual || !manualMove || !manualItem
     ? null
     : !sessionsReady
@@ -1047,19 +1132,79 @@ export function FlowRun({
         : !manualLast
           ? manualEstimate
             ? estimateLine(manualEstimate)
-            : "First time on this one. Add your weight and we'll remember it."
+            : noEstimateLine()
           : manualPlan?.raised && manualPlan.sets[0]?.weightKg != null && manualLast.sets[0]?.weightKg != null
             ? `Last time ${formatKg(manualLast.sets[0].weightKg)} kg × ${manualItem.repsMax}. Try ${formatKg(manualPlan.sets[0].weightKg)} kg.`
             : null;
-  const suggestion =
-    running?.phase === 'finished'
-      ? nextFlowSuggestion(
-          id,
-          running.cards.reduce((sum, card) => sum + (card.status === 'done' ? (card.seconds ?? 0) : 0), 0),
-          running.cards.reduce((sum, card) => sum + (card.status === 'done' ? card.targetSeconds : 0), 0),
-          catalogFlows,
-        )
+  const swapSource = manualExerciseId ? (swappedFrom(customflow?.changes, manualExerciseId) ?? manualExerciseId) : null;
+  const swapOrigin =
+    swapSource && (gym?.items.some(item => item.exerciseId === swapSource) || priorityIds.has(swapSource)) ? swapSource : null;
+  const priorityExercise = Boolean(swapSource && priorityIds.has(swapSource));
+  async function chooseSwap(exerciseId: string) {
+    if (!swapFor || !gym) return;
+    const card = state?.cards[state.index];
+    const rows = card ? (drafts[card.cardId] ?? []) : [];
+    const rewrite = Boolean(card && rows.every(row => !row.ticked && !row.skipped));
+    if (rewrite && card) {
+      const nextId = gymCardId(id, exerciseId);
+      const name = exercise(exerciseId)?.name ?? exerciseId;
+      setDrafts(previous => {
+        const copy = { ...previous };
+        delete copy[card.cardId];
+        return copy;
+      });
+      setState(currentState =>
+        currentState
+          ? {
+              ...currentState,
+              cards: currentState.cards.map((item, index) =>
+                index === currentState.index ? { ...item, cardId: nextId, title: name } : item,
+              ),
+            }
+          : currentState,
+      );
+    }
+    try {
+      await saveCustomflowSwap({ kind: 'qram-flow', id, version: null }, swapFor, exerciseId);
+      setSwapFor(null);
+    } catch (error) {
+      if (rewrite && card) {
+        setState(currentState =>
+          currentState
+            ? {
+                ...currentState,
+                cards: currentState.cards.map((item, index) =>
+                  index === currentState.index ? { ...item, cardId: card.cardId, title: card.title } : item,
+                ),
+              }
+            : currentState,
+        );
+      }
+      throw error;
+    }
+  }
+  const todayPicture = useMemo(
+    () => (running?.phase === 'finished' ? workedToday(running.cards, drafts, today, focusLevelFor(member.level)) : null),
+    [drafts, member.level, running, today],
+  );
+  const loggedLines = (running?.cards ?? []).flatMap(card => {
+    const count = (drafts[card.cardId] ?? []).filter(row => row.ticked).length;
+    if (!count) return [];
+    return [`${card.title} · ${count} ${count === 1 ? 'set' : 'sets'}`];
+  });
+  const seriesNext = todaySeries.occurrences.find(item => item.date === today && item.status === 'open' && item.itemId !== id);
+  const seriesTitle = !seriesNext
+    ? null
+    : seriesNext.itemKind === 'flow'
+      ? (data.flows.find(flow => flow.id === seriesNext.itemId)?.title ?? gymFlowById(seriesNext.itemId)?.title ?? catalogFlows.find(flow => flow.id === seriesNext.itemId)?.title ?? null)
       : null;
+  const nextToday = nextTitle
+    ? { title: nextTitle, start: onNext ? () => void settle('next') : null }
+    : seriesNext && seriesTitle && seriesNext.itemKind === 'flow' && onTry
+      ? { title: seriesTitle, start: () => void settle('try', { flowId: seriesNext.itemId, title: seriesTitle }) }
+      : seriesNext && seriesTitle
+        ? { title: seriesTitle, start: null }
+        : null;
   const showingHistory = historyOpen && !running && metrics !== null;
   const sheetTitle = showingHistory
     ? 'History'
@@ -1068,12 +1213,11 @@ export function FlowRun({
       ? 'About you'
       : title
     : running.phase === 'finished'
-      ? 'Flow complete'
-      : running.phase === 'rest'
-        ? 'Rest'
-        : (current?.title ?? title);
+      ? 'Done'
+      : (current?.title ?? title);
 
   return (
+    <>
     <Sheet
       title={sheetTitle}
       presentation="modal"
@@ -1090,29 +1234,27 @@ export function FlowRun({
       }}
     >
       {error ? (
-        <Text accessibilityRole="alert" style={{ color: C.danger, fontSize: 15 }}>
+        <Text accessibilityRole="alert" variant="subhead" style={{ color: C.danger }}>
           {error}
         </Text>
       ) : null}
       {(metrics === undefined || existing === undefined) && !gym ? (
         error ? (
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            variant="text"
+            size="regular"
+            title="Try again"
             accessibilityLabel="Try again"
             onPress={() => setReloadKey(value => value + 1)}
-            style={{ minHeight: 48, justifyContent: 'center' }}
-          >
-            <Text style={{ color: C.lime, fontSize: 16, fontWeight: '700' }}>Try again</Text>
-          </Pressable>
+          />
         ) : (
-          <Text style={{ color: C.muted, fontSize: 16 }}>Loading…</Text>
+          <Skeleton shape="line" />
         )
       ) : metrics === null ? (
         <AboutYouForm
           initial={null}
           onSaved={savedMetrics => {
             setMetrics(savedMetrics);
-            setLevel(startingLevel(savedMetrics, Date.now()));
           }}
         />
       ) : !running ? (
@@ -1123,12 +1265,12 @@ export function FlowRun({
             id={id}
             cards={cards}
             level={level}
-            onLevel={setLevel}
+            onLevel={setPickedLevel}
             metrics={metrics}
             gym={gym}
             sessions={sessions}
             inProgress={Boolean(existing)}
-            loading={metrics === undefined || existing === undefined}
+            loading={metrics === undefined || existing === undefined || (id.startsWith('community-') && community.loading)}
             error={error}
             busy={busy}
             safeBottomInset={safeBottomInset}
@@ -1151,27 +1293,16 @@ export function FlowRun({
           move={manualMove}
           name={manualMove?.name ?? current.title}
           exerciseId={manualMove?.id}
-          target={manualItem ? gymTargetLabel(manualItem) : ''}
-          rowTarget={manualItem ? setTargetText(manualItem) : ''}
-          flowRest={manualItem?.restSeconds ?? null}
-          onAddSet={() =>
-            setDrafts(previous => {
-              const list = previous[current.cardId];
-              if (!list?.length || list.length >= 20) return previous;
-              return { ...previous, [current.cardId]: [...list, extraSet(list[list.length - 1])] };
-            })
+          planned={manualItem ? plannedLine(manualItem.sets) : ''}
+          priority={priorityExercise}
+          onSwap={
+            swapOrigin && !(drafts[current.cardId] ?? []).some(row => row.ticked)
+              ? () => setSwapFor(swapOrigin)
+              : undefined
           }
-          onRemoveSet={() =>
-            setDrafts(previous => {
-              const list = previous[current.cardId];
-              const last = list?.[list.length - 1];
-              if (!list || list.length <= 1 || !last || last.ticked || last.skipped || last.holdRunning) return previous;
-              return { ...previous, [current.cardId]: list.slice(0, -1) };
-            })
-          }
+          supersetLabel={manualExerciseId ? supersetCaption(setOrder, manualExerciseId) : null}
           mode={!manualMove || !manualItem ? 'weight' : isHoldTarget(manualItem) ? 'hold' : manualMove.load === 'bodyweight' ? 'reps' : 'weight'}
           note={manualNote}
-          pattern={manualPattern}
           scheme={manualItem?.scheme ? schemeById(manualItem.scheme) : null}
           load={manualMove?.load ?? 'weight'}
           index={running.index}
@@ -1180,94 +1311,49 @@ export function FlowRun({
           now={now}
           paused={running.pausedAt != null}
           rows={drafts[current.cardId]}
-          restLeft={restUntil == null ? 0 : Math.max(0, Math.ceil((restUntil - (running.pausedAt ?? now)) / 1000))}
-          onWeight={(setIndex, value) =>
-            setDrafts(previous => {
-              const rows = previous[current.cardId];
-              if (!rows) return previous;
-              return {
-                ...previous,
-                [current.cardId]: rows.map((row, rowIndex) => {
-                  if (rowIndex === setIndex)
-                    return { ...row, weight: value, touched: true, bump: null, edited: row.ticked ? true : row.edited };
-                  if (setIndex === 0 && !row.ticked && !row.touched && row.weight.trim() === '') return { ...row, weight: value };
-                  return row;
-                }),
-              };
-            })
+          restLeft={
+            restCardId === current.cardId && restUntil != null
+              ? Math.max(0, Math.ceil((restUntil - (running.pausedAt ?? now)) / 1000))
+              : 0
           }
-          onReps={(setIndex, value) =>
-            setDrafts(previous => {
-              const rows = previous[current.cardId];
-              if (!rows) return previous;
-              return {
-                ...previous,
-                [current.cardId]: rows.map((row, rowIndex) =>
-                  rowIndex === setIndex ? { ...row, reps: value, touched: true, edited: row.ticked ? true : row.edited } : row,
-                ),
-              };
-            })
-          }
+          restReason={restReason}
+          onHarder={() => nudgeRest('harder')}
+          onEasier={() => nudgeRest('easier')}
+          onSkipRest={() => {
+            setRestUntil(null);
+            setRestReason('');
+          }}
+          onWeight={(setIndex, value) => patchDraft(current.cardId, setIndex, { weight: value, bump: null })}
+          onReps={(setIndex, value) => patchDraft(current.cardId, setIndex, { reps: value })}
           onTickSet={setIndex => {
             const at = Date.now();
             const exerciseId = gymExerciseId(current.cardId);
             const move = exerciseId ? exercise(exerciseId) : undefined;
-            const entry = exerciseId ? gymFlowItem(id, exerciseId) : undefined;
-            const prepared = (drafts[current.cardId] ?? []).map((row, index) => (index === setIndex ? openSet(row, at) : row));
-            const row = prepared[setIndex];
-            const logged = !move || !entry || !row || row.ticked || row.skipped ? null : parseLogged(row, move.load, entry);
-            if (!move || !entry || !row || row.ticked || row.skipped || !logged) return;
-            // Saved straight away, so a ticked set survives leaving the workout.
-            const nowTicked = tickedRows(prepared, setIndex, move, entry, logged, at);
-            setDrafts(previous => ({ ...previous, [current.cardId]: nowTicked }));
-            void persistCard(current.cardId, nowTicked);
-            setRestUntil(at + (row.restPlannedSeconds ?? entry.restSeconds ?? 90) * 1000);
-            setRestFor({ cardId: current.cardId, setIndex, at });
-          }}
-          onSkipRest={() => {
-            setRestUntil(null);
-            stampNextOpen(current.cardId, Date.now());
-            // Skipping the rest after the last set moves on, as the rest ending would.
-            const cardRows = drafts[current.cardId] ?? [];
-            const dealtWith = cardRows.length > 0 && runFooterState(cardRows.map(row => ({ ticked: row.ticked, skipped: row.skipped, running: row.holdRunning }))).ready;
-            if (dealtWith && running.index + 1 < running.cards.length) void leaveManual(current.cardId, 'next');
-          }}
-          onNext={() => void leaveManual(current.cardId, 'next')}
-          onSkip={() => {
-            const at = Date.now();
-            const cardRows = drafts[current.cardId] ?? [];
-            const noneTicked = !cardRows.some(row => row.ticked);
-            const nextRows = cardRows.map(row => (noneTicked || (!row.ticked && !row.skipped) ? markSkipped(row, at) : row));
-            setDrafts(previous => ({ ...previous, [current.cardId]: nextRows }));
-            void leaveManual(current.cardId, noneTicked ? 'skip' : 'next', nextRows);
-          }}
-          onRest={(setIndex, seconds) => {
-            if (restFor && restFor.cardId === current.cardId && restFor.setIndex === setIndex && restUntil != null) {
-              setRestUntil(restFor.at + seconds * 1000);
+            const entry = exerciseId ? plannedItem(exerciseId) : undefined;
+            const rows = drafts[current.cardId] ?? [];
+            const row = rows[setIndex];
+            if (!move || !entry || !row || row.ticked || row.skipped || row.holdRunning) return;
+            const prepared = rows.map((item, index) => (index === setIndex ? openSet(item, at) : item));
+            const logged = parseLogged(prepared[setIndex] ?? row, move.load, entry);
+            if (!logged) {
+              setError(isHoldTarget(entry) ? 'Add the time, then tick the set.' : move.load === 'bodyweight' || move.load === 'assisted' ? 'Add the reps, then tick the set.' : 'Add a weight, then tick the set.');
+              return;
             }
-            setDrafts(previous => {
-              const list = previous[current.cardId];
-              if (!list) return previous;
-              return {
-                ...previous,
-                [current.cardId]: list.map((row, index) => (index === setIndex ? { ...row, restPlannedSeconds: seconds } : row)),
-              };
-            });
+            setError('');
+            const next = loggedRows(prepared, setIndex, {
+              weight: logged.weightKg == null ? '' : formatKg(logged.weightKg),
+              reps: logged.reps == null ? '' : String(logged.reps),
+              seconds: logged.durationSeconds == null ? '' : String(logged.durationSeconds),
+              touched: true,
+            }, at);
+            const rested = afterSet(entry.exerciseId, current.cardId, next, setIndex, at);
+            setDrafts(previous => ({ ...previous, [current.cardId]: rested }));
+            void persistCard(current.cardId, rested);
           }}
-          onSeconds={(setIndex, value) =>
-            setDrafts(previous => {
-              const rows = previous[current.cardId];
-              if (!rows) return previous;
-              return {
-                ...previous,
-                [current.cardId]: rows.map((row, rowIndex) =>
-                  rowIndex === setIndex
-                    ? { ...row, seconds: value, touched: true, typedSeconds: true, edited: row.ticked ? true : row.edited }
-                    : row,
-                ),
-              };
-            })
-          }
+          moving={manualItem ? canMoveOn((drafts[current.cardId] ?? []).filter(row => row.ticked).length, manualItem.sets) : true}
+          onNext={() => void leaveExercise(current.cardId, 'next')}
+          onSkip={() => void leaveExercise(current.cardId, 'skip')}
+          onSeconds={(setIndex, value) => patchDraft(current.cardId, setIndex, { seconds: value, typedSeconds: true })}
           onStartHold={setIndex => {
             const at = Date.now();
             setDrafts(previous => {
@@ -1286,31 +1372,16 @@ export function FlowRun({
           onStopHold={setIndex => {
             const entry = manualItem;
             const row = drafts[current.cardId]?.[setIndex];
-            if (!entry || !row || row.ticked || !row.holdRunning) return;
+            if (!entry || !manualMove || !row || row.ticked || !row.holdRunning) return;
             const at = Date.now();
             const seconds = Math.min(3600, Math.max(1, Math.round(holdElapsedMs(row, at) / 1000)));
-            setDrafts(previous => {
-              const rows = previous[current.cardId];
-              if (!rows) return previous;
-              const stamped = rows.map((item, rowIndex) =>
-                rowIndex === setIndex ? { ...item, clockRan: true, typedSeconds: false, seconds: String(seconds) } : item,
-              );
-              if (!manualMove) {
-                return {
-                  ...previous,
-                  [current.cardId]: stamped.map((item, rowIndex) =>
-                    rowIndex === setIndex
-                      ? { ...item, ...emptyHold, seconds: String(seconds), ticked: true, skipped: false, completedAt: item.completedAt ?? at }
-                      : item,
-                  ),
-                };
-              }
-              return {
-                ...previous,
-                [current.cardId]: tickedRows(stamped, setIndex, manualMove, entry, { weightKg: null, reps: null, durationSeconds: seconds }, at),
-              };
-            });
-            setRestUntil(Date.now() + (entry.restSeconds ?? 90) * 1000);
+            const stamped = (drafts[current.cardId] ?? []).map((item, rowIndex) =>
+              rowIndex === setIndex ? { ...item, clockRan: true, typedSeconds: false, seconds: String(seconds) } : item,
+            );
+            const next = loggedRows(stamped, setIndex, { seconds: String(seconds) }, at);
+            const rested = afterSet(entry.exerciseId, current.cardId, next, setIndex, at);
+            setDrafts(previous => ({ ...previous, [current.cardId]: rested }));
+            void persistCard(current.cardId, rested);
           }}
           onPause={() => {
             const at = Date.now();
@@ -1367,177 +1438,64 @@ export function FlowRun({
             )
           }
         />
-      ) : running.phase === 'rest' && current ? (
-        <View style={{ gap: 18, paddingTop: 24 }}>
-          <Text variant="numeric" style={{ color: C.text, fontSize: 72, fontWeight: '700', textAlign: 'center' }}>
-            {clock(remainingSeconds(running, now))}
-          </Text>
-          <Text style={{ color: C.muted, fontSize: 18, textAlign: 'center' }}>Next: {current.title}</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Start next"
-            onPress={() => apply(currentState => endRest(currentState, Date.now()))}
-            style={{ minHeight: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: C.lime }}
-          >
-            <Text style={{ color: C.onAccent, fontSize: 18, fontWeight: '700' }}>Start next</Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={running.pausedAt ? 'Resume' : 'Pause'}
-            onPress={() =>
-              apply(currentState =>
-                currentState.pausedAt != null ? resumeRun(currentState, Date.now()) : pauseRun(currentState, Date.now()),
-              )
-            }
-            style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>
-              {running.pausedAt ? 'Resume' : 'Pause'}
-            </Text>
-          </Pressable>
-        </View>
-      ) : (
-        <View style={{ gap: 16 }}>
-          <Confetti play={animations} />
-          <Text accessibilityRole="header" style={{ color: C.text, fontSize: 32, fontWeight: '700' }}>
-            Flow complete!
-          </Text>
-          <Text style={{ color: C.muted, fontSize: 18 }}>
-            Time taken {clock(running.cards.reduce((sum, card) => sum + (card.status === 'done' ? (card.seconds ?? 0) : 0), 0))}
-          </Text>
-          {gym ? (
-            <View style={{ gap: 8 }}>
-              <Text style={{ color: C.text, fontSize: 16, fontWeight: '700' }}>How hard was it?</Text>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <Text style={{ color: C.muted, fontSize: 13 }}>Easy</Text>
-                <Text style={{ color: C.muted, fontSize: 13 }}>All out</Text>
-              </View>
-              <View style={{ flexDirection: 'row', gap: 4 }}>
-                {Array.from({ length: 10 }, (_, index) => index + 1).map(value => (
-                  <Pressable
-                    key={value}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${value} out of 10`}
-                    accessibilityState={{ selected: effort === value }}
-                    onPress={() => {
-                      setEffort(value);
-                      if (live && state) void saveFlowRun(live.id, state, value).catch(() => undefined);
-                    }}
-                    style={{
-                      flex: 1,
-                      minHeight: 40,
-                      borderRadius: 8,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: effort === value ? C.lime : C.card,
-                    }}
-                  >
-                    <Text style={{ color: effort === value ? C.onAccent : C.text, fontSize: 14, fontWeight: '700' }}>{value}</Text>
-                  </Pressable>
-                ))}
-              </View>
+      ) : running.phase === 'rest' ? null : (
+        <View style={{ gap: space.md }}>
+          <Text accessibilityRole="header" variant="title" style={{ color: C.text }}>Done</Text>
+          {todayPicture ? (
+            <View style={{ alignItems: 'center', gap: space.sm }}>
+              <Text variant="footnote" style={{ color: C.muted }}>Worked today</Text>
+              <BodyPicture areas={todayPicture} width={240} showLegend />
             </View>
           ) : null}
-          {posted.current ? (
-            <View style={{ gap: 12 }}>
-              <Text accessibilityRole="alert" style={{ color: C.lime, fontSize: 17, fontWeight: '700' }}>
-                ✓ Posted to your timeline
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Done"
-                disabled={busy}
-                onPress={() => void settle('close')}
-                style={{ minHeight: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: C.lime }}
-              >
-                <Text style={{ color: C.onAccent, fontSize: 18, fontWeight: '700' }}>Done</Text>
-              </Pressable>
+          {loggedLines.map(line => (
+            <Text key={line} variant="callout" style={{ color: C.text }}>{line}</Text>
+          ))}
+          {nextToday ? (
+            <View style={{ gap: space.sm }}>
+              <Text variant="footnote" style={{ color: C.muted }}>Next today</Text>
+              <Text variant="callout" style={{ color: C.text }}>{nextToday.title}</Text>
             </View>
+          ) : null}
+          {nextToday?.start ? (
+            <Button title="Start" accessibilityLabel="Start" disabled={busy} onPress={nextToday.start} />
           ) : (
-          <>
-          <TextInput
-            accessibilityLabel="Add a note"
-            value={note}
-            onChangeText={setNote}
-            placeholder="Add a note"
-            placeholderTextColor={C.muted}
-            maxLength={communityLimits.description}
-            multiline
-            style={{
-              minHeight: 80,
-              borderRadius: 12,
-              borderWidth: 1,
-              borderColor: C.line,
-              backgroundColor: C.card,
-              color: C.text,
-              padding: 14,
-              fontSize: 16,
-            }}
-          />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Post to timeline"
-            disabled={busy || posted.current}
-            onPress={() => void post()}
-            style={{
-              minHeight: 56,
-              borderRadius: 16,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: C.lime,
-              opacity: busy || posted.current ? 0.5 : 1,
-            }}
-          >
-            <Text style={{ color: C.onAccent, fontSize: 18, fontWeight: '700' }}>
-              {posted.current ? 'Posted' : 'Post to timeline'}
-            </Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Not now"
-            disabled={busy}
-            onPress={() => void settle('close')}
-            style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>Not now</Text>
-          </Pressable>
-          </>
+            <Button title="Done" accessibilityLabel="Done" disabled={busy} onPress={() => void settle('close')} />
           )}
-          {nextTitle && onNext ? (
+          {nextToday?.start ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={`Next: ${nextTitle}`}
+              accessibilityLabel="Done"
               disabled={busy}
-              onPress={() => void settle('next')}
-              style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
+              onPress={() => void settle('close')}
+              style={{ minHeight: hit, alignItems: 'center', justifyContent: 'center' }}
             >
-              <Text style={{ color: C.lime, fontSize: 16, fontWeight: '700' }}>Next: {nextTitle}</Text>
+              <Text variant="callout" style={{ color: C.muted, fontWeight: '600' }}>Done</Text>
             </Pressable>
-          ) : null}
-          {suggestion ? (
-            <View style={{ gap: 8 }}>
-              <Text style={{ color: C.text, fontSize: 16, lineHeight: 22 }}>
-                Your body seems used to this flow. Try {suggestion.title} next.
-              </Text>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Try ${suggestion.title}`}
-                disabled={busy}
-                onPress={() =>
-                  void settle('try', {
-                    flowId: suggestion.flowId ?? suggestion.id,
-                    title: suggestion.title,
-                  })
-                }
-                style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
-              >
-                <Text style={{ color: C.lime, fontSize: 16, fontWeight: '700' }}>Try {suggestion.title}</Text>
-              </Pressable>
-            </View>
           ) : null}
         </View>
       )}
     </Sheet>
+    {swapFor && gym ? (
+      <SwapChooser
+        sourceId={swapFor}
+        avoidMainAreas={supersetPartnerAreas(
+          gym.items.map(item => ({ key: item.exerciseId, exerciseId: item.exerciseId, superset: item.superset })),
+          swapFor,
+          item => {
+            const replacement = customflow?.changes.swaps?.[item.key];
+            return replacement && replacement !== item.exerciseId ? replacement : item.exerciseId;
+          },
+        )}
+        library={data.flows}
+        onClose={() => setSwapFor(null)}
+        onChoose={chooseSwap}
+        onView={flow => {
+          setSwapFor(null);
+          onTry?.(flow.id, flow.title);
+        }}
+      />
+    ) : null}
+    </>
   );
 }
 
@@ -1571,47 +1529,40 @@ function CardStep({
   const { colors: C } = useTheme();
   const target = [reps ? `${reps} reps` : '', load != null ? `${load} kg` : ''].filter(Boolean).join(' · ');
   return (
-    <View style={{ gap: 16, paddingTop: 8 }}>
-      <View style={{ height: 220, borderRadius: 18, overflow: 'hidden', backgroundColor: C.card }}>
+    <View style={{ gap: space.md, paddingTop: space.sm }}>
+      <View style={{ height: 220, borderRadius: radius.card, overflow: 'hidden', backgroundColor: C.card }}>
         {card ? <FlowIllustration flow={card} cover /> : null}
       </View>
-      <Text accessibilityRole="header" style={{ color: C.text, fontSize: 28, fontWeight: '700' }}>
+      <Text accessibilityRole="header" variant="title" style={{ color: C.text }}>
         {title}
       </Text>
       <Text variant="numeric" style={{ color: C.text, fontSize: 72, fontWeight: '700' }}>
         {clock(remaining)}
       </Text>
-      <Text style={{ color: C.muted, fontSize: 16 }}>
+      <Text variant="callout" style={{ color: C.muted }}>
         Card {index + 1} of {total}
       </Text>
-      {target ? <Text style={{ color: C.text, fontSize: 16 }}>{target}</Text> : null}
+      {target ? <Text variant="callout" style={{ color: C.text }}>{target}</Text> : null}
       <View style={{ height: 6, borderRadius: 3, backgroundColor: C.line, overflow: 'hidden' }}>
         <View style={{ width: `${Math.round(progress * 100)}%`, height: 6, backgroundColor: C.lime }} />
       </View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Done"
-        onPress={onDone}
-        style={{ minHeight: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: C.lime }}
-      >
-        <Text style={{ color: C.onAccent, fontSize: 18, fontWeight: '700' }}>Done</Text>
-      </Pressable>
-      <View style={{ flexDirection: 'row', gap: 12 }}>
+      <Button title="Done" accessibilityLabel="Done" onPress={onDone} />
+      <View style={{ flexDirection: 'row', gap: space.ms }}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Skip"
           onPress={onSkip}
-          style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
+          style={{ flex: 1, minHeight: hit, alignItems: 'center', justifyContent: 'center' }}
         >
-          <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>Skip</Text>
+          <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>Skip</Text>
         </Pressable>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={paused ? 'Resume' : 'Pause'}
           onPress={onPause}
-          style={{ flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center' }}
+          style={{ flex: 1, minHeight: hit, alignItems: 'center', justifyContent: 'center' }}
         >
-          <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>{paused ? 'Resume' : 'Pause'}</Text>
+          <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>{paused ? 'Resume' : 'Pause'}</Text>
         </Pressable>
       </View>
     </View>
@@ -1622,14 +1573,12 @@ function GymManualCard({
   move,
   name,
   exerciseId,
-  target,
-  rowTarget,
-  flowRest,
-  onAddSet,
-  onRemoveSet,
+  planned,
+  priority,
+  onSwap,
+  supersetLabel,
   mode,
   note,
-  pattern,
   scheme,
   load,
   index,
@@ -1639,14 +1588,17 @@ function GymManualCard({
   paused,
   rows,
   restLeft,
+  restReason,
+  onHarder,
+  onEasier,
+  onSkipRest,
   onWeight,
   onReps,
   onSeconds,
-  onRest,
   onTickSet,
   onStartHold,
   onStopHold,
-  onSkipRest,
+  moving,
   onNext,
   onSkip,
   onPause,
@@ -1656,16 +1608,12 @@ function GymManualCard({
   move?: GymExercise;
   name: string;
   exerciseId?: string;
-  target: string;
-  rowTarget: string;
-  /** The flow's default rest between sets. */
-  flowRest: number | null;
-  onAddSet: () => void;
-  /** Drops the last set, only while it hasn't been done. */
-  onRemoveSet: () => void;
+  planned: string;
+  priority?: boolean;
+  onSwap?: () => void;
+  supersetLabel?: string | null;
   mode: 'weight' | 'reps' | 'hold';
   note: string | null;
-  pattern: string | null;
   scheme: SetScheme | null;
   load: LoadType;
   index: number;
@@ -1675,15 +1623,17 @@ function GymManualCard({
   paused: boolean;
   rows?: SetDraft[];
   restLeft: number;
+  restReason: string;
+  onHarder: () => void;
+  onEasier: () => void;
+  onSkipRest: () => void;
   onWeight: (setIndex: number, value: string) => void;
   onReps: (setIndex: number, value: string) => void;
   onSeconds: (setIndex: number, value: string) => void;
-  /** The rest after this set, which the person may change. */
-  onRest: (setIndex: number, seconds: number) => void;
   onTickSet: (setIndex: number) => void;
   onStartHold: (setIndex: number) => void;
   onStopHold: (setIndex: number) => void;
-  onSkipRest: () => void;
+  moving: boolean;
   onNext: () => void;
   onSkip: () => void;
   onPause: () => void;
@@ -1692,249 +1642,242 @@ function GymManualCard({
 }) {
   const { colors: C } = useTheme();
   const [infoOpen, setInfoOpen] = useState(false);
-  const footer = runFooterState(
-    (rows ?? []).map(row => ({ ticked: row.ticked, skipped: row.skipped, running: row.holdRunning })),
-  );
+  const [editor, setEditor] = useState<{ setIndex: number; field: 'weight' | 'reps' | 'seconds'; typing: boolean } | null>(null);
+  useEffect(() => {
+    setEditor(null);
+  }, [exerciseId]);
+  const list = rows ?? [];
+  const openIndex = list.findIndex(row => !row.ticked && !row.skipped);
+  const runningHold = list.find(row => row.holdRunning) ?? null;
+  // The current set has its wheel open without a tap; tapping another set moves it there.
+  const active =
+    editor ??
+    (openIndex >= 0 && !runningHold
+      ? { setIndex: openIndex, field: mode === 'hold' ? ('seconds' as const) : ('reps' as const), typing: false }
+      : null);
+  const highlighted = active?.setIndex ?? openIndex;
+  const anyTicked = list.some(row => row.ticked);
+  const allDone = list.length > 0 && openIndex < 0;
   const safeBottom = useSafeAreaInsets().bottom;
-  const runningHold = rows?.find(row => row.holdRunning) ?? null;
-  const lastRow = rows?.[rows.length - 1];
-  const canRemoveSet = Boolean(rows && rows.length > 1 && lastRow && !lastRow.ticked && !lastRow.skipped && !lastRow.holdRunning);
-  return (
-    // The modal already keeps clear of the home indicator; the bar's glass runs past it to the edge.
-    <View style={{ flex: 1, marginHorizontal: -space.lg, marginBottom: -safeBottom }}>
-    <ScrollView
-      key={exerciseId}
-      style={{ flex: 1 }}
-      keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="interactive"
-      contentContainerStyle={{ gap: 14, paddingHorizontal: space.lg, paddingTop: 8, paddingBottom: 290 + safeBottom }}
-    >
-      {exerciseId ? (
-        <ExercisePicture
-          exerciseId={exerciseId}
-          name={name}
-          onPress={() => {
-            if (move) setInfoOpen(true);
+  // The footer floats over the list; the list leaves exactly its height free at the end.
+  const [footerHeight, setFooterHeight] = useState(0);
+  const flowColumns = (row: SetDraft, setIndex: number): NumberWheelProps[] => {
+    if (mode === 'hold') return durationColumns(row.seconds, value => onSeconds(setIndex, value), 'Time');
+    const columns: NumberWheelProps[] = [];
+    if (mode !== 'reps' && load !== 'bodyweight') columns.push(weightColumn(move?.equipment, row.weight, value => onWeight(setIndex, value), 'Weight'));
+    columns.push(repsColumn(row.reps, value => onReps(setIndex, value), 'Reps'));
+    return columns;
+  };
+  const showNumber = (setIndex: number, field: 'weight' | 'reps' | 'seconds', value: string, label: string, big: boolean) => {
+    const typing = editor?.setIndex === setIndex && editor.field === field && editor.typing;
+    if (typing) {
+      return (
+        <WheelEntry
+          accessibilityLabel={label}
+          value={value}
+          onChangeText={next => {
+            if (field === 'weight') onWeight(setIndex, next);
+            else if (field === 'reps') onReps(setIndex, next.replace(/[^0-9]/g, ''));
+            else onSeconds(setIndex, next.replace(/[^0-9]/g, ''));
           }}
+          onPress={() => setEditor({ setIndex, field, typing: false })}
+          onTypingEnd={() => setEditor(current => (current?.typing ? null : current))}
+          focused
+          typing
+          keyboardType={field === 'weight' ? 'decimal-pad' : 'number-pad'}
+          placeholder={field === 'weight' ? 'kg' : field === 'reps' ? 'reps' : 'sec'}
+          placeholderTextColor={C.muted}
+          style={{ minWidth: 72, minHeight: hit, color: C.text, fontSize: big ? 28 : 18, fontWeight: '600', paddingHorizontal: space.xs }}
         />
-      ) : null}
-      <Text style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>{target}</Text>
-      {infoOpen && move ? <ExerciseHowToSheet item={move} scheme={scheme} onClose={() => setInfoOpen(false)} /> : null}
-      {note ? <Text style={{ color: C.text, fontSize: 15, lineHeight: 21 }}>{note}</Text> : null}
-      {pattern && mode === 'weight' ? <Text style={{ color: C.muted, fontSize: 13, lineHeight: 18 }}>{pattern}</Text> : null}
-      {rows ? (
-        rows.map((row, setIndex) => (
-          <Fragment key={setIndex}>
-          {mode === 'hold' ? (
-            <View key={setIndex} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={{ width: 24, color: C.muted, fontSize: 16 }}>{setIndex + 1}</Text>
-              {row.holdRunning ? (
-                <>
-                  <Text
-                    variant="numeric"
-                    accessibilityLabel={`Set ${setIndex + 1} time`}
-                    style={{ flex: 1, color: C.text, fontSize: 28, fontWeight: '700' }}
-                  >
-                    {clock(Math.floor(holdElapsedMs(row, now) / 1000))}
-                  </Text>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Stop set ${setIndex + 1}`}
-                    onPress={() => onStopHold(setIndex)}
-                    style={{ minWidth: 96, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: C.lime }}
-                  >
-                    <Text style={{ color: C.onAccent, fontSize: 17, fontWeight: '700' }}>Stop</Text>
-                  </Pressable>
-                </>
-              ) : (
-                <>
-                  <TextInput
-                    accessibilityLabel={`Set ${setIndex + 1} seconds`}
-                    value={row.seconds}
-                    onChangeText={value => onSeconds(setIndex, value.replace(/[^0-9]/g, ''))}
-                    keyboardType="number-pad"
-                    placeholder="sec"
-                    placeholderTextColor={C.muted}
-                    style={{
-                      flex: 1,
-                      minWidth: 0,
-                      minHeight: 56,
-                      borderRadius: 12,
-                      borderWidth: 1,
-                      borderColor: C.line,
-                      backgroundColor: C.card,
-                      color: C.text,
-                      fontSize: 22,
-                      fontWeight: '700',
-                      paddingHorizontal: 12,
-                    }}
-                  />
-                  <Text style={{ color: C.muted, fontSize: 14 }}>sec</Text>
-                  {!row.ticked ? (
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel={`Start set ${setIndex + 1}`}
-                      onPress={() => onStartHold(setIndex)}
-                      style={{ minWidth: 72, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: C.lime }}
-                    >
-                      <Text style={{ color: C.lime, fontSize: 16, fontWeight: '700' }}>Start</Text>
-                    </Pressable>
-                  ) : null}
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={row.ticked ? `Set ${setIndex + 1} done` : `Tick set ${setIndex + 1}`}
-                    accessibilityState={{ disabled: row.ticked }}
-                    disabled={row.ticked}
-                    onPress={() => onTickSet(setIndex)}
-                    style={{ width: 56, height: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: row.ticked ? C.line : C.lime }}
-                  >
-                    <Text style={{ color: row.ticked ? C.muted : C.onAccent, fontSize: 22, fontWeight: '700' }}>✓</Text>
-                  </Pressable>
-                </>
-              )}
-            </View>
-          ) : (
-          <View key={setIndex} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
-            <Text style={{ width: 28, color: C.muted, fontSize: 16, lineHeight: 56 }}>{setIndex + 1}</Text>
-            {mode === 'reps' ? null : load === 'bodyweight' ? (
-              <Text style={{ flex: 1, color: C.muted, fontSize: 16, lineHeight: 56 }}>Bodyweight</Text>
-            ) : (
-              <View style={{ flex: 1.4, gap: 4 }}>
-                <TextInput
-                  accessibilityLabel={`Set ${setIndex + 1} weight kilograms`}
-                  value={row.weight}
-                  onChangeText={value => onWeight(setIndex, value)}
-                  keyboardType="decimal-pad"
-                  placeholder="kg"
-                  placeholderTextColor={C.muted}
-                  style={{
-                    minHeight: 56,
-                    borderRadius: 12,
-                    borderWidth: 1,
-                    borderColor: C.line,
-                    backgroundColor: C.card,
-                    color: C.text,
-                    fontSize: 28,
-                    fontWeight: '700',
-                    paddingHorizontal: 12,
-                  }}
+      );
+    }
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        onPress={() => setEditor({ setIndex, field, typing: false })}
+        style={{ minHeight: hit, justifyContent: 'center', paddingHorizontal: space.xs }}
+      >
+        <Text variant="numeric" style={{ color: big ? C.text : C.muted, fontSize: big ? 32 : 18, fontWeight: '600' }}>
+          {value || '—'}
+        </Text>
+      </Pressable>
+    );
+  };
+  return (
+    <View style={{ flex: 1, marginHorizontal: -space.lg, marginBottom: -safeBottom }}>
+      <ScrollView
+        key={exerciseId}
+        style={{ flex: 1 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        contentContainerStyle={{ gap: space.ms, paddingHorizontal: space.lg, paddingTop: space.sm, paddingBottom: footerHeight + space.md }}
+      >
+        <Text variant="footnote" style={{ color: C.muted }}>
+          {`Exercise ${index + 1} of ${total}`}
+        </Text>
+        {exerciseId ? (
+          <ExercisePicture
+            exerciseId={exerciseId}
+            name={name}
+            onPress={() => {
+              if (move) setInfoOpen(true);
+            }}
+          />
+        ) : null}
+        {supersetLabel ? <Text variant="footnote" style={{ color: C.muted }}>{supersetLabel}</Text> : null}
+        {priority ? <Text variant="footnote" style={{ color: C.muted }}>Your priority</Text> : null}
+        {onSwap ? (
+          <Button variant="text" size="regular" title="Swap" accessibilityLabel="Swap this exercise" onPress={onSwap} />
+        ) : null}
+        {planned ? <Text variant="footnote" style={{ color: C.muted }}>{planned}</Text> : null}
+        {infoOpen && move ? <ExerciseHowToSheet item={move} scheme={scheme} onClose={() => setInfoOpen(false)} /> : null}
+        {note ? <Text variant="subhead" style={{ color: C.text }}>{note}</Text> : null}
+        {list.length ? (
+          list.map((row, setIndex) => {
+            const open = !row.ticked && !row.skipped;
+            const big = setIndex === highlighted;
+            const showRest = open && restLeft > 0 && setIndex === openIndex;
+            // While the wheel is open it is the row: the numbers aren't shown twice.
+            const wheel = active?.setIndex === setIndex && !active.typing && !row.holdRunning;
+            const startHold =
+              mode === 'hold' && open && !row.holdRunning ? (
+                <Button
+                  variant="secondary"
+                  size="regular"
+                  fit
+                  title="Start"
+                  accessibilityLabel={`Start set ${setIndex + 1}`}
+                  onPress={() => onStartHold(setIndex)}
                 />
-                {row.bump ? <Text style={{ color: C.muted, fontSize: 12 }}>{row.bump}</Text> : null}
+              ) : null;
+            // Only the active set's tick is filled: one filled green thing on the screen at a time.
+            const tick = open ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Tick set ${setIndex + 1}`}
+                onPress={() => {
+                  setEditor(null);
+                  onTickSet(setIndex);
+                }}
+                style={({ pressed }) => ({
+                  width: size.button,
+                  height: size.button,
+                  borderRadius: radius.control,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: big ? C.lime : 'transparent',
+                  borderWidth: big ? 0 : stroke.line,
+                  borderColor: C.line,
+                  opacity: pressed ? opacity.pressed : 1,
+                })}
+              >
+                <Glyph name={{ ios: 'checkmark', android: 'check' }} fallback="✓" color={big ? C.onAccent : C.muted} size={space.lg} />
+              </Pressable>
+            ) : (
+              <View accessible accessibilityLabel={`Set ${setIndex + 1} done`} style={{ minWidth: hit, alignItems: 'center' }}>
+                <Glyph name={{ ios: 'checkmark', android: 'check' }} fallback="✓" color={C.muted} size={space.md} />
               </View>
-            )}
-            <TextInput
-              accessibilityLabel={`Set ${setIndex + 1} reps`}
-              value={row.reps}
-              onChangeText={value => onReps(setIndex, value.replace(/[^0-9]/g, ''))}
-              keyboardType="number-pad"
-              placeholder={rowTarget === 'max' ? 'max' : 'reps'}
-              placeholderTextColor={C.muted}
-              style={{
-                flex: 1,
-                minHeight: 56,
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: C.line,
-                backgroundColor: C.card,
-                color: C.text,
-                fontSize: 22,
-                fontWeight: '700',
-                paddingHorizontal: 12,
-              }}
-            />
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={row.ticked ? `Set ${setIndex + 1} done` : `Tick set ${setIndex + 1}`}
-              accessibilityState={{ disabled: row.ticked }}
-              disabled={row.ticked}
-              onPress={() => onTickSet(setIndex)}
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 16,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: row.ticked ? C.line : C.lime,
-              }}
-            >
-              <Text style={{ color: row.ticked ? C.muted : C.onAccent, fontSize: 22, fontWeight: '700' }}>✓</Text>
-            </Pressable>
-          </View>
-          )}
-          {setIndex < rows.length - 1 || index + 1 < total ? (
-            <RestStepper
-              seconds={row.restPlannedSeconds ?? 0}
-              label={setIndex < rows.length - 1 ? 'Rest' : 'Rest before next exercise'}
-              flowDefault={flowRest}
-              onChange={value => onRest(setIndex, value)}
-            />
-          ) : null}
-          </Fragment>
-        ))
-      ) : (
-        <Text style={{ color: C.muted, fontSize: 16 }}>Loading…</Text>
-      )}
-      {rows?.length ? (
-        <View style={{ flexDirection: 'row', gap: 10 }}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Add a set"
-            onPress={onAddSet}
-            style={({ pressed }) => ({
-              flex: 1,
-              minHeight: 44,
-              borderRadius: 14,
-              borderWidth: 1,
-              borderColor: C.line,
-              alignItems: 'center',
-              justifyContent: 'center',
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={{ color: C.lime, fontSize: 15, fontWeight: '700' }}>+ Add set</Text>
-          </Pressable>
-          {canRemoveSet ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Remove the last set"
-              onPress={onRemoveSet}
-              style={({ pressed }) => ({
-                flex: 1,
-                minHeight: 44,
-                borderRadius: 14,
-                borderWidth: 1,
-                borderColor: C.line,
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: pressed ? 0.6 : 1,
-              })}
-            >
-              <Text style={{ color: C.text, fontSize: 15, fontWeight: '600' }}>− Remove set</Text>
-            </Pressable>
-          ) : null}
-        </View>
-      ) : null}
-      {exerciseId ? <FocusArea exerciseId={exerciseId} /> : null}
-    </ScrollView>
-    <RunFooter
-      noun="Exercise"
-      index={index}
-      total={total}
-      elapsed={elapsed}
-      paused={paused}
-      hold={runningHold ? { seconds: Math.floor(holdElapsedMs(runningHold, now) / 1000), target: Number(runningHold.seconds) || 0 } : null}
-      restLeft={restLeft}
-      onSkipRest={onSkipRest}
-      ready={Boolean(rows?.length) && footer.ready}
-      hint={footer.hint || 'Finish or skip 1 more set'}
-      onNext={onNext}
-      skipLabel={rows?.length ? footer.skipLabel : 'Skip'}
-      onSkip={onSkip}
-      pauseLabel={paused ? 'Resume' : 'Pause'}
-      onPause={onPause}
-      bottom={safeBottom + 8}
-    />
-    {countdown ? <RunCountdown key={`countdown-${exerciseId ?? name}`} name={name} onDone={onCountdownDone} /> : null}
+            );
+            return (
+              <View
+                key={setIndex}
+                style={{
+                  borderRadius: radius.control,
+                  borderWidth: big ? stroke.active : 0,
+                  borderColor: C.lime,
+                  paddingHorizontal: big ? space.ms : 0,
+                  paddingVertical: big ? space.sm : 0,
+                  gap: space.sm,
+                }}
+              >
+                {wheel ? null : (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+                  {mode === 'hold' && row.holdRunning ? (
+                    <>
+                      <Text variant="display" numeric accessibilityLabel={`Set ${setIndex + 1} time`} style={{ flex: 1, color: C.text }}>
+                        {clock(Math.floor(holdElapsedMs(row, now) / 1000))}
+                      </Text>
+                      <Button
+                        size="regular"
+                        fit
+                        title="Stop"
+                        accessibilityLabel={`Stop set ${setIndex + 1}`}
+                        onPress={() => onStopHold(setIndex)}
+                      />
+                    </>
+                  ) : (
+                    <>
+                      {mode === 'hold' ? (
+                        showNumber(setIndex, 'seconds', row.seconds, adjustLabel(setIndex + 1, 'time', row.seconds, 'sec'), big)
+                      ) : mode === 'reps' || load === 'bodyweight' ? null : (
+                        showNumber(setIndex, 'weight', row.weight, adjustLabel(setIndex + 1, 'weight', row.weight, 'kg'), big)
+                      )}
+                      {mode === 'hold' ? (
+                        <Text variant="footnote" style={{ color: C.muted }}>sec</Text>
+                      ) : (
+                        <>
+                          {mode === 'reps' || load === 'bodyweight' ? null : <Text variant="footnote" style={{ color: C.muted }}>kg</Text>}
+                          {showNumber(setIndex, 'reps', row.reps, adjustLabel(setIndex + 1, 'reps', row.reps, 'reps'), big)}
+                          <Text variant="footnote" style={{ color: C.muted }}>reps</Text>
+                        </>
+                      )}
+                      {startHold}
+                      {tick}
+                    </>
+                  )}
+                </View>
+                )}
+                {wheel ? (
+                  <View style={{ gap: space.xs }}>
+                    <InlineWheels columns={flowColumns(row, setIndex)} />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityLabel="Type the number"
+                        onPress={() => setEditor(active ? { ...active, typing: true } : null)}
+                        style={{ flex: 1, minHeight: hit, justifyContent: 'center' }}
+                      >
+                        <Text variant="footnote" style={{ color: C.muted }}>Type</Text>
+                      </Pressable>
+                      {startHold}
+                      {tick}
+                    </View>
+                  </View>
+                ) : null}
+                {/* The rest clock lives in the footer; the card keeps only why this rest is the length it is. */}
+                {showRest && restReason ? <ReasonLine>{restReason}</ReasonLine> : null}
+              </View>
+            );
+          })
+        ) : (
+          <Skeleton shape="block" />
+        )}
+        {exerciseId ? <FocusArea exerciseId={exerciseId} /> : null}
+      </ScrollView>
+      <RunFooter
+        noun="Exercise"
+        index={index}
+        total={total}
+        elapsed={elapsed}
+        paused={paused}
+        hold={runningHold ? { seconds: Math.floor(holdElapsedMs(runningHold, now) / 1000), target: Number(runningHold.seconds) || 0 } : null}
+        restLeft={restLeft}
+        onSkipRest={onSkipRest}
+        onHarder={onHarder}
+        onEasier={onEasier}
+        ready={moving && !runningHold}
+        emphasis={allDone ? 'primary' : 'secondary'}
+        hint={runningHold ? 'Stop the hold first' : ''}
+        onNext={onNext}
+        skipLabel={anyTicked ? null : 'Skip'}
+        onSkip={onSkip}
+        pauseLabel={paused ? 'Resume' : 'Pause'}
+        onPause={onPause}
+        bottom={safeBottom + space.sm}
+        onHeight={setFooterHeight}
+      />
+      {countdown ? <RunCountdown key={`countdown-${exerciseId ?? name}`} name={name} onDone={onCountdownDone} /> : null}
     </View>
   );
 }

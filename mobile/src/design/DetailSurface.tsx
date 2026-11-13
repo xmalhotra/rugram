@@ -23,11 +23,14 @@ export function DetailSurface({
   onClose,
   fullScreen,
   presentation,
+  safeArea = true,
 }: {
   children: React.ReactNode;
   onClose: () => void;
   fullScreen: boolean;
   presentation?: 'inline' | 'modal';
+  /** False when the content handles the safe area itself (a full-screen page with its own header). */
+  safeArea?: boolean;
 }) {
   const parentDepth = useContext(InlineDetailDepth);
   const inline = presentation ? presentation === 'inline' : parentDepth > 0;
@@ -91,7 +94,11 @@ export function DetailSurface({
     >
       <InlineDetailDepth.Provider value={0}>
         <SafeAreaProvider initialMetrics={fullScreen ? initialWindowMetrics : undefined}>
-          <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>{children}</SafeAreaView>
+          {safeArea ? (
+            <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>{children}</SafeAreaView>
+          ) : (
+            <View style={{ flex: 1, backgroundColor: C.bg }}>{children}</View>
+          )}
         </SafeAreaProvider>
       </InlineDetailDepth.Provider>
     </Modal>

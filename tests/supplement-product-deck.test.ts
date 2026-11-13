@@ -1,3 +1,4 @@
+import { designMock, designTokens } from './support/design-mocks';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -50,7 +51,7 @@ test('real product deck keeps ranks, pages and information callbacks coherent ac
         };
       if (name === 'react-native')
         return { View: 'View', FlatList: 'FlatList', Pressable: 'Pressable' };
-      if (name === './design/theme') return { useTheme: () => ({ colors: {} }) };
+      if (name === './design/theme') return { ...designTokens, useTheme: () => ({ colors: {} }) };
       if (name === '../../shared/supplement-picks') return require('../shared/supplement-picks');
       const component = name.split('/').at(-1)!;
       return { [component]: component };

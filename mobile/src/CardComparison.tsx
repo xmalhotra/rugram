@@ -5,7 +5,7 @@ import { Text } from './design/Text';
 import type { CardBenefit, CreditCard, CardWallet } from '../../shared/credit-cards';
 import { Button, Chip } from './design/components';
 import { Disclosure } from './Disclosure';
-import { useTheme } from './design/theme';
+import { hit, radius, space, useTheme } from './design/theme';
 const money = formatInr;
 export function CardComparison({
   cards,
@@ -35,9 +35,9 @@ export function CardComparison({
           accessibilityRole="button"
           accessibilityLabel={`View ${card.name}`}
           onPress={() => onOpen(card)}
-          style={{ minHeight: 48, justifyContent: 'center' }}
+          style={{ minHeight: hit, justifyContent: 'center' }}
         >
-          <Text style={{ color: C.text, fontSize: 16, lineHeight: 23, fontWeight: '600' }}>
+          <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>
             {card.name} →
           </Text>
         </Pressable>
@@ -106,12 +106,12 @@ export function CardComparison({
     },
   ];
   return (
-    <View style={{ gap: 14 }}>
-      <Text style={{ color: C.text, fontSize: 22, fontWeight: '600' }}>Compare card benefits</Text>
+    <View style={{ gap: space.md }}>
+      <Text variant="heading" style={{ color: C.text }}>Compare card benefits</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ gap: 8 }}
+        contentContainerStyle={{ gap: space.sm }}
       >
         {categories.map(item => (
           <Chip
@@ -122,9 +122,9 @@ export function CardComparison({
           />
         ))}
       </ScrollView>
-      <Text style={{ color: C.muted, fontSize: 12 }}>Swipe table sideways to compare cards →</Text>
+      <Text variant="caption" style={{ color: C.muted }}>Swipe table sideways to compare cards →</Text>
       <ScrollView horizontal directionalLockEnabled showsHorizontalScrollIndicator>
-        <View style={{ borderWidth: 1, borderColor: C.line, borderRadius: 16, overflow: 'hidden' }}>
+        <View style={{ borderWidth: 1, borderColor: C.line, borderRadius: radius.control, overflow: 'hidden' }}>
           {rows.map((row, index) => (
             <View
               key={row.label}
@@ -138,13 +138,13 @@ export function CardComparison({
               <View
                 style={{
                   width: 108,
-                  padding: 12,
+                  padding: space.ms,
                   justifyContent: 'center',
                   borderRightWidth: 1,
                   borderRightColor: C.line,
                 }}
               >
-                <Text style={{ color: C.muted, fontSize: 13, lineHeight: 19, fontWeight: '600' }}>
+                <Text variant="footnote" style={{ color: C.muted, fontWeight: '600' }}>
                   {row.label}
                 </Text>
               </View>
@@ -153,7 +153,7 @@ export function CardComparison({
                   key={cards[column].id}
                   style={{
                     width: 178,
-                    padding: 12,
+                    padding: space.ms,
                     minHeight: 66,
                     justifyContent: 'center',
                     borderRightWidth: column === cards.length - 1 ? 0 : 1,
@@ -162,12 +162,8 @@ export function CardComparison({
                 >
                   {typeof value === 'string' ? (
                     <Text
-                      style={{
-                        color: row.accent ? C.lime : C.text,
-                        fontSize: row.accent ? 19 : 14,
-                        lineHeight: row.accent ? 26 : 21,
-                        fontWeight: row.accent ? '600' : '400',
-                      }}
+                      variant={row.accent ? 'section' : 'subhead'}
+                      style={{ color: row.accent ? C.lime : C.text }}
                     >
                       {value}
                     </Text>
@@ -180,23 +176,23 @@ export function CardComparison({
           ))}
         </View>
       </ScrollView>
-      <Text style={{ color: C.muted, fontSize: 12, lineHeight: 19 }}>
+      <Text variant="caption" style={{ color: C.muted }}>
         Published benefits, not a personal savings estimate. Eligibility, exclusions, fees and taxes
         apply. Pay in full; borrowing costs can outweigh rewards.
       </Text>
       <Disclosure title="Eligibility, waivers & sources">
         {cards.map(card => (
-          <View key={card.id} style={{ gap: 8, paddingVertical: 8 }}>
-            <Text style={{ color: C.text, fontSize: 17, fontWeight: '600' }}>{card.name}</Text>
-            <Text style={{ color: C.muted, fontSize: 14, lineHeight: 21 }}>{card.waiver}</Text>
+          <View key={card.id} style={{ gap: space.sm, paddingVertical: space.sm }}>
+            <Text variant="headline" style={{ color: C.text }}>{card.name}</Text>
+            <Text variant="subhead" style={{ color: C.muted }}>{card.waiver}</Text>
             {card.benefits
               .filter(benefit => benefit.category === category)
               .map(benefit => (
-                <Text key={benefit.id} style={{ color: C.muted, fontSize: 14, lineHeight: 21 }}>
+                <Text key={benefit.id} variant="subhead" style={{ color: C.muted }}>
                   {benefit.summary} {benefit.conditions}
                 </Text>
               ))}
-            <Text style={{ color: C.muted, fontSize: 12 }}>
+            <Text variant="caption" style={{ color: C.muted }}>
               Source review: {card.checkedAt} · confirm current terms with the issuer.
             </Text>
             <Button title="Review this card’s sources →" secondary onPress={() => onOpen(card)} />

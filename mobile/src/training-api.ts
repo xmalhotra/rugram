@@ -154,6 +154,7 @@ export function logTraining(input: {
   blocks: {
     id: string;
     skipped?: boolean;
+    exerciseId?: string;
     sets?: { index: number; skipped?: boolean; values?: Record<string, LogValue>; detail?: SetDetail }[];
   }[];
 }) {

@@ -3,7 +3,8 @@ import { Pressable, View } from 'react-native';
 import type { HabitFlow } from '../../shared/mobile';
 import { FlowIllustration } from './FlowIllustration';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { Glyph } from './design/Glyph';
+import { opacity, radius, space, stroke, useTheme } from './design/theme';
 export function FlowPreview({
   flow,
   added,
@@ -23,6 +24,7 @@ export function FlowPreview({
   const metric =
     flow.sessionGuide?.format ??
     (flow.workout ? `${flow.workout.blocks.length} movements` : `${flow.steps.length} steps`);
+  const dim = (pressed: boolean) => (busy ? opacity.disabled : pressed ? opacity.pressed : 1);
   if (layout === 'row')
     return (
       <Pressable
@@ -34,26 +36,26 @@ export function FlowPreview({
           minHeight: 72,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 12,
-          opacity: busy ? 0.5 : pressed ? 0.7 : 1,
+          gap: space.ms,
+          opacity: dim(pressed),
         })}
       >
         <View
           style={{
             width: 56,
             height: 56,
-            borderRadius: 6,
+            borderRadius: radius.small,
             overflow: 'hidden',
             backgroundColor: C.card,
           }}
         >
           <FlowIllustration flow={flow} />
         </View>
-        <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-          <Text numberOfLines={1} style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>
+        <View style={{ flex: 1, minWidth: 0, gap: space.xxs }}>
+          <Text numberOfLines={1} variant="callout" style={{ color: C.text, fontWeight: '600' }}>
             {flow.title}
           </Text>
-          <Text numberOfLines={1} style={{ color: C.muted, fontSize: 13 }}>
+          <Text numberOfLines={1} variant="footnote" style={{ color: C.muted }}>
             {metric}
             {added ? ' · Saved' : ''}
           </Text>
@@ -69,24 +71,25 @@ export function FlowPreview({
         onPress={onPress}
         style={({ pressed }) => ({
           width: 156,
-          opacity: busy ? 0.5 : pressed ? 0.7 : 1,
+          opacity: dim(pressed),
         })}
       >
-        <View style={{ width: 156, height: 156, borderRadius: 10, overflow: 'hidden' }}>
+        <View style={{ width: 156, height: 156, borderRadius: radius.small, overflow: 'hidden' }}>
           <FlowIllustration flow={flow} cover />
           {added && (
-            <Text style={{ position: 'absolute', right: 4, top: 4, color: C.lime, fontSize: 12 }}>
-              ✓
-            </Text>
+            <View style={{ position: 'absolute', right: space.xs, top: space.xs }}>
+              <Glyph name={{ ios: 'checkmark', android: 'check' }} fallback="✓" color={C.lime} size={space.ms} />
+            </View>
           )}
         </View>
         <Text
           numberOfLines={2}
-          style={{ color: C.text, fontSize: 15, fontWeight: '600', marginTop: 8 }}
+          variant="subhead"
+          style={{ color: C.text, fontWeight: '600', marginTop: space.sm }}
         >
           {flow.title}
         </Text>
-        <Text numberOfLines={2} style={{ color: C.muted, fontSize: 13 }}>
+        <Text numberOfLines={2} variant="footnote" style={{ color: C.muted }}>
           {metric}
           {added ? ' · Saved' : ''}
         </Text>
@@ -101,13 +104,13 @@ export function FlowPreview({
       style={({ pressed }) => ({
         width: fill ? '100%' : 168,
         minHeight: 188,
-        padding: 12,
-        borderRadius: 20,
-        borderWidth: 1,
+        padding: space.ms,
+        borderRadius: radius.card,
+        borderWidth: stroke.line,
         borderColor: C.line,
         backgroundColor: C.card,
-        gap: 8,
-        opacity: busy ? 0.5 : pressed ? 0.7 : 1,
+        gap: space.sm,
+        opacity: dim(pressed),
       })}
     >
       <View
@@ -120,23 +123,24 @@ export function FlowPreview({
       >
         <FlowIllustration flow={flow} />
         {added && (
-          <Text style={{ position: 'absolute', right: 4, top: 4, color: C.lime, fontSize: 12 }}>
-            ✓
-          </Text>
+          <View style={{ position: 'absolute', right: space.xs, top: space.xs }}>
+            <Glyph name={{ ios: 'checkmark', android: 'check' }} fallback="✓" color={C.lime} size={space.ms} />
+          </View>
         )}
       </View>
       <Text
         numberOfLines={2}
-        style={{ color: C.text, fontSize: 15, lineHeight: 21, fontWeight: '600', minHeight: 42 }}
+        variant="subhead"
+        style={{ color: C.text, fontWeight: '600', minHeight: 42 }}
       >
         {flow.title}
       </Text>
-      <Text numberOfLines={1} style={{ color: C.muted, fontSize: 12 }}>
+      <Text numberOfLines={1} variant="caption" style={{ color: C.muted }}>
         {flow.sessionGuide?.format ??
           (flow.workout ? `${flow.workout.blocks.length} movements` : `${flow.steps.length} steps`)}
       </Text>
       {flow.sessionGuide?.attribution && (
-        <Text numberOfLines={2} style={{ color: C.muted, fontSize: 11, lineHeight: 16 }}>
+        <Text numberOfLines={2} variant="caption" style={{ color: C.muted }}>
           {flow.sessionGuide.attribution.label}
         </Text>
       )}

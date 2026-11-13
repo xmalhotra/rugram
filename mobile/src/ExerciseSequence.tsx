@@ -1,16 +1,19 @@
+import { Glyph } from './design/Glyph';
 import React, { useRef, useState } from 'react';
-import { FlatList, Modal, Pressable, ScrollView, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, View } from 'react-native';
+import { DetailSurface } from './design/DetailSurface';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Exercise } from '../../shared/exercises';
+import { Button } from './design/components';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { useTheme, space, hit } from './design/theme';
 import { ExerciseTechniqueCard } from './ExerciseTechniqueCard';
 
 export function ExerciseSequence({
   exercises,
   initialIndex,
   onClose,
-  onLink,
+  onLink
 }: {
   exercises: Exercise[];
   initialIndex: number;
@@ -27,30 +30,23 @@ export function ExerciseSequence({
     setIndex(bounded);
   }
   return (
-    <Modal visible animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
+    <DetailSurface presentation="modal" fullScreen safeArea={false} onClose={onClose}>
       <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
         <View
           style={{
-            paddingHorizontal: 20,
-            paddingVertical: 10,
+            paddingHorizontal: space.lg,
+            paddingVertical: space.ms,
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 12,
+            gap: space.ms
           }}
         >
-          <Text accessibilityLiveRegion="polite" style={{ flex: 1, color: C.muted, fontSize: 15 }}>
+          <Text variant="subhead" accessibilityLiveRegion="polite" style={{ flex: 1, color: C.muted }}>
             Movement {index + 1} of {exercises.length}
           </Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Close movement guide"
-            onPress={onClose}
-            style={{ minHeight: 48, minWidth: 64, justifyContent: 'center', alignItems: 'center' }}
-          >
-            <Text style={{ color: C.lime, fontSize: 17 }}>Done</Text>
-          </Pressable>
+          <Button variant="text" size="regular" title="Done" accessibilityLabel="Close movement guide" onPress={onClose} />
         </View>
-        <View style={{ flexDirection: 'row', gap: 5, paddingHorizontal: 20, paddingBottom: 12 }}>
+        <View style={{ flexDirection: 'row', gap: space.xs, paddingHorizontal: space.lg, paddingBottom: space.ms }}>
           {exercises.map((exercise, position) => (
             <View
               key={exercise.id}
@@ -58,7 +54,7 @@ export function ExerciseSequence({
                 height: 3,
                 flex: 1,
                 borderRadius: 2,
-                backgroundColor: position === index ? C.lime : C.line,
+                backgroundColor: position === index ? C.lime : C.line
               }}
             />
           ))}
@@ -77,7 +73,7 @@ export function ExerciseSequence({
               getItemLayout={(_, position) => ({
                 length: width,
                 offset: width * position,
-                index: position,
+                index: position
               })}
               keyExtractor={exercise => exercise.id}
               onMomentumScrollEnd={event =>
@@ -94,12 +90,12 @@ export function ExerciseSequence({
               renderItem={({ item }) => (
                 <ScrollView
                   style={{ width, flex: 1 }}
-                  contentContainerStyle={{ padding: 20, paddingTop: 0, paddingBottom: 32 }}
+                  contentContainerStyle={{ padding: space.lg, paddingTop: 0, paddingBottom: space.xxl }}
                   showsVerticalScrollIndicator
                   directionalLockEnabled
                 >
                   <ExerciseTechniqueCard exercise={item} onLink={onLink} />
-                  <Text style={{ color: C.muted, fontSize: 13, lineHeight: 20, marginTop: 16 }}>
+                  <Text variant="footnote" style={{ color: C.muted, marginTop: space.md }}>
                     Simplified illustration, not a complete demonstration. Stop for pain and seek
                     qualified coaching when needed.
                   </Text>
@@ -112,8 +108,8 @@ export function ExerciseSequence({
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            paddingHorizontal: 20,
-            paddingVertical: 6,
+            paddingHorizontal: space.lg,
+            paddingVertical: space.sm
           }}
         >
           <Pressable
@@ -123,14 +119,14 @@ export function ExerciseSequence({
             onPress={() => move(index - 1)}
             style={{
               minWidth: 64,
-              minHeight: 48,
+              minHeight: hit,
               justifyContent: 'center',
-              opacity: index === 0 ? 0.3 : 1,
+              opacity: index === 0 ? 0.3 : 1
             }}
           >
-            <Text style={{ color: C.lime, fontSize: 24 }}>←</Text>
+            <Glyph name={{ ios: 'chevron.left', android: 'arrow_back' }} fallback="←" color={C.text} />
           </Pressable>
-          <Text style={{ flex: 1, color: C.muted, fontSize: 13, textAlign: 'center' }}>
+          <Text variant="footnote" style={{ flex: 1, color: C.muted, textAlign: 'center' }}>
             Swipe for the next movement
           </Text>
           <Pressable
@@ -141,17 +137,24 @@ export function ExerciseSequence({
             onPress={() => (index === exercises.length - 1 ? onClose() : move(index + 1))}
             style={{
               minWidth: 64,
-              minHeight: 48,
+              minHeight: hit,
               justifyContent: 'center',
-              alignItems: 'flex-end',
+              alignItems: 'flex-end'
             }}
           >
-            <Text style={{ color: C.lime, fontSize: 24 }}>
-              {index === exercises.length - 1 ? '✓' : '→'}
-            </Text>
+            <Glyph
+              name={
+                index === exercises.length - 1
+                  ? { ios: 'checkmark', android: 'check' }
+                  : { ios: 'chevron.right', android: 'chevron_right' }
+              }
+              fallback={index === exercises.length - 1 ? '✓' : '→'}
+              color={C.text}
+              size={24}
+            />
           </Pressable>
         </View>
       </SafeAreaView>
-    </Modal>
+    </DetailSurface>
   );
 }

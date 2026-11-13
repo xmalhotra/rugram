@@ -8,7 +8,7 @@ import { useSession } from './session';
 import { api } from './api';
 import { ApiError } from '../../shared/api-response';
 import { EmptyState, Skeleton } from './design/states';
-import { useTheme } from './design/theme';
+import { space, useTheme } from './design/theme';
 export function ContentLinkScreen({ kind }: { kind: SharedKind }) {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const id = typeof params.id === 'string' ? params.id : '';
@@ -78,7 +78,7 @@ export function ContentLinkScreen({ kind }: { kind: SharedKind }) {
     );
   if (ready !== `${kind}:${id}`)
     return (
-      <View style={{ flex: 1, backgroundColor: C.bg, padding: 24, justifyContent: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: C.bg, padding: space.xl, justifyContent: 'center' }}>
         <Skeleton shape="card" />
       </View>
     );

@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import type { TechResource } from '../../shared/tech-resources';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { opacity, radius, space, useTheme } from './design/theme';
 import { FlowHomeAction } from './FlowHomeAction';
 
 /** A tech card is a set of sources. It has no generated person and no pose frames. */
@@ -27,22 +27,22 @@ export function TechResourceCard({
   return (
     <ScrollView
       style={{ flex: 1 }}
-      contentContainerStyle={{ gap: 16, paddingBottom: 32 }}
+      contentContainerStyle={{ gap: space.md, paddingBottom: space.xxl }}
       showsVerticalScrollIndicator={false}
     >
-      <View style={{ gap: 6 }}>
-        <Text accessibilityRole="header" style={{ color: C.text, fontSize: 28, fontWeight: '600' }}>
+      <View style={{ gap: space.sm }}>
+        <Text accessibilityRole="header" variant="title" style={{ color: C.text }}>
           {resource.title}
         </Text>
-        <Text style={{ color: C.muted, fontSize: 16, lineHeight: 24 }}>{resource.summary}</Text>
+        <Text variant="callout" style={{ color: C.muted }}>{resource.summary}</Text>
       </View>
       <View
         style={{
-          borderRadius: 16,
+          borderRadius: radius.control,
           borderWidth: 1,
           borderColor: C.line,
           backgroundColor: C.card,
-          paddingHorizontal: 16,
+          paddingHorizontal: space.md,
         }}
       >
         {resource.links.map((link, index) => (
@@ -54,14 +54,14 @@ export function TechResourceCard({
               onPress={() => onLink(link.url)}
               style={({ pressed }) => ({
                 minHeight: 72,
-                paddingVertical: 14,
+                paddingVertical: space.md,
                 justifyContent: 'center',
-                gap: 4,
-                opacity: pressed ? 0.6 : 1,
+                gap: space.xs,
+                opacity: pressed ? opacity.pressed : 1,
               })}
             >
-              <Text style={{ color: C.text, fontSize: 16, fontWeight: '500' }}>{link.title}</Text>
-              <Text style={{ color: C.muted, fontSize: 14, lineHeight: 20 }}>{link.detail}</Text>
+              <Text variant="callout" style={{ color: C.text }}>{link.title}</Text>
+              <Text variant="subhead" style={{ color: C.muted }}>{link.detail}</Text>
             </Pressable>
           </View>
         ))}

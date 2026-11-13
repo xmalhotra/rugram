@@ -15,7 +15,7 @@ import { communityLimits, hasUnpublishedChanges } from '../../shared/community-f
 import { communityAct, useCommunityStatus } from './community';
 import { useSession } from './session';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { hit, space, useTheme } from './design/theme';
 import { flowCreationEnabled } from '../../shared/flow-catalog';
 import { gymTechnique } from '../../shared/gym-techniques';
 import { GymTechniqueNotes } from './GymTechniqueNotes';
@@ -46,47 +46,41 @@ export function PersonalFlowDetails({
   const [editing, setEditing] = useState(false);
   const resolved = resolvePersonalFlow(flow, library);
   return (
-    <View style={{ flex: 1, gap: 8 }}>
+    <View style={{ flex: 1, gap: space.sm }}>
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 12,
+          gap: space.ms,
         }}
       >
-        <Text style={{ flex: 1, color: C.muted, fontSize: 12 }}>
+        <Text variant="caption" style={{ flex: 1, color: C.muted }}>
           Your mix · {flow.cards.length} {flow.cards.length === 1 ? 'card' : 'cards'}
         </Text>
-        <Pressable
-          accessibilityRole="button"
+        <Button
+          title="Start"
           accessibilityLabel="Start this flow"
           onPress={onStart}
-          style={({ pressed }) => ({
-            minHeight: 36,
-            paddingHorizontal: 14,
-            borderRadius: 18,
-            justifyContent: 'center',
-            backgroundColor: C.lime,
-            opacity: pressed ? 0.7 : 1,
-          })}
-        >
-          <Text style={{ color: C.onAccent, fontWeight: '700', fontSize: 14 }}>Start</Text>
-        </Pressable>
+          fit
+          size="regular"
+        />
         {flowCreationEnabled && (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Edit flow name and cards"
             onPress={() => setEditing(true)}
-            style={{ minHeight: 44, paddingHorizontal: 12, justifyContent: 'center' }}
+            style={{ minHeight: hit, paddingHorizontal: space.ms, justifyContent: 'center' }}
           >
-            <Text style={{ color: C.text, fontWeight: '600', fontSize: 14 }}>Edit flow</Text>
+            <Text variant="subhead" style={{ color: C.text, fontWeight: '600' }}>
+              Edit flow
+            </Text>
           </Pressable>
         )}
       </View>
       {flowCreationEnabled && <PublishControls flow={flow} />}
       {resolved.missing.length > 0 && (
-        <Text style={{ color: C.muted, fontSize: 12 }}>
+        <Text variant="caption" style={{ color: C.muted }}>
           {resolved.missing.length} {resolved.missing.length === 1 ? 'card is' : 'cards are'}{' '}
           currently unavailable. Review in Edit flow.
         </Text>
@@ -114,15 +108,15 @@ export function PersonalFlowDetails({
           }
         />
       ) : (
-        <View style={{ flex: 1, justifyContent: 'center', gap: 16 }}>
-          <Text style={{ color: C.text, fontSize: 24, fontWeight: '600' }}>
+        <View style={{ flex: 1, justifyContent: 'center', gap: space.md }}>
+          <Text variant="heading" style={{ color: C.text }}>
             Make this flow yours
           </Text>
-          <Text style={{ color: C.muted, fontSize: 16, lineHeight: 24 }}>
+          <Text variant="callout" style={{ color: C.muted }}>
             Open any collection and tap Add to Flow on a card you like. Choose {flow.name} to bring
             it here.
           </Text>
-          <Button title="Explore cards" onPress={onBrowse} />
+          <Button title="Explore cards" variant="secondary" onPress={onBrowse} />
         </View>
       )}
       {flowCreationEnabled && editing && (
@@ -213,17 +207,16 @@ function PublishControls({ flow }: { flow: PersonalFlow }) {
       setBusy(false);
     }
   }
-  const line = { color: C.muted, fontSize: 13, flex: 1 } as const;
+  const line = { color: C.muted, flex: 1 } as const;
   const link = (label: string, onPress: () => void) => (
-    <Pressable
-      accessibilityRole="button"
+    <Button
+      variant="text"
+      size="regular"
+      title={label}
       accessibilityLabel={label}
       disabled={busy}
       onPress={onPress}
-      style={{ minHeight: 40, justifyContent: 'center', opacity: busy ? 0.5 : 1 }}
-    >
-      <Text style={{ color: C.lime, fontWeight: '600', fontSize: 14 }}>{label}</Text>
-    </Pressable>
+    />
   );
   if (!status) return null;
   if (flow.source) {
@@ -231,8 +224,8 @@ function PublishControls({ flow }: { flow: PersonalFlow }) {
     const removed = copy?.latestVersion === null;
     const outdated = copy && copy.latestVersion !== null && copy.latestVersion > copy.savedVersion;
     return (
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <Text style={line}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+        <Text variant="footnote" style={line}>
           Saved from {flow.source.authorName}
           {removed ? ' · original removed' : outdated ? ' · update available' : ''}
         </Text>
@@ -247,8 +240,8 @@ function PublishControls({ flow }: { flow: PersonalFlow }) {
   const tooFew = flow.cards.length < communityLimits.minCards;
   return (
     <>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-        <Text style={line}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.ms }}>
+        <Text variant="footnote" style={line}>
           {published
             ? `Published · version ${published.version}${changed ? ' · unpublished changes' : ''}`
             : tooFew

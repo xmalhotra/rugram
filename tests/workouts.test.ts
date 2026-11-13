@@ -53,7 +53,7 @@ test('consumer workout guides show canonical technique cards rather than set tra
   assert.match(sequence,/initialScrollIndex=\{index\}/);
   assert.match(sequence,/<ScrollView/);
   assert.match(sequence,/ExerciseTechniqueCard/);
-  assert.match(card,/filter\(item=>item\.verified\)/);
+  assert.match(card,/filter\(item\s*=>\s*item\.verified\)/);
   assert.match(details,/flow\.rhythm && !flow\.workout/);
   assert.doesNotMatch(absWorkoutFlow.description,/check off|understand the dose/);
   assert.doesNotMatch(absWorkoutFlow.milestone!,/session|set means/);

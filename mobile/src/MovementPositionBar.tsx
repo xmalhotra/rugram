@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import Slider, { type MarkerProps } from '@react-native-community/slider';
 import { movementFrame } from '../../shared/movement-viewer';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { hit, space, useTheme } from './design/theme';
 
 export type MovementPositionState = { progress: number; phase: number };
 export type MovementPositionUpdate = (
@@ -50,14 +50,15 @@ export function MovementPositionBar({
   const { colors: C } = useTheme();
   const displayedPhase = Math.min(frameCount - 1, Math.max(0, phase));
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, height: 44 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md, height: hit }}>
       <Text
-        style={{ color: C.muted, fontSize: 13 }}
+        variant="footnote"
+        style={{ color: C.muted }}
         accessibilityLabel={`${frameTerm} ${displayedPhase + 1} of ${frameCount}`}
       >
         {frameTerm} {displayedPhase + 1} / {frameCount}
       </Text>
-      <View style={{ flex: 1, height: 44, justifyContent: 'center' }}>
+      <View style={{ flex: 1, height: hit, justifyContent: 'center' }}>
         {controlMode === 'slider' && (
           <Slider
             minimumValue={1}
@@ -82,11 +83,11 @@ export function MovementPositionBar({
               now: displayedPhase + 1,
               text: `${frameTerm} ${displayedPhase + 1} of ${frameCount}`,
             }}
-            style={{ height: 44, width: '100%' }}
+            style={{ height: hit, width: '100%' }}
           />
         )}
         {controlMode === 'tilt' && (
-          <View style={{ flexDirection: 'row', gap: 6 }} accessibilityElementsHidden>
+          <View style={{ flexDirection: 'row', gap: space.sm }} accessibilityElementsHidden>
             {Array.from({ length: frameCount }, (_, index) => (
               <View
                 key={index}

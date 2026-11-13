@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, View, type ViewStyle } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View, type ViewStyle } from 'react-native';
 import type { CreditCard } from '../../shared/credit-cards';
 import { cardTable, formatFee, type SpendCategory } from '../../shared/card-table';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { Button } from './design/components';
+import { radius, space, stroke, useTheme } from './design/theme';
 
 const headerHeight = 88;
 const infoHeight = 56;
@@ -25,9 +26,9 @@ export function CardComparisonTable({
   const [picked, setPicked] = useState<{ cardId: string; category: SpendCategory } | null>(null);
   const rowStyle = (height: number, backgroundColor?: string): ViewStyle => ({
     height,
-    padding: 8,
+    padding: space.sm,
     justifyContent: 'center',
-    borderBottomWidth: 0.5,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: C.line,
     backgroundColor,
   });
@@ -42,16 +43,16 @@ export function CardComparisonTable({
 
   if (cards.length === 0) {
     return (
-      <View style={{ gap: 14 }}>
+      <View style={{ gap: space.md }}>
         <Text style={{ color: C.muted }}>No cards to compare yet.</Text>
       </View>
     );
   }
 
   return (
-    <View style={{ gap: 14 }}>
+    <View style={{ gap: space.md }}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View style={{ flexDirection: 'row', gap: space.sm }}>
           {rows.map(row => {
             const selected = category === row.category;
             return (
@@ -64,9 +65,9 @@ export function CardComparisonTable({
                   setCategory(current => (current === row.category ? null : row.category))
                 }
                 style={{
-                  borderRadius: 16,
-                  paddingHorizontal: 12,
-                  paddingVertical: 6,
+                  borderRadius: radius.control,
+                  paddingHorizontal: space.ms,
+                  paddingVertical: space.sm,
                   borderWidth: 1,
                   borderColor: C.line,
                   backgroundColor: selected ? C.lime : undefined,
@@ -81,15 +82,15 @@ export function CardComparisonTable({
       <View style={{ flexDirection: 'row' }}>
         <View style={{ width: 128 }}>
           <View style={rowStyle(headerHeight)}>
-            <Text style={{ color: C.text, fontSize: 13, fontWeight: '700' }}>Card</Text>
+            <Text variant="footnote" style={{ color: C.text, fontWeight: '600' }}>Card</Text>
           </View>
           {(['Joining fee', 'Annual fee', 'Fee waiver'] as const).map(label => (
             <View key={label} style={rowStyle(infoHeight)}>
-              <Text style={{ color: C.text, fontSize: 13 }}>{label}</Text>
+              <Text variant="footnote" style={{ color: C.text }}>{label}</Text>
             </View>
           ))}
           <View style={rowStyle(sectionHeight)}>
-            <Text style={{ color: C.muted, fontSize: 12, fontWeight: '600' }}>
+            <Text variant="caption" style={{ color: C.muted, fontWeight: '600' }}>
               Rewards by spend
             </Text>
           </View>
@@ -98,7 +99,7 @@ export function CardComparisonTable({
               key={row.category}
               style={rowStyle(categoryHeight, category === row.category ? C.card : undefined)}
             >
-              <Text style={{ color: C.text, fontSize: 13 }} numberOfLines={2}>
+              <Text variant="footnote" style={{ color: C.text }} numberOfLines={2}>
                 {row.category}
               </Text>
             </View>
@@ -111,7 +112,7 @@ export function CardComparisonTable({
                 key={card.id}
                 style={{
                   width: 112,
-                  borderLeftWidth: index === 0 ? 0 : 0.5,
+                  borderLeftWidth: index === 0 ? 0 : StyleSheet.hairlineWidth,
                   borderLeftColor: C.line,
                 }}
               >
@@ -122,27 +123,28 @@ export function CardComparisonTable({
                   style={rowStyle(headerHeight)}
                 >
                   <Text
-                    style={{ color: C.text, fontSize: 13, fontWeight: '700' }}
+                    variant="footnote"
+                    style={{ color: C.text, fontWeight: '600' }}
                     numberOfLines={2}
                   >
                     {card.name}
                   </Text>
-                  <Text style={{ color: C.muted, fontSize: 12 }} numberOfLines={1}>
+                  <Text variant="caption" style={{ color: C.muted }} numberOfLines={1}>
                     {card.issuer}
                   </Text>
                 </Pressable>
                 <View style={rowStyle(infoHeight)}>
-                  <Text style={{ color: C.text, fontSize: 13 }} numberOfLines={2}>
+                  <Text variant="footnote" style={{ color: C.text }} numberOfLines={2}>
                     {formatFee(card.joiningFee)}
                   </Text>
                 </View>
                 <View style={rowStyle(infoHeight)}>
-                  <Text style={{ color: C.text, fontSize: 13 }} numberOfLines={2}>
+                  <Text variant="footnote" style={{ color: C.text }} numberOfLines={2}>
                     {formatFee(card.annualFee)}
                   </Text>
                 </View>
                 <View style={rowStyle(infoHeight)}>
-                  <Text style={{ color: C.muted, fontSize: 11 }} numberOfLines={3}>
+                  <Text variant="caption" style={{ color: C.muted }} numberOfLines={3}>
                     {card.waiver}
                   </Text>
                 </View>
@@ -162,14 +164,14 @@ export function CardComparisonTable({
                       onPress={() => setPicked({ cardId: card.id, category: row.category })}
                       style={[
                         rowStyle(categoryHeight, backgroundColor),
-                        open && { borderWidth: 2, borderColor: C.text },
+                        open && { borderWidth: stroke.active, borderColor: C.text },
                       ]}
                     >
-                      <Text style={{ color, fontSize: 15, fontWeight: '700' }}>{cell.label}</Text>
+                      <Text variant="subhead" style={{ color, fontWeight: '600' }}>{cell.label}</Text>
                     </Pressable>
                   ) : (
                     <View key={row.category} style={rowStyle(categoryHeight, backgroundColor)}>
-                      <Text style={{ color, fontSize: 15, fontWeight: '700' }}>–</Text>
+                      <Text variant="subhead" style={{ color, fontWeight: '600' }}>–</Text>
                     </View>
                   );
                 })}
@@ -181,21 +183,21 @@ export function CardComparisonTable({
       {pickedCard && pickedCell ? (
         <View
           style={{
-            borderRadius: 16,
+            borderRadius: radius.control,
             borderWidth: 1,
             borderColor: C.line,
             backgroundColor: C.card,
-            padding: 14,
-            gap: 6,
+            padding: space.md,
+            gap: space.sm,
           }}
         >
-          <Text style={{ color: C.text, fontWeight: '700' }}>
+          <Text style={{ color: C.text, fontWeight: '600' }}>
             {`${pickedCard.name} · ${pickedCell.benefit.title}`}
           </Text>
           <Text style={{ color: C.text }}>{pickedCell.benefit.summary}</Text>
-          <Text style={{ color: C.muted, fontSize: 13 }}>{pickedCell.benefit.conditions}</Text>
+          <Text variant="footnote" style={{ color: C.muted }}>{pickedCell.benefit.conditions}</Text>
           {pickedCell.benefit.tracker ? (
-            <Text style={{ color: C.muted, fontSize: 13 }}>
+            <Text variant="footnote" style={{ color: C.muted }}>
               {`Cap: ${
                 pickedCell.benefit.tracker.unit === 'INR'
                   ? `₹${pickedCell.benefit.tracker.limit.toLocaleString('en-IN')}`
@@ -207,19 +209,18 @@ export function CardComparisonTable({
               }`}
             </Text>
           ) : null}
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            variant="text"
+            title="Source ›"
             accessibilityLabel="Open source"
             onPress={() => onLink(pickedCell.benefit.sourceUrl)}
-          >
-            <Text style={{ color: C.lime, fontWeight: '600' }}>Source ›</Text>
-          </Pressable>
+          />
           <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => setPicked(null)}>
             <Text style={{ color: C.muted }}>Close</Text>
           </Pressable>
         </View>
       ) : null}
-      <Text style={{ color: C.muted, fontSize: 12 }}>
+      <Text variant="caption" style={{ color: C.muted }}>
         {`Rates from each card's published terms, checked ${checkedAt}. Caps and exclusions apply. Tap a cell for details.`}
       </Text>
     </View>

@@ -65,6 +65,7 @@ const action = z.discriminatedUnion('action', [
     .strict(),
   z.object({ action: z.literal('city'), id: z.string().trim().min(2).max(80) }),
   z.object({ action: z.literal('focus'), id: z.string().min(1).max(128) }),
+  z.object({ action: z.literal('purpose'), id: z.string().min(1).max(128) }),
   z.object({
     action: z.literal('workout-flow'),
     workout: workoutSchema,
@@ -265,6 +266,7 @@ export const POST = observed(async (request: Request) => {
     else if (input.action === 'endorse')
       await endorseProduct(user, input.id, input.sourceUrl, input.disclosure);
     else if (input.action === 'rsvp') await rsvpEvent(user, input.id, input.enabled);
+    else if (input.action === 'purpose') await editProfile(user, 'purpose', input.id);
     else if (input.action === 'city' || input.action === 'focus')
       await editProfile(user, input.action, input.id);
     else
@@ -289,7 +291,7 @@ export const POST = observed(async (request: Request) => {
     const message = error instanceof Error ? error.message : '';
     if (usernameClientError(message)) return apiError(message, 400);
     if (
-      !/^(Personal flow |Completion |Creator not found|Creator event|Card not available|Card benefit|Add the card|Only creators|Admin access|Creator access|Equipment not available|Exercise not available|Flow not found|Focus not available|Join the flow|Product not available|Listing not found|Event not available|This event|Content event|Content cancelled|Content rejection|Your saved history|Account )/.test(
+        !/^(Personal flow |Completion |Creator not found|Creator event|Card not available|Card benefit|Add the card|Only creators|Admin access|Creator access|Equipment not available|Exercise not available|Flow not found|Focus not available|Purpose not available|Join the flow|Product not available|Listing not found|Event not available|This event|Content event|Content cancelled|Content rejection|Your saved history|Account )/.test(
         message,
       )
     )

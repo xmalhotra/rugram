@@ -2,10 +2,9 @@ import { useMemo, useRef, type ComponentRef } from 'react';
 import { ScrollView, View } from 'react-native';
 import { trainingCalendar, type CalendarDay } from '../../shared/training-calendar';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { space, useTheme } from './design/theme';
 
 const cell = 12;
-const gap = 3;
 const levelOpacity = [0, 0.3, 0.55, 0.8, 1];
 const weekdayLabels = ['Mon', '', 'Wed', '', 'Fri', '', ''];
 
@@ -35,21 +34,21 @@ export function TrainingCalendar({ finishedAt }: { finishedAt: readonly string[]
     />
   );
   return (
-    <View style={{ gap: 8 }}>
+    <View style={{ gap: space.sm }}>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-        <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>
+        <Text accessibilityRole="header" variant="section" style={{ color: C.text }}>
           Training
         </Text>
-        <Text style={{ color: C.muted, fontSize: 13 }}>
+        <Text variant="footnote" style={{ color: C.muted }}>
           {finishedAt == null
             ? ' '
             : `${calendar.total} workout${calendar.total === 1 ? '' : 's'} on ${calendar.activeDays} day${calendar.activeDays === 1 ? '' : 's'} this year`}
         </Text>
       </View>
-      <View style={{ flexDirection: 'row', gap: 6 }}>
-        <View style={{ paddingTop: 16, gap }}>
+      <View style={{ flexDirection: 'row', gap: space.sm }}>
+        <View style={{ paddingTop: space.md, gap: space.xs }}>
           {weekdayLabels.map((label, index) => (
-            <Text key={index} style={{ height: cell, color: C.muted, fontSize: 9, lineHeight: cell }}>
+            <Text key={index} variant="caption" style={{ height: cell, color: C.muted }}>
               {label}
             </Text>
           ))}
@@ -61,13 +60,13 @@ export function TrainingCalendar({ finishedAt }: { finishedAt: readonly string[]
           onContentSizeChange={() => scroll.current?.scrollToEnd({ animated: false })}
           accessibilityLabel="Training calendar, the last year"
         >
-          <View style={{ flexDirection: 'row', gap }}>
+          <View style={{ flexDirection: 'row', gap: space.xs }}>
             {calendar.weeks.map(week => (
-              <View key={week.days[0].date} style={{ gap }}>
+              <View key={week.days[0].date} style={{ gap: space.xs }}>
                 {/* The month name overflows into the next columns, so it never widens its own. */}
                 <View style={{ height: 13, width: cell, overflow: 'visible' }}>
                   {week.month ? (
-                    <Text numberOfLines={1} style={{ position: 'absolute', left: 0, width: 32, color: C.muted, fontSize: 10 }}>
+                    <Text numberOfLines={1} variant="caption" style={{ position: 'absolute', left: 0, width: 32, color: C.muted }}>
                       {week.month}
                     </Text>
                   ) : null}
@@ -81,9 +80,9 @@ export function TrainingCalendar({ finishedAt }: { finishedAt: readonly string[]
       <View
         accessible
         accessibilityLabel="Lighter squares are fewer workouts, darker are more"
-        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}
+        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: space.xs }}
       >
-        <Text style={{ color: C.muted, fontSize: 11 }}>Less</Text>
+        <Text variant="caption" style={{ color: C.muted }}>Less</Text>
         {levelOpacity.map((opacity, level) => (
           <View
             key={level}
@@ -96,7 +95,7 @@ export function TrainingCalendar({ finishedAt }: { finishedAt: readonly string[]
             }}
           />
         ))}
-        <Text style={{ color: C.muted, fontSize: 11 }}>More</Text>
+        <Text variant="caption" style={{ color: C.muted }}>More</Text>
       </View>
     </View>
   );

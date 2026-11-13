@@ -4,11 +4,14 @@ import type { PublicUser } from './types';
 import type { HabitFlow, MobileProfile } from '../../shared/mobile';
 import { findFlowCard } from '../../shared/personal-flows';
 import { resolveVisualFlow } from '../../shared/visual-flows';
-import { gymExerciseId, gymFlowById } from '../../shared/gym-flows';
+import { gymExerciseId, gymFlowById, gymHabitCard, gymRestSeconds } from '../../shared/gym-flows';
+import { flowLevelOf, memberGymItems } from '../../shared/priority-finisher';
+import type { PersonalMetrics } from '../../shared/personal-metrics';
 import type { HistoryRun, HistoryRunStatus } from '../../shared/flow-history';
 import { readRunSetLogs } from './exercise-log-store';
 import { readCustomflows } from './customflow-store';
-import { applyCustomflow, customflowKey, type Customflows } from '../../shared/customflows';
+import { readPersonalMetrics } from './personal-metric-store';
+import { applyCustomflow, customflowKey, type Customflow, type Customflows } from '../../shared/customflows';
 import { effortRating } from '../../shared/set-detail';
 import {
   canPost,
@@ -81,6 +84,8 @@ export const flowRunSchema = z.discriminatedUnion('action', [
       kind: z.enum(['flow', 'personal']),
       id: z.string().min(1).max(200),
       level: z.enum(levels),
+      /** Community flows only. Omitted means the current published version. */
+      version: z.number().int().min(1).max(10000).optional(),
     })
     .strict(),
   z
@@ -235,13 +240,39 @@ function mergeState(stored: FlowRunState, incoming: FlowRunState): FlowRunState 
   };
 }
 
+async function resolveCommunityRun(id: string, version: number | undefined, level: RunLevel, deps: FlowRunDeps) {
+  const { communitySnapshot } = await import('./community-snapshot');
+  const found = await communitySnapshot(id, version, deps.demo);
+  if (found === 'missing') throw new FlowRunError('Flow not found.', 404);
+  if (found === 'version') throw new FlowRunError('That version is no longer available.', 404);
+  const library = await deps.library();
+  if (!found.cards.length) throw new FlowRunError('This flow has no cards.');
+  return {
+    title: found.title.slice(0, 120),
+    rest: restFor(id, level),
+    cards: found.cards.map(reference => ({
+      cardId: reference.cardId,
+      sourceFlowId: reference.sourceFlowId,
+      title: reference.title,
+      targetSeconds: benchmarkFor(
+        id,
+        reference.cardId,
+        level,
+        findFlowCard(library, reference.sourceFlowId, reference.cardId),
+      ).seconds,
+    })),
+  };
+}
+
 async function resolveRunnable(
   user: PublicUser,
   kind: 'flow' | 'personal',
   id: string,
   level: RunLevel,
+  version: number | undefined,
   deps: FlowRunDeps,
 ) {
+  if (id.startsWith('community-')) return resolveCommunityRun(id, version, level, deps);
   const profile = await deps.profile(user);
   const library = await deps.library();
   if (kind === 'personal') {
@@ -268,13 +299,30 @@ async function resolveRunnable(
   const source = library.find(item => item.id === id);
   if (!source) throw new FlowRunError('Flow not found.', 404);
   const gym = gymFlowById(source.id);
-  // A gym flow runs as the member's Customflow when they've customised it.
-  const customflow = gym ? (await readCustomflows(user).catch(() => ({}) as Customflows))[customflowKey('qram-flow', gym.id)] : undefined;
-  const cards = applyCustomflow(resolveVisualFlow(source, library).cards, customflow, card => gymExerciseId(card.id) ?? card.id);
+  // A gym flow runs as the member's Customflow, with a priority finisher when they've asked for one.
+  const [customflows, metrics] = gym
+    ? await Promise.all([
+        readCustomflows(user).catch(() => ({}) as Customflows),
+        readPersonalMetrics(user).catch(() => ({}) as PersonalMetrics),
+      ])
+    : [{} as Customflows, {} as PersonalMetrics];
+  const own = gym ? customflows[customflowKey('qram-flow', gym.id)] : undefined;
+  let overlay: Customflow | null = null;
+  if (gym && !own?.fromName) {
+    const { followRunChanges } = await import('./follow-store');
+    overlay = await followRunChanges(user, gym.id);
+  }
+  const customflow = own?.fromName ? own : (overlay ?? own);
+  const priorities = metrics['gym.priorities']?.areas ?? [];
+  // Gym cards are built from the member's items, so a swap or a removed finisher changes the run.
+  const gymItems = gym ? memberGymItems(gym.items, priorities, flowLevelOf(gym.level), customflow) : null;
+  const cards = gym && gymItems
+    ? gymItems.map(item => gymHabitCard(gym, item))
+    : applyCustomflow(resolveVisualFlow(source, library).cards, customflow, card => gymExerciseId(card.id) ?? card.id);
   if (!cards.length) throw new FlowRunError('This flow has no cards.');
   return {
     title: source.title.slice(0, 120),
-    rest: gym?.items[0]?.restSeconds ?? restFor(source.id, level),
+    rest: gymItems?.[0] ? gymRestSeconds(gymItems[0]) : restFor(source.id, level),
     cards: cards.map(card => ({
       cardId: card.id,
       sourceFlowId: source.id,
@@ -468,12 +516,12 @@ export async function deleteMetrics(user: PublicUser, deps?: FlowRunDeps) {
 
 export async function beginRun(
   user: PublicUser,
-  input: { kind: 'flow' | 'personal'; id: string; level: RunLevel },
+  input: { kind: 'flow' | 'personal'; id: string; level: RunLevel; version?: number },
   deps?: FlowRunDeps,
   now = Date.now(),
 ) {
   const resolved = await resolveDeps(deps);
-  const runnable = await resolveRunnable(user, input.kind, input.id, input.level, resolved);
+  const runnable = await resolveRunnable(user, input.kind, input.id, input.level, input.version, resolved);
   const at = new Date(now).toISOString();
   const bodyWeightKg = await currentBodyWeight(user.id, resolved.demo);
   if (resolved.demo) {
@@ -592,9 +640,18 @@ export async function finishRun(
     applyEffort(run, effort);
     run.status = run.state.phase === 'finished' ? 'finished' : 'abandoned';
     run.updatedAt = at;
+    if (run.status === 'finished') {
+      const { settleFlowFollows } = await import('./follow-store');
+      await settleFlowFollows(user, true);
+    }
     return publish(run);
   }
-  return writeRun(user, runId, parsed, 'finished', at, effort);
+  const saved = await writeRun(user, runId, parsed, 'finished', at, effort);
+  if (saved.status === 'finished') {
+    const { settleFlowFollows } = await import('./follow-store');
+    await settleFlowFollows(user, false);
+  }
+  return saved;
 }
 
 async function currentBodyWeight(userId: string, demo: boolean) {

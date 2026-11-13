@@ -4,7 +4,7 @@ import type { Product } from '../../shared/mobile';
 import { supplementProductPosition } from '../../shared/supplement-picks';
 import { ProductPreview } from './ProductPreview';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { hit, radius, space, useTheme } from './design/theme';
 import { SupplementPickInformation } from './SupplementPickInformation';
 
 export function SupplementProductDeck({
@@ -23,7 +23,7 @@ export function SupplementProductDeck({
   const list = useRef<FlatList<Product>>(null);
   const metals = ['#d6b963', '#bac3d0', '#c6916c'];
   return (
-    <View onLayout={event => setWidth(event.nativeEvent.layout.width)} style={{ gap: 14 }}>
+    <View onLayout={event => setWidth(event.nativeEvent.layout.width)} style={{ gap: space.md }}>
       {width > 0 && (
         <FlatList
           key={width}
@@ -56,10 +56,10 @@ export function SupplementProductDeck({
             const position = supplementProductPosition(product, index);
             const metal = position.medal ? metals[position.number - 1] : undefined;
             return (
-              <View style={{ width, paddingHorizontal: 2 }}>
+              <View style={{ width, paddingHorizontal: space.xxs }}>
                 <View
                   style={{
-                    borderRadius: 24,
+                    borderRadius: radius.card,
                     borderWidth: 1,
                     borderColor: metal ?? C.line,
                     backgroundColor: C.card,
@@ -71,23 +71,23 @@ export function SupplementProductDeck({
                       flexDirection: 'row',
                       justifyContent: 'space-between',
                       alignItems: 'center',
-                      minHeight: 48,
-                      paddingHorizontal: 12,
-                      paddingTop: 8,
+                      minHeight: hit,
+                      paddingHorizontal: space.ms,
+                      paddingTop: space.sm,
                     }}
                   >
                     <View
                       accessibilityLabel={`${position.ranked ? 'Editorial shortlist rank' : 'Catalogue position'} ${position.number}${position.medal ? `, ${position.medal}` : ''}`}
                       style={{
-                        borderRadius: 12,
+                        borderRadius: radius.small,
                         backgroundColor: C.card,
                         borderColor: metal ?? C.line,
                         borderWidth: 1,
-                        paddingHorizontal: 14,
-                        paddingVertical: 8,
+                        paddingHorizontal: space.md,
+                        paddingVertical: space.sm,
                       }}
                     >
-                      <Text style={{ color: metal ?? C.text, fontWeight: '700', fontSize: 16 }}>
+                      <Text variant="callout" style={{ color: metal ?? C.text, fontWeight: '600' }}>
                         {position.number}
                         {position.medal ? ` · ${position.medal}` : ''}
                       </Text>
@@ -97,13 +97,13 @@ export function SupplementProductDeck({
                       accessibilityLabel={`Information about ${product.title}`}
                       onPress={() => setInformation(product)}
                       style={{
-                        width: 48,
-                        height: 48,
+                        width: hit,
+                        height: hit,
                         alignItems: 'center',
                         justifyContent: 'center',
                       }}
                     >
-                      <Text style={{ color: C.muted, fontSize: 27 }}>ⓘ</Text>
+                      <Text variant="title" style={{ color: C.muted }}>ⓘ</Text>
                     </Pressable>
                   </View>
                   <ProductPreview
@@ -125,7 +125,7 @@ export function SupplementProductDeck({
         <View
           accessibilityRole="tablist"
           accessibilityLabel="Product positions"
-          style={{ flexDirection: 'row', justifyContent: 'center', gap: 8 }}
+          style={{ flexDirection: 'row', justifyContent: 'center', gap: space.sm }}
         >
           {products.map((product, index) => (
             <Pressable
@@ -138,9 +138,9 @@ export function SupplementProductDeck({
                 setActive(index);
               }}
               style={{
-                minHeight: 44,
-                minWidth: 44,
-                borderRadius: 14,
+                minHeight: hit,
+                minWidth: hit,
+                borderRadius: radius.control,
                 borderWidth: 1,
                 borderColor: active === index ? C.lime : C.line,
                 alignItems: 'center',
@@ -149,9 +149,9 @@ export function SupplementProductDeck({
               }}
             >
               <Text
+                variant="callout"
                 style={{
                   color: active === index ? C.lime : C.muted,
-                  fontSize: 16,
                   fontWeight: '600',
                 }}
               >

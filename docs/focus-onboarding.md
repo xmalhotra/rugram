@@ -1,29 +1,21 @@
 # Focus-first journey
 
-## Current v4 journey
+## Current first run
 
-This section supersedes the historical rail-based journey below. Home now uses
-`FocusStarter`, distinct from the Flows tab's rail browser:
+This section supersedes the historical journeys below. A member with no series and no Map flow sees it on Home → Yours. A member who already has series skips it.
 
-1. Seven illustrated two-column focus cards. Selection saves through the existing
-   authenticated focus action, recording `focus_selected` only on change.
-2. Matching starter preview: illustration, steps and per-step duration wording,
-   sources and the common health note. Other matching starters can be selected.
-   “Try this flow” continues without joining yet.
-3. Optional city, Hyderabad preselected when enabled. “Use this city & add flow”
-   saves city then joins; “Choose later & add flow” joins without a city change.
-   The explicit desired-state flow action records the existing join analytics.
+1. One screen: Qram means sequence. This app gives you a sequence for your day, starting with training. One button, Continue.
+2. One purpose from `offeredPurposes()` in `shared/purposes.ts`. Saving it stores `purposeId`, `purposeStartedOn`, and that purpose's catalogue focus.
+3. Only the questions that purpose needs (`questionsForPurpose` in `shared/first-run.ts`). Gym place and workout time are added only when the purpose leads to gym flows. Stepper, Back, and Skip. A skip is kept.
+4. The answers said back on one screen. Each row can be changed.
+5. Ready Map flows that fit, best first (`firstRunResult`), with the reason and the predicted figure. "Use this" creates that Map flow in slot 1, follows it from today, and lands on Today. Start there begins the workout.
+6. A purpose with no ready Map flow shows the starter for its focus and the line "More is coming for {purpose}."
 
-Progress and Back are available. Nothing is purchased or scheduled. Unknown
-total durations are not invented. An empty managed focus offers another choice.
-The shortest one-starter path takes four taps, excluding OTP, optional choices
-and source reading. Device/accessibility testing is still outstanding.
+The shortest path, Do a handstand (two questions, none skipped), is seven taps from the opening screen to a workout starting: Continue, the purpose, two answers, Continue, Use this, Start. Gain muscle, which also asks gym time, is nine taps the same way.
 
-The tab bar stays visible. Members with flows see Today; removing all flows
-offers setup again as requested for an empty Home. `/onboarding` redirects Home.
-Development test accounts require explicit `EXPO_PUBLIC_DEMO_MODE=true`; mock SMS
-still requires a server-issued local-demo challenge. OTP uses six visual boxes
-with a single native input for paste, autofill and sequential entry.
+Changing place, time, or a level input in Personalise shows how many flows now fit. Changing priority areas shows how many flows gained one. The numbers come from the catalogue.
+
+The tab bar stays visible. `/onboarding` redirects Home. Development test accounts require explicit `EXPO_PUBLIC_DEMO_MODE=true`; mock SMS still requires a server-issued local-demo challenge. OTP uses six visual boxes with a single native input for paste, autofill and sequential entry. The screen was not opened on a phone.
 
 ## Historical journey (before v4)
 

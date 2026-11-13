@@ -7,6 +7,9 @@ import { clearSearches } from './local-searches';
 import { resetStrength } from './strength';
 import { resetCustomflows } from './customflows';
 import { resetPersonalMetrics } from './personal-metrics';
+import { resetFlowSeries } from './flow-series';
+import { resetBodyFlow } from './body-flow';
+import { resetFocusPlan } from './focus-plan';
 type Session = {
   data: MobilePayload | null;
   loading: boolean;
@@ -117,6 +120,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       resetStrength();
       resetCustomflows();
       resetPersonalMetrics();
+      resetFlowSeries();
+      resetBodyFlow();
+      resetFocusPlan();
       const value = await api<MobilePayload>('/api/mobile');
       if (current === generation.current) {
         setData(value);
@@ -143,6 +149,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     resetStrength();
     resetCustomflows();
     resetPersonalMetrics();
+    resetFlowSeries();
+    resetBodyFlow();
+    resetFocusPlan();
     void revoke;
   }
   return (

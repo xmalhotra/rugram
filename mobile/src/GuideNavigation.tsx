@@ -5,7 +5,7 @@ import { Gyroscope } from 'expo-sensors';
 import { useFocusEffect } from 'expo-router';
 import { initialTiltState, tiltNavigation } from '../../shared/tilt-navigation';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { hit, space, useTheme } from './design/theme';
 
 export function GuideNavigation({
   index,
@@ -112,7 +112,7 @@ export function GuideNavigation({
     }
   }
   return (
-    <View style={{ gap: 2 }}>
+    <View style={{ gap: space.xxs }}>
       <Slider
         minimumValue={0}
         maximumValue={Math.max(1, count - 1)}
@@ -134,18 +134,18 @@ export function GuideNavigation({
           setEnabled(false);
         }}
         onValueChange={onChange}
-        style={{ width: '100%', height: 44 }}
+        style={{ width: '100%', height: hit }}
       />
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 12,
-          minHeight: 44,
+          gap: space.ms,
+          minHeight: hit,
         }}
       >
-        <Text style={{ color: C.muted, fontSize: 13, flexShrink: 1 }}>
+        <Text variant="footnote" style={{ color: C.muted, flexShrink: 1 }}>
           {enabled ? 'Gently roll your phone left or right' : 'Tilt to change cards'}
         </Text>
         <Switch
@@ -157,7 +157,7 @@ export function GuideNavigation({
         />
       </View>
       {!!message && (
-        <Text accessibilityLiveRegion="polite" style={{ color: C.muted, fontSize: 12 }}>
+        <Text accessibilityLiveRegion="polite" variant="caption" style={{ color: C.muted }}>
           {message}
         </Text>
       )}

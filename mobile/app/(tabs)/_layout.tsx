@@ -36,7 +36,7 @@ export default function TabLayout() {
             options={{
               title: ['Home', 'Flows', 'Picks', 'Events'][index],
               tabBarIcon: ({ color }) => (
-                <Text style={{ color, fontSize: 22 }}>{['⌂', '▱', '▢', '▦', '✎'][index]}</Text>
+                <Text variant="heading" style={{ color }}>{['⌂', '▱', '▢', '▦', '✎'][index]}</Text>
               ),
             }}
           />

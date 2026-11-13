@@ -119,7 +119,7 @@ test('skipped sets are stored and ignored by prefill, your last, progression and
     {
       action: 'log',
       runId: started.run.id,
-      exerciseId: 'rope-hammer-curl',
+      exerciseId: 'cable-curl',
       sets: [
         {
           setIndex: 1,
@@ -149,7 +149,7 @@ test('skipped sets are stored and ignored by prefill, your last, progression and
   assert.equal(stored[1]?.reps, null);
   assert.equal(stored[0]?.detail.edited, true);
   assert.equal(stored[0]?.detail.completedAt, new Date(now + 30_000).toISOString());
-  const session = await readExerciseSessions(owner, ['rope-hammer-curl'], deps);
+  const session = await readExerciseSessions(owner, ['cable-curl'], deps);
   assert.deepEqual(
     session.sessions[0]?.sets.map(set => ({ weightKg: set.weightKg, reps: set.reps, durationSeconds: set.durationSeconds })),
     [{ weightKg: 15, reps: 10, durationSeconds: null }],
@@ -158,8 +158,8 @@ test('skipped sets are stored and ignored by prefill, your last, progression and
   assert.ok(session.sessions[0]?.sets.every(set => 'restSeconds' in set && 'setIndex' in set));
   assert.equal(yourLastLine(session.sessions[0]?.sets ?? []).includes('999'), false);
   assert.equal(yourLastLine(session.sessions[0]?.sets ?? []), '15 kg × 10');
-  const move = exercise('rope-hammer-curl');
-  const item = gymFlowItem('gym-back-biceps', 'rope-hammer-curl');
+  const move = exercise('cable-curl');
+  const item = gymFlowItem('gym-back-biceps', 'cable-curl');
   assert.ok(move && item);
   const mixed = [
     { weightKg: 15, reps: 10, durationSeconds: null, status: 'done' as const },
@@ -169,7 +169,7 @@ test('skipped sets are stored and ignored by prefill, your last, progression and
   const plan = planWithScheme(move, item, schemeById(item.scheme), mixed);
   assert.equal(JSON.stringify(plan).includes('999'), false);
   const history = await readFlowHistory(owner, { history: 'gym-back-biceps', kind: 'flow' }, runDeps);
-  const line = formatLoggedSets(history.runs[0]?.cards.find(card => card.exerciseId === 'rope-hammer-curl')?.sets ?? []);
+  const line = formatLoggedSets(history.runs[0]?.cards.find(card => card.exerciseId === 'cable-curl')?.sets ?? []);
   assert.match(line, /Skipped/);
   assert.equal(line.includes('999'), false);
   assert.match(line, /15 kg × 10/);

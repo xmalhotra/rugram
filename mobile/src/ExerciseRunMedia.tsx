@@ -4,7 +4,8 @@ import { useExerciseHowTo } from './ExerciseHowTo';
 import { muscleAreas, muscleMapFor, type MuscleArea } from '../../shared/muscle-map';
 import { BodyMap } from './BodyMap';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { radius, space, useTheme } from './design/theme';
+import { IconButton } from './design/parts';
 import { HowToLoop } from './ExerciseHowTo';
 
 const pictureSize = 150;
@@ -30,69 +31,22 @@ export function ExercisePicture({
         accessibilityRole="button"
         accessibilityLabel={label}
         onPress={onPress}
-        style={{ width: pictureSize, height: pictureSize, borderRadius: 16, overflow: 'hidden' }}
+        style={{ width: pictureSize, height: pictureSize, borderRadius: radius.card, overflow: 'hidden' }}
       >
         <HowToLoop exerciseId={exerciseId} size={pictureSize} />
       </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        onPress={onPress}
-        style={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          width: 44,
-          height: 44,
-          alignItems: 'flex-end',
-          justifyContent: 'flex-start',
-        }}
-      >
-        <View
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 18,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: C.card,
-            borderWidth: 1,
-            borderColor: C.line,
-          }}
-        >
-          <Text style={{ color: C.text, fontSize: 16 }}>ⓘ</Text>
-        </View>
-      </Pressable>
-      <Pressable
-        accessibilityRole="link"
-        accessibilityLabel={`Watch someone do ${name} on YouTube`}
-        accessibilityHint="Opens YouTube"
-        onPress={() => void Linking.openURL(exerciseVideoUrl(name, howTo?.videoUrl)).catch(() => undefined)}
-        style={{
-          position: 'absolute',
-          top: 52,
-          right: 0,
-          width: 44,
-          height: 44,
-          alignItems: 'flex-end',
-          justifyContent: 'flex-start',
-        }}
-      >
-        <View
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 18,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: C.card,
-            borderWidth: 1,
-            borderColor: C.line,
-          }}
-        >
-          <Text style={{ color: C.text, fontSize: 13, marginLeft: 2 }}>▶</Text>
-        </View>
-      </Pressable>
+      <View style={{ position: 'absolute', top: 0, right: 0, gap: space.sm }}>
+        <IconButton label={label} look="outlined" symbol="info" android="info" fallback="i" symbolSize={space.lg} onPress={onPress} />
+        <IconButton
+          label={`Watch someone do ${name} on YouTube`}
+          look="outlined"
+          symbol="play.fill"
+          android="play_arrow"
+          fallback="▶"
+          symbolSize={space.md}
+          onPress={() => void Linking.openURL(exerciseVideoUrl(name, howTo?.videoUrl)).catch(() => undefined)}
+        />
+      </View>
     </View>
   );
 }
@@ -106,25 +60,25 @@ export function FocusArea({ exerciseId }: { exerciseId: string }) {
     area => area === 'upper-abs' || area === 'lower-abs',
   );
   return (
-    <View style={{ gap: 8 }}>
-      <Text accessibilityRole="header" style={{ color: C.text, fontSize: 17, fontWeight: '700' }}>
+    <View style={{ gap: space.sm }}>
+      <Text accessibilityRole="header" variant="headline" style={{ color: C.text }}>
         Focus area
       </Text>
       <View style={{ alignItems: 'center' }}>
         <BodyMap main={muscles.main} helpers={muscles.helpers} width={200} />
       </View>
       {muscles.main.length ? (
-        <Text style={{ color: C.text, fontSize: 15, lineHeight: 21 }}>
+        <Text variant="subhead" style={{ color: C.text }}>
           Main: {muscles.main.map(areaTitle).join(', ')}
         </Text>
       ) : null}
       {muscles.helpers.length ? (
-        <Text style={{ color: C.text, fontSize: 15, lineHeight: 21 }}>
+        <Text variant="subhead" style={{ color: C.text }}>
           Helps: {muscles.helpers.map(areaTitle).join(', ')}
         </Text>
       ) : null}
       {emphasisesAbs ? (
-        <Text style={{ color: C.muted, fontSize: 13, lineHeight: 18 }}>
+        <Text variant="footnote" style={{ color: C.muted }}>
           The abs work as one muscle. This shows which part this movement emphasises.
         </Text>
       ) : null}

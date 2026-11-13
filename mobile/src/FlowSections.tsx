@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { RefreshControl, ScrollView, View } from 'react-native';
 import type { HabitFlow } from '../../shared/mobile';
 import type { FocusContent, NutritionPath } from '../../shared/admin-content';
 import { buildFlowSections } from '../../shared/flow-sections';
@@ -7,7 +7,8 @@ import { topicAtOffset } from '../../shared/flow-scroll';
 import { CategoryRail } from './CategoryRail';
 import { FlowPreview } from './FlowPreview';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { IconButton, SectionHeader } from './design/components';
+import { space, useTheme } from './design/theme';
 
 export function FlowSections({
   title,
@@ -63,7 +64,7 @@ export function FlowSections({
       stickyHeaderIndices={[0]}
       showsVerticalScrollIndicator={false}
       scrollEventThrottle={32}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 128 }}
+      contentContainerStyle={{ paddingHorizontal: space.md, paddingBottom: 128 }}
       refreshControl={
         onRefresh ? (
           <RefreshControl refreshing={busy} onRefresh={onRefresh} tintColor={C.lime} />
@@ -90,25 +91,21 @@ export function FlowSections({
         onLayout={event => setHeaderHeight(event.nativeEvent.layout.height)}
         style={{
           backgroundColor: C.bg,
-          paddingTop: 8,
-          paddingBottom: 10,
-          gap: 8,
+          paddingTop: space.sm,
+          paddingBottom: space.ms,
+          gap: space.sm,
         }}
       >
         {onBack && (
-        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Back to ${backLabel}`}
+        <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'center' }}>
+          <IconButton
+            label={`Back to ${backLabel}`}
             onPress={onBack}
-            style={{ minWidth: 44, minHeight: 44, justifyContent: 'center', alignItems: 'center' }}
-          >
-            <Text style={{ color: C.lime, fontSize: 28 }}>←</Text>
-          </Pressable>
-          <Text
-            accessibilityRole="header"
-            style={{ color: C.text, fontSize: 25, fontWeight: '600' }}
-          >
+            symbol="chevron.left"
+            android="arrow_back"
+            fallback="←"
+          />
+          <Text accessibilityRole="header" variant="title" style={{ color: C.text }}>
             {title}
           </Text>
         </View>
@@ -141,9 +138,9 @@ export function FlowSections({
             restoreInitial();
           }}
           style={{
-            paddingTop: 14,
-            paddingBottom: 18,
-            gap: 12,
+            paddingTop: space.md,
+            paddingBottom: space.md,
+            gap: space.ms,
             minHeight:
               index === sections.length - 1 ? Math.max(0, viewport - headerHeight) : undefined,
           }}
@@ -154,19 +151,15 @@ export function FlowSections({
             section.groups[0].flows.length === 1 &&
             section.groups[0].flows[0].title === section.title
           ) && (
-            <Text
-              accessibilityRole="header"
-              style={{ color: C.text, fontSize: 22, fontWeight: '700' }}
-            >
-              {section.title}
-            </Text>
+            <SectionHeader title={section.title} />
           )}
           {section.groups.map(group => (
-              <View key={group.id} style={{ gap: 4 }}>
+              <View key={group.id} style={{ gap: space.xs }}>
                 {group.title && (
                   <Text
                     accessibilityRole="header"
-                    style={{ color: C.muted, fontSize: 17, fontWeight: '600', marginBottom: 4 }}
+                    variant="headline"
+                    style={{ color: C.muted, marginBottom: space.xs }}
                   >
                     {group.title}
                   </Text>
@@ -174,7 +167,7 @@ export function FlowSections({
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={{ gap: 14, paddingRight: 20 }}
+                  contentContainerStyle={{ gap: space.md, paddingRight: space.lg }}
                 >
                   {group.flows.map(flow => (
                     <FlowPreview
@@ -194,7 +187,7 @@ export function FlowSections({
         </View>
       ))}
       {!sections.length && (
-        <Text style={{ color: C.muted, padding: 20 }}>No published flows here yet.</Text>
+        <Text style={{ color: C.muted, padding: space.lg }}>No published flows here yet.</Text>
       )}
     </ScrollView>
   );

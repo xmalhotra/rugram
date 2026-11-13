@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { gymTechnique } from '../../shared/gym-techniques';
 import { Button } from './design/components';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { space, useTheme } from './design/theme';
 
 export function GymTechniqueNotes({
   cardId,
@@ -16,18 +16,18 @@ export function GymTechniqueNotes({
   const { colors: C } = useTheme();
   if (!card) return null;
   return (
-    <View style={{ gap: 18 }}>
+    <View style={{ gap: space.md }}>
       {[
         ['When this may help', card.when],
         ['The cue to practise', card.cue],
         ['Know the limit', card.caution],
       ].map(([title, body]) => (
-        <View key={title} style={{ gap: 6 }}>
-          <Text style={{ color: C.text, fontSize: 17, fontWeight: '600' }}>{title}</Text>
-          <Text style={{ color: C.muted, fontSize: 15, lineHeight: 23 }}>{body}</Text>
+        <View key={title} style={{ gap: space.sm }}>
+          <Text variant="headline" style={{ color: C.text }}>{title}</Text>
+          <Text variant="subhead" style={{ color: C.muted }}>{body}</Text>
         </View>
       ))}
-      <Text style={{ color: C.muted, fontSize: 13 }}>Equipment: {card.equipment}</Text>
+      <Text variant="footnote" style={{ color: C.muted }}>Equipment: {card.equipment}</Text>
       {card.sources.map(source => (
         <Button
           key={source.url}

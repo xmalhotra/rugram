@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { formatKg } from '../../shared/progression';
 import { sourceLine, strengthPatterns, workingReps, workingWeight, type StrengthPattern } from '../../shared/strength';
+import { Button, SectionHeader } from './design/components';
+import { Glyph } from './design/Glyph';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { hit, opacity, radius, size, space, textRoles, useTheme } from './design/theme';
 import { clearAnchor, saveAnchor, useStrength } from './strength';
 
 /**
@@ -11,21 +13,16 @@ import { clearAnchor, saveAnchor, useStrength } from './strength';
  * the rest are estimated, and logged sets keep everything current. Private to the member.
  */
 /** `embedded` drops the heading and intro, for a page that has its own. */
-export function StrengthProfile({ embedded = false }: { embedded?: boolean } = {}) {
+export function StrengthProfile({ embedded = false, onSaved }: { embedded?: boolean; onSaved?: () => void } = {}) {
   const { colors: C } = useTheme();
   const strength = useStrength();
   const [open, setOpen] = useState<StrengthPattern | null>(null);
   return (
-    <View style={{ gap: 6 }}>
+    <View style={{ gap: space.sm }}>
       {embedded ? null : (
         <>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-            <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>
-              Your strength
-            </Text>
-            <Text style={{ color: C.muted, fontSize: 13 }}>Only you can see this</Text>
-          </View>
-          <Text style={{ color: C.muted, fontSize: 14, lineHeight: 20 }}>
+          <SectionHeader title="Your strength" detail="Only you can see this" />
+          <Text variant="subhead" style={{ color: C.muted }}>
             Tell us a weight you can lift for a few reps. We start new exercises from it, and your logged sets keep it up to
             date.
           </Text>
@@ -50,44 +47,51 @@ export function StrengthProfile({ embedded = false }: { embedded?: boolean } = {
               ? sourceLine(estimate)
               : 'Add a lift or your body weight to estimate';
         return (
-          <View key={item.id} style={{ borderBottomWidth: 0.5, borderColor: C.line }}>
+          <View key={item.id} style={{ borderBottomWidth: StyleSheet.hairlineWidth, borderColor: C.line }}>
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ expanded }}
               accessibilityLabel={`${item.title}. ${estimate ? `${shown.replace('~', 'about ').replace('×', 'for')} reps. ${under}.` : 'Not set.'} ${expanded ? 'Close' : 'Change'}`}
               onPress={() => setOpen(expanded ? null : item.id)}
               style={({ pressed }) => ({
-                minHeight: 52,
+                minHeight: size.button,
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 12,
-                paddingVertical: 8,
-                opacity: pressed ? 0.6 : 1,
+                gap: space.ms,
+                paddingVertical: space.sm,
+                opacity: pressed ? opacity.pressed : 1,
               })}
             >
-              <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                <Text style={{ color: C.text, fontSize: 16 }}>{item.title}</Text>
-                <Text numberOfLines={1} style={{ color: C.muted, fontSize: 13 }}>
+              <View style={{ flex: 1, minWidth: 0, gap: space.xxs }}>
+                <Text variant="callout" style={{ color: C.text }}>{item.title}</Text>
+                <Text numberOfLines={1} variant="footnote" style={{ color: C.muted }}>
                   {under}
                 </Text>
               </View>
-              <Text style={{ color: estimate?.source === 'you' || estimate?.source === 'sets' ? C.text : C.muted, fontSize: 16 }}>
+              <Text variant="callout" style={{ color: estimate?.source === 'you' || estimate?.source === 'sets' ? C.text : C.muted }}>
                 {shown}
               </Text>
-              <Text style={{ color: C.muted, fontSize: 20 }}>{expanded ? '⌃' : '›'}</Text>
+              {expanded ? (
+                <Text variant="section" style={{ color: C.muted }}>⌃</Text>
+              ) : (
+                <Glyph name={{ ios: 'chevron.right', android: 'chevron_right' }} fallback="›" color={C.muted} size={space.md} />
+              )}
             </Pressable>
             {expanded ? (
               <AnchorEditor
                 pattern={item.id}
                 title={item.title}
                 initial={anchor ? { weightKg: anchor.weightKg, reps: anchor.reps } : null}
-                onDone={() => setOpen(null)}
+                onDone={() => {
+                  setOpen(null);
+                  onSaved?.();
+                }}
               />
             ) : null}
           </View>
         );
       })}
-      <Text style={{ color: C.muted, fontSize: 12, lineHeight: 17 }}>
+      <Text variant="caption" style={{ color: C.muted }}>
         ~ means our estimate: roughly what you could lift for 8 reps. New exercises start a little lighter than that.
       </Text>
     </View>
@@ -129,10 +133,10 @@ export function AnchorEditor({
     if (!Number.isInteger(count) || count < 1 || count > 12) return setError('Enter 1 to 12 reps.');
     void run(() => saveAnchor(pattern, weightKg, count));
   }
-  const field = { flex: 1, minHeight: 44, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingHorizontal: 12, color: C.text, fontSize: 16 } as const;
+  const field = { flex: 1, minHeight: hit, borderWidth: 1, borderColor: C.line, borderRadius: radius.small, paddingHorizontal: space.ms, color: C.text, fontSize: textRoles.callout.fontSize } as const;
   return (
-    <View style={{ gap: 8, paddingBottom: 12 }}>
-      <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+    <View style={{ gap: space.sm, paddingBottom: space.ms }}>
+      <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'center' }}>
         <TextInput
           accessibilityLabel={`${title} weight in kilograms`}
           value={weight}
@@ -142,7 +146,7 @@ export function AnchorEditor({
           keyboardType="decimal-pad"
           style={field}
         />
-        <Text style={{ color: C.muted, fontSize: 16 }}>×</Text>
+        <Text variant="callout" style={{ color: C.muted }}>×</Text>
         <TextInput
           accessibilityLabel={`${title} reps`}
           value={reps}
@@ -153,26 +157,25 @@ export function AnchorEditor({
           style={field}
         />
       </View>
-      {error ? <Text style={{ color: C.danger ?? C.text, fontSize: 13 }}>{error}</Text> : null}
-      <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
-        <Pressable
-          accessibilityRole="button"
+      {error ? <Text variant="footnote" style={{ color: C.danger ?? C.text }}>{error}</Text> : null}
+      <View style={{ flexDirection: 'row', gap: space.md, alignItems: 'center' }}>
+        <Button
+          title="Save"
+          variant="text"
+          size="regular"
           accessibilityLabel={`Save ${title}`}
           disabled={busy}
           onPress={save}
-          style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', opacity: busy ? 0.5 : pressed ? 0.6 : 1 })}
-        >
-          <Text style={{ color: C.lime, fontSize: 16, fontWeight: '600' }}>Save</Text>
-        </Pressable>
+        />
         {initial ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Remove your ${title}`}
             disabled={busy}
             onPress={() => void run(() => clearAnchor(pattern))}
-            style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', opacity: busy ? 0.5 : pressed ? 0.6 : 1 })}
+            style={({ pressed }) => ({ minHeight: hit, justifyContent: 'center', opacity: busy ? 0.5 : pressed ? opacity.pressed : 1 })}
           >
-            <Text style={{ color: C.muted, fontSize: 16 }}>Remove</Text>
+            <Text variant="callout" style={{ color: C.muted }}>Remove</Text>
           </Pressable>
         ) : null}
       </View>

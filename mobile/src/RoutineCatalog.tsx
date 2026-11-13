@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FlatList, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { FlatList, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import {
   routineCheckpoints,
@@ -12,7 +12,8 @@ import {
 } from '../../shared/routines';
 import { addDailyItem, dailyRoutine, removeDailyItem, replaceDailyItem } from '../../shared/daily-checks';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { Button } from './design/components';
+import { hit, opacity, radius, space, stroke, textRoles, useTheme } from './design/theme';
 import { useRootListInset } from './RootList';
 import { usePaneState } from './pane-state';
 import { CatalogBar } from './FlowCatalogTile';
@@ -23,7 +24,7 @@ import { useSession } from './session';
 import { checkpointRoute, emptyRoutineRoute, type RoutineRoute } from './routine-route';
 
 const railWidth = 88;
-const gap = 12;
+const columnGap = space.ms;
 
 function useRoute() {
   return usePaneState<RoutineRoute>('routineRoute', emptyRoutineRoute, 'account');
@@ -39,7 +40,7 @@ function CheckpointRail({
   const { colors: C } = useTheme();
   return (
     <ScrollView
-      style={{ width: railWidth, flexGrow: 0, borderRightWidth: 0.5, borderColor: C.line }}
+      style={{ width: railWidth, flexGrow: 0, borderRightWidth: StyleSheet.hairlineWidth, borderColor: C.line }}
       contentContainerStyle={{ paddingBottom: 128 }}
       showsVerticalScrollIndicator={false}
     >
@@ -52,15 +53,15 @@ function CheckpointRail({
             accessibilityLabel={checkpoint}
             accessibilityState={{ selected: on }}
             onPress={() => onSelect(checkpoint)}
-            style={{ alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 6 }}
+            style={{ alignItems: 'center', gap: space.sm, paddingVertical: space.ms, paddingHorizontal: space.sm }}
           >
             <CheckpointIcon checkpoint={checkpoint} color={on ? C.lime : C.muted} size={22} />
             <Text
               numberOfLines={2}
+              variant="caption"
               style={{
                 color: on ? C.lime : C.muted,
-                fontSize: 11,
-                fontWeight: on ? '700' : '500',
+                fontWeight: on ? '600' : undefined,
                 textAlign: 'center',
               }}
             >
@@ -90,12 +91,12 @@ function CheckpointRail({
 function TypeRow({ value, onChange }: { value: RoutineTypeFilter; onChange: (value: RoutineTypeFilter) => void }) {
   const { colors: C } = useTheme();
   return (
-    <View style={{ height: 56, flexGrow: 0, flexShrink: 0, borderBottomWidth: 0.5, borderColor: C.line }}>
+    <View style={{ height: 56, flexGrow: 0, flexShrink: 0, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: C.line }}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         style={{ flexGrow: 0 }}
-        contentContainerStyle={{ alignItems: 'center', gap: 8, paddingHorizontal: 12 }}
+        contentContainerStyle={{ alignItems: 'center', gap: space.sm, paddingHorizontal: space.ms }}
       >
         {routineTypeFilters.map(filter => {
           const selected = value === filter.id;
@@ -109,14 +110,14 @@ function TypeRow({ value, onChange }: { value: RoutineTypeFilter; onChange: (val
               style={{
                 height: 36,
                 justifyContent: 'center',
-                paddingHorizontal: 14,
-                borderRadius: 10,
+                paddingHorizontal: space.md,
+                borderRadius: radius.small,
                 backgroundColor: selected ? C.lime : C.card,
-                borderWidth: 1,
+                borderWidth: stroke.line,
                 borderColor: selected ? C.lime : C.line,
               }}
             >
-              <Text style={{ color: selected ? C.onAccent : C.text, fontSize: 14 }}>{filter.label}</Text>
+              <Text variant="subhead" style={{ color: selected ? C.onAccent : C.text }}>{filter.label}</Text>
             </Pressable>
           );
         })}
@@ -141,16 +142,16 @@ function RoutineCardView({
       accessibilityRole="button"
       accessibilityLabel={routine.title}
       onPress={onPress}
-      style={({ pressed }) => ({ width, padding: 6, gap: 4, opacity: pressed ? 0.75 : 1 })}
+      style={({ pressed }) => ({ width, padding: space.sm, gap: space.xs, opacity: pressed ? opacity.pressed : 1 })}
     >
-      <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
+      <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'flex-start' }}>
         <RoutineTypeIcon type={routine.type} color={C.muted} size={18} />
-        <Text numberOfLines={2} style={{ flex: 1, color: C.text, fontSize: 15, fontWeight: '600', lineHeight: 19 }}>
+        <Text numberOfLines={2} variant="subhead" style={{ flex: 1, color: C.text, fontWeight: '600' }}>
           {routine.title}
         </Text>
       </View>
       {!!parts && (
-        <Text numberOfLines={1} style={{ color: C.muted, fontSize: 13 }}>
+        <Text numberOfLines={1} variant="footnote" style={{ color: C.muted }}>
           {parts}
         </Text>
       )}
@@ -163,12 +164,11 @@ export function RoutineCheckpointPage({ checkpoint }: { checkpoint: RoutineCheck
   const { colors: C } = useTheme();
   const inset = useRootListInset();
   const [route, setRoute] = useRoute();
-  const [, setMode] = usePaneState<'map' | 'daily'>('yoursMode', 'map', 'account');
   const type = route.type === 'All' ? undefined : route.type;
   return (
-    <View style={{ flex: 1, paddingTop: Math.max(0, inset - 12) }}>
-      <CatalogBar title="Routine" onBack={() => setRoute(emptyRoutineRoute)} />
-      <View style={{ flex: 1, flexDirection: 'row', borderTopWidth: 0.5, borderColor: C.line }}>
+    <View style={{ flex: 1, paddingTop: Math.max(0, inset - space.ms) }}>
+      <CatalogBar title="Daily flow" onBack={() => setRoute(emptyRoutineRoute)} />
+      <View style={{ flex: 1, flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderColor: C.line }}>
         <CheckpointRail
           selected={checkpoint}
           onSelect={next => setRoute(checkpointRoute(next, route.swapDailyId ?? undefined))}
@@ -176,7 +176,7 @@ export function RoutineCheckpointPage({ checkpoint }: { checkpoint: RoutineCheck
         <View style={{ flex: 1, minWidth: 0 }}>
           <TypeRow value={route.type} onChange={next => setRoute(current => ({ ...current, type: next }))} />
           {route.swapDailyId && (
-            <Text style={{ color: C.muted, fontSize: 13, paddingHorizontal: 12, paddingTop: 8 }}>Pick a replacement</Text>
+            <Text variant="footnote" style={{ color: C.muted, paddingHorizontal: space.ms, paddingTop: space.sm }}>Pick a replacement</Text>
           )}
           <RoutineBrowser
             checkpoint={checkpoint}
@@ -188,7 +188,6 @@ export function RoutineCheckpointPage({ checkpoint }: { checkpoint: RoutineCheck
             onSearch={() => setRoute(current => ({ ...current, search: true, checkpoint: null }))}
             onSwapped={() => {
               setRoute(emptyRoutineRoute);
-              setMode('daily');
               router.push('/(tabs)');
             }}
           />
@@ -223,7 +222,7 @@ function RoutineBrowser({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [own, setOwn] = useState('');
-  const cell = width > 0 ? (width - gap) / 2 : 0;
+  const cell = width > 0 ? (width - columnGap) / 2 : 0;
   useEffect(() => {
     let live = true;
     setLoading(true);
@@ -237,7 +236,7 @@ function RoutineBrowser({
         setCursor(result.nextCursor);
       })
       .catch(() => {
-        if (live) setError('Could not load routines.');
+        if (live) setError('Could not load Daily flow.');
       })
       .finally(() => {
         if (live) setLoading(false);
@@ -254,7 +253,7 @@ function RoutineBrowser({
         setRows(current => [...current, ...result.routines]);
         setCursor(result.nextCursor);
       })
-      .catch(() => setError('Could not load routines.'))
+      .catch(() => setError('Could not load Daily flow.'))
       .finally(() => setLoading(false));
   }
   const last = !loading && !cursor;
@@ -267,27 +266,27 @@ function RoutineBrowser({
           numColumns={2}
           onEndReached={more}
           onEndReachedThreshold={0.4}
-          contentContainerStyle={{ paddingBottom: 128, paddingTop: 8 }}
+          contentContainerStyle={{ paddingBottom: 128, paddingTop: space.sm }}
           ListEmptyComponent={
             !loading ? (
-              <Text style={{ color: C.muted, fontSize: 14, padding: 12 }}>{error || 'Nothing here yet.'}</Text>
+              <Text variant="subhead" style={{ color: C.muted, padding: space.ms }}>{error || 'Nothing here yet.'}</Text>
             ) : undefined
           }
           ListFooterComponent={
             last ? (
-              <View style={{ gap: 8, paddingHorizontal: 12, paddingTop: 8 }}>
+              <View style={{ gap: space.sm, paddingHorizontal: space.ms, paddingTop: space.sm }}>
                 {!q && (
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Search everything"
                     onPress={onSearch}
-                    style={{ minHeight: 44, justifyContent: 'center' }}
+                    style={{ minHeight: hit, justifyContent: 'center' }}
                   >
-                    <Text style={{ color: C.muted, fontSize: 15 }}>Search everything</Text>
+                    <Text variant="subhead" style={{ color: C.muted }}>Search everything</Text>
                   </Pressable>
                 )}
                 {checkpoint && (
-                  <View style={{ gap: 8 }}>
+                  <View style={{ gap: space.sm }}>
                     <TextInput
                       accessibilityLabel="Add your own"
                       value={own}
@@ -296,14 +295,14 @@ function RoutineBrowser({
                       placeholder="Add your own"
                       placeholderTextColor={C.muted}
                       style={{
-                        minHeight: 48,
-                        borderRadius: 12,
-                        borderWidth: 1,
+                        minHeight: hit,
+                        borderRadius: radius.small,
+                        borderWidth: stroke.line,
                         borderColor: C.line,
                         backgroundColor: C.card,
                         color: C.text,
-                        fontSize: 16,
-                        paddingHorizontal: 12,
+                        fontSize: textRoles.callout.fontSize,
+                        paddingHorizontal: space.ms,
                       }}
                     />
                     <Pressable
@@ -315,9 +314,9 @@ function RoutineBrowser({
                         update(current => addDailyItem(current, own, 1, `d-${Date.now().toString(36)}`, checkpoint));
                         setOwn('');
                       }}
-                      style={{ minHeight: 44, justifyContent: 'center', opacity: own.trim() ? 1 : 0.5 }}
+                      style={{ minHeight: hit, justifyContent: 'center', opacity: own.trim() ? 1 : 0.5 }}
                     >
-                      <Text style={{ color: C.text, fontSize: 15 }}>Add your own</Text>
+                      <Text variant="subhead" style={{ color: C.text }}>Add your own</Text>
                     </Pressable>
                   </View>
                 )}
@@ -353,41 +352,34 @@ export function RoutineSearchPage() {
   const [q, setQ] = useState('');
   const type = route.type === 'All' ? undefined : route.type;
   return (
-    <View style={{ flex: 1, paddingTop: Math.max(0, inset - 12) }}>
+    <View style={{ flex: 1, paddingTop: Math.max(0, inset - space.ms) }}>
       <CatalogBar
-        title="Routine"
+        title="Daily flow"
         onBack={() => setRoute(current => ({ ...current, search: false, checkpoint: current.fromCheckpoint }))}
       />
-      <View style={{ flex: 1, borderTopWidth: 0.5, borderColor: C.line }}>
-        <View style={{ flexDirection: 'row', gap: 8, padding: 12 }}>
+      <View style={{ flex: 1, borderTopWidth: StyleSheet.hairlineWidth, borderColor: C.line }}>
+        <View style={{ flexDirection: 'row', gap: space.sm, padding: space.ms }}>
           <TextInput
-            accessibilityLabel="Search routines"
+            accessibilityLabel="Search Daily flow"
             value={text}
             onChangeText={setText}
             onSubmitEditing={() => setQ(text.trim())}
             maxLength={80}
-            placeholder="Search routines"
+            placeholder="Search Daily flow"
             placeholderTextColor={C.muted}
             style={{
               flex: 1,
-              minHeight: 44,
-              borderRadius: 12,
-              borderWidth: 1,
+              minHeight: hit,
+              borderRadius: radius.small,
+              borderWidth: stroke.line,
               borderColor: C.line,
               backgroundColor: C.card,
               color: C.text,
-              fontSize: 16,
-              paddingHorizontal: 12,
+              fontSize: textRoles.callout.fontSize,
+              paddingHorizontal: space.ms,
             }}
           />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Search"
-            onPress={() => setQ(text.trim())}
-            style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 8 }}
-          >
-            <Text style={{ color: C.lime, fontSize: 16, fontWeight: '600' }}>Search</Text>
-          </Pressable>
+          <Button variant="text" size="regular" title="Search" accessibilityLabel="Search" onPress={() => setQ(text.trim())} />
         </View>
         <TypeRow value={route.type} onChange={next => setRoute(current => ({ ...current, type: next }))} />
         {q ? (
@@ -400,7 +392,7 @@ export function RoutineSearchPage() {
             onSwapped={() => undefined}
           />
         ) : (
-          <Text style={{ color: C.muted, fontSize: 14, paddingHorizontal: 12 }}>Search across all checkpoints.</Text>
+          <Text variant="subhead" style={{ color: C.muted, paddingHorizontal: space.ms }}>Search across all checkpoints.</Text>
         )}
       </View>
     </View>
@@ -422,7 +414,7 @@ export function RoutineDetailPage({ routineId }: { routineId: string }) {
         if (live) setRoutine(result);
       })
       .catch(() => {
-        if (live) setError('Could not load that routine.');
+        if (live) setError('Could not load that.');
       });
     return () => {
       live = false;
@@ -431,9 +423,9 @@ export function RoutineDetailPage({ routineId }: { routineId: string }) {
   const slot = route.fromCheckpoint ?? routine?.mainCheckpoint;
   const saved = routine && slot ? dailyRoutine(checks, routine.id, slot) : undefined;
   return (
-    <View style={{ flex: 1, paddingTop: Math.max(0, inset - 12) }}>
+    <View style={{ flex: 1, paddingTop: Math.max(0, inset - space.ms) }}>
       <CatalogBar
-        title="Routine"
+        title="Daily flow"
         onBack={() =>
           setRoute(current => ({
             ...current,
@@ -442,24 +434,24 @@ export function RoutineDetailPage({ routineId }: { routineId: string }) {
           }))
         }
       />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 128, gap: 16 }}>
+      <ScrollView contentContainerStyle={{ padding: space.md, paddingBottom: 128, gap: space.md }}>
         {error ? <Text style={{ color: C.muted }}>{error}</Text> : null}
         {routine && (
           <>
-            <Text accessibilityRole="header" style={{ color: C.text, fontSize: 28, fontWeight: '700' }}>
+            <Text accessibilityRole="header" variant="title" style={{ color: C.text }}>
               {routine.title}
             </Text>
-            <Text style={{ color: C.muted, fontSize: 15 }}>{routine.type}</Text>
-            <Text style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>What's in it</Text>
+            <Text variant="subhead" style={{ color: C.muted }}>{routine.type}</Text>
+            <Text variant="headline" style={{ color: C.text }}>What's in it</Text>
             {routine.parts.map(part => (
-              <Text key={`${part.name}-${part.amount ?? ''}`} style={{ color: C.text, fontSize: 16 }}>
+              <Text key={`${part.name}-${part.amount ?? ''}`} variant="callout" style={{ color: C.text }}>
                 {[part.amount, part.name].filter(Boolean).join(' ')}
               </Text>
             ))}
-            <Text style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>Usually</Text>
-            <Text style={{ color: C.text, fontSize: 16 }}>{routine.checkpoints.join(', ')}</Text>
-            <Pressable
-              accessibilityRole="button"
+            <Text variant="headline" style={{ color: C.text }}>Usually</Text>
+            <Text variant="callout" style={{ color: C.text }}>{routine.checkpoints.join(', ')}</Text>
+            <Button
+              title={saved ? '✓ In my day' : 'Add to my day'}
               accessibilityLabel={saved ? 'In my day' : 'Add to my day'}
               onPress={() => {
                 if (!slot) return;
@@ -478,19 +470,7 @@ export function RoutineDetailPage({ routineId }: { routineId: string }) {
                   ),
                 );
               }}
-              style={{
-                minHeight: 52,
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 26,
-                backgroundColor: C.lime,
-                marginTop: 8,
-              }}
-            >
-              <Text style={{ color: C.onAccent, fontSize: 16, fontWeight: '700' }}>
-                {saved ? '✓ In my day' : 'Add to my day'}
-              </Text>
-            </Pressable>
+            />
           </>
         )}
       </ScrollView>
@@ -505,7 +485,7 @@ export function RoutineCheckpointCover({ checkpoint }: { checkpoint: RoutineChec
       style={{
         width: '100%',
         aspectRatio: 1,
-        borderRadius: 14,
+        borderRadius: radius.control,
         overflow: 'hidden',
         backgroundColor: C.card,
         alignItems: 'center',

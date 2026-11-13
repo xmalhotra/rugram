@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import type { FlowLeaderboard } from '../../shared/flow-leaderboard';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { Button, SectionHeader } from './design/components';
+import { Glyph } from './design/Glyph';
+import { opacity, radius, space, useTheme } from './design/theme';
 import { flowLeaderboard } from './flow-interest';
 
 const collapsed = 5;
@@ -30,14 +32,9 @@ export function RequestedFlows({ refreshKey, onOpen }: { refreshKey: string; onO
   const top = board.flows[0].count;
   const shown = all ? board.flows : board.flows.slice(0, collapsed);
   return (
-    <View style={{ gap: 10 }}>
-      <View style={{ gap: 2 }}>
-        <Text accessibilityRole="header" style={{ color: C.text, fontSize: 22, fontWeight: '700' }}>
-          Most requested
-        </Text>
-        <Text style={{ color: C.muted, fontSize: 14 }}>Flows people are asking us to build next</Text>
-      </View>
-      <View style={{ borderRadius: 14, backgroundColor: C.card, paddingHorizontal: 12 }}>
+    <View style={{ gap: space.ms }}>
+      <SectionHeader title="Most requested" detail="Flows people are asking us to build next" />
+      <View style={{ borderRadius: radius.control, backgroundColor: C.card, paddingHorizontal: space.ms }}>
         {shown.map((flow, index) => {
           const people = `${flow.count} request${flow.count === 1 ? '' : 's'}`;
           return (
@@ -50,55 +47,51 @@ export function RequestedFlows({ refreshKey, onOpen }: { refreshKey: string; onO
                 minHeight: 64,
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 12,
-                paddingVertical: 10,
-                borderTopWidth: index ? 0.5 : 0,
+                gap: space.ms,
+                paddingVertical: space.ms,
+                borderTopWidth: index ? StyleSheet.hairlineWidth : 0,
                 borderColor: C.line,
-                opacity: pressed ? 0.6 : 1,
+                opacity: pressed ? opacity.pressed : 1,
               })}
             >
               <Text
+                variant="headline"
                 style={{
                   width: 24,
                   textAlign: 'center',
                   color: flow.rank <= 3 ? C.lime : C.muted,
-                  fontSize: 17,
-                  fontWeight: '700',
                 }}
               >
                 {flow.rank}
               </Text>
-              <View style={{ flex: 1, minWidth: 0, gap: 4 }}>
-                <Text numberOfLines={1} style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>
+              <View style={{ flex: 1, minWidth: 0, gap: space.xs }}>
+                <Text numberOfLines={1} variant="callout" style={{ color: C.text, fontWeight: '600' }}>
                   {flow.title}
                 </Text>
                 {/* How close this flow is to the top one. */}
-                <View style={{ height: 4, borderRadius: 2, backgroundColor: C.line, overflow: 'hidden' }}>
+                <View style={{ height: 4, borderRadius: radius.pill, backgroundColor: C.line, overflow: 'hidden' }}>
                   <View style={{ width: `${Math.max(6, (flow.count / top) * 100)}%`, height: 4, backgroundColor: C.lime }} />
                 </View>
-                <Text numberOfLines={1} style={{ color: C.muted, fontSize: 13 }}>
+                <Text numberOfLines={1} variant="footnote" style={{ color: C.muted }}>
                   {`${flow.level} · ${people}${flow.requested ? ' · You asked' : ''}`}
                 </Text>
               </View>
               {flow.thisWeek ? (
-                <Text style={{ color: C.lime, fontSize: 13, fontWeight: '600' }}>{`+${flow.thisWeek} this week`}</Text>
+                <Text variant="footnote" style={{ color: C.lime, fontWeight: '600' }}>{`+${flow.thisWeek} this week`}</Text>
               ) : null}
-              <Text style={{ color: C.muted, fontSize: 20 }}>›</Text>
+              <Glyph name={{ ios: 'chevron.right', android: 'chevron_right' }} fallback="›" color={C.muted} size={space.lg} />
             </Pressable>
           );
         })}
       </View>
       {board.flows.length > collapsed ? (
-        <Pressable
-          accessibilityRole="button"
+        <Button
+          variant="text"
+          size="regular"
+          title={all ? 'Show fewer' : `Show all ${board.flows.length}`}
           accessibilityLabel={all ? 'Show the top five' : `Show all ${board.flows.length}`}
           onPress={() => setAll(value => !value)}
-          style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', opacity: pressed ? 0.6 : 1 })}
-        >
-          <Text style={{ color: C.lime, fontSize: 15, fontWeight: '600' }}>
-            {all ? 'Show fewer' : `Show all ${board.flows.length}`}
-          </Text>
-        </Pressable>
+        />
       ) : null}
     </View>
   );

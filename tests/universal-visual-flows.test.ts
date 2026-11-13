@@ -1,3 +1,4 @@
+import { designMock, designTokens } from './support/design-mocks';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -174,7 +175,7 @@ function mount(file: string) {
       if (name.startsWith('../../shared/')) return require(`../shared/${name.split('/').at(-1)}`);
       if (name === './design/components')
         return { Sheet: 'Sheet', Button: 'Button', Badge: 'Badge', Card: 'Card', Field: 'Field' };
-      if (name === './design/theme') return { useTheme: () => ({ colors: {} }) };
+      if (name === './design/theme') return { ...designTokens, useTheme: () => ({ colors: {} }) };
       const component = name.split('/').at(-1)!;
       return { [component]: component };
     },

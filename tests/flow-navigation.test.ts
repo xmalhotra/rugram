@@ -27,7 +27,7 @@ test('the Flows tab catalog has no Lifestyle or Tech category chrome', () => {
   assert.match(readFileSync('mobile/src/FlowCatalogTile.tsx', 'utf8'), /accessibilityLabel="Go back"|PageBar/);
   assert.match(
     readFileSync('mobile/src/FlowSections.tsx', 'utf8'),
-    /accessibilityLabel=\{`Back to \$\{backLabel\}`\}/,
+    /label=\{`Back to \$\{backLabel\}`\}/,
   );
 });
 

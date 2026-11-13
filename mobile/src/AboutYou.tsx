@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import type { Lifestyle, UserMetrics } from '../../shared/flow-benchmarks';
+import { Button } from './design/components';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { hit, radius, space, textRoles, useTheme } from './design/theme';
 import { saveFlowMetrics } from './flow-runs';
 
 export const lifestyles: { id: Lifestyle; label: string }[] = [
@@ -48,12 +49,12 @@ export function AboutYouForm({
     }
   }
   return (
-    <View style={{ gap: 14 }}>
-      <Text style={{ color: C.muted, fontSize: 15, lineHeight: 22 }}>
+    <View style={{ gap: space.md }}>
+      <Text variant="subhead" style={{ color: C.muted }}>
         We use this to set your starting targets. It isn&apos;t medical advice. You can change or delete it in your
         profile.
       </Text>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
         {lifestyles.map(option => {
           const selected = option.id === lifestyle;
           return (
@@ -64,9 +65,9 @@ export function AboutYouForm({
               accessibilityState={{ selected }}
               onPress={() => setLifestyle(option.id)}
               style={{
-                minHeight: 44,
-                paddingHorizontal: 14,
-                borderRadius: 22,
+                minHeight: hit,
+                paddingHorizontal: space.md,
+                borderRadius: radius.pill,
                 justifyContent: 'center',
                 backgroundColor: selected ? C.lime : C.card,
                 borderWidth: 1,
@@ -78,7 +79,7 @@ export function AboutYouForm({
           );
         })}
       </View>
-      <Text style={{ color: C.muted, fontSize: 13 }}>Birth year</Text>
+      <Text variant="footnote" style={{ color: C.muted }}>Birth year</Text>
       <TextInput
         accessibilityLabel="Birth year"
         value={birthYear}
@@ -88,17 +89,17 @@ export function AboutYouForm({
         placeholder="1990"
         placeholderTextColor={C.muted}
         style={{
-          minHeight: 48,
-          borderRadius: 12,
+          minHeight: hit,
+          borderRadius: radius.small,
           borderWidth: 1,
           borderColor: C.line,
           backgroundColor: C.card,
           color: C.text,
-          paddingHorizontal: 14,
-          fontSize: 18,
+          paddingHorizontal: space.md,
+          fontSize: textRoles.body.fontSize,
         }}
       />
-      <Text style={{ color: C.muted, fontSize: 13 }}>Weight in kg</Text>
+      <Text variant="footnote" style={{ color: C.muted }}>Weight in kg</Text>
       <TextInput
         accessibilityLabel="Weight in kilograms"
         value={weight}
@@ -108,37 +109,27 @@ export function AboutYouForm({
         placeholder="70"
         placeholderTextColor={C.muted}
         style={{
-          minHeight: 48,
-          borderRadius: 12,
+          minHeight: hit,
+          borderRadius: radius.small,
           borderWidth: 1,
           borderColor: C.line,
           backgroundColor: C.card,
           color: C.text,
-          paddingHorizontal: 14,
-          fontSize: 18,
+          paddingHorizontal: space.md,
+          fontSize: textRoles.body.fontSize,
         }}
       />
       {!!error && (
-        <Text accessibilityRole="alert" style={{ color: C.danger, fontSize: 14 }}>
+        <Text accessibilityRole="alert" variant="subhead" style={{ color: C.danger }}>
           {error}
         </Text>
       )}
-      <Pressable
-        accessibilityRole="button"
+      <Button
+        title={busy ? 'Saving…' : 'Save'}
         accessibilityLabel="Save your details"
         disabled={busy}
         onPress={() => void save()}
-        style={{
-          minHeight: 52,
-          borderRadius: 16,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: C.lime,
-          opacity: busy ? 0.5 : 1,
-        }}
-      >
-        <Text style={{ color: C.onAccent, fontSize: 17, fontWeight: '700' }}>{busy ? 'Saving…' : 'Save'}</Text>
-      </Pressable>
+      />
     </View>
   );
 }

@@ -1,3 +1,4 @@
+import { designMock, designTokens } from './support/design-mocks';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -166,7 +167,7 @@ test('technique information uses the current card’s cues, limits and exact sou
       if (name === 'react') return {};
       if (name === 'react-native') return { View: 'View' };
       if (name === '../../shared/gym-techniques') return { gymTechnique };
-      if (name === './design/theme') return { useTheme: () => ({ colors: {} }) };
+      if (name === './design/theme') return { ...designTokens, useTheme: () => ({ colors: {} }) };
       if (name === './design/components') return { Button: 'Button' };
       if (name === './design/Text') return { Text: 'Text' };
       throw new Error(name);

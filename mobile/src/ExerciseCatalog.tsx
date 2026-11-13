@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, SectionList, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, SectionList, StyleSheet, TextInput, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import {
   equipmentGroups,
@@ -13,7 +13,9 @@ import { exerciseUsage } from '../../shared/exercise-usage';
 import { yourLastLine } from '../../shared/set-detail';
 import type { HabitFlow } from '../../shared/mobile';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { Button, SectionHeader } from './design/components';
+import { Glyph } from './design/Glyph';
+import { hit, opacity, radius, size, space, stroke, textRoles, useTheme } from './design/theme';
 import { usePaneState } from './pane-state';
 import { useRootListInset } from './RootList';
 import { CatalogBar } from './FlowCatalogTile';
@@ -26,7 +28,7 @@ import type { SetScheme } from '../../shared/set-schemes';
 import { muscleMapFor, muscleAreas, type MuscleArea } from '../../shared/muscle-map';
 import { BodyMap } from './BodyMap';
 
-const gap = 12;
+const gap = space.ms;
 const railWidth = 88;
 
 const label = (value: string) => value[0].toUpperCase() + value.slice(1);
@@ -40,7 +42,7 @@ function ExerciseSquare({ item }: { item: GymExercise }) {
       style={{
         width: '100%',
         aspectRatio: 1,
-        borderRadius: 14,
+        borderRadius: radius.control,
         overflow: 'hidden',
         backgroundColor: C.card,
       }}
@@ -58,6 +60,7 @@ export function ExercisePage({
   onView,
   topInset,
   scheme,
+  onUse,
 }: {
   item: GymExercise;
   library: HabitFlow[];
@@ -65,11 +68,14 @@ export function ExercisePage({
   onView: (flow: HabitFlow) => void;
   topInset?: number;
   scheme?: SetScheme | null;
+  /** Pick mode: this exercise can replace another. A returned sentence refuses the pick. */
+  onUse?: () => void | string;
 }) {
   const { colors: C } = useTheme();
   const contextInset = useRootListInset();
   const inset = topInset ?? contextInset;
   const [info, setInfo] = useState(false);
+  const [refused, setRefused] = useState('');
   const [last, setLast] = useState<ExerciseSession | null>(null);
   useEffect(() => {
     let live = true;
@@ -82,6 +88,7 @@ export function ExercisePage({
       live = false;
     };
   }, [item.id]);
+  useEffect(() => setRefused(''), [item.id]);
   const facts = [
     ['Equipment', station(item.station)?.title ?? item.station],
     ['Works', item.muscles.map(label).join(', ')],
@@ -91,30 +98,43 @@ export function ExercisePage({
     area => area === 'upper-abs' || area === 'lower-abs',
   );
   return (
-    <View style={{ flex: 1, paddingTop: Math.max(0, inset - 12) }}>
+    <View style={{ flex: 1, paddingTop: Math.max(0, inset - space.ms) }}>
       <CatalogBar title="All Exercises" onBack={onBack} />
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 128, gap: 16 }}
+        contentContainerStyle={{ paddingHorizontal: space.md, paddingTop: space.sm, paddingBottom: 128, gap: space.md }}
       >
         <ExercisePicture exerciseId={item.id} name={item.name} onPress={() => setInfo(true)} />
-        <Text accessibilityRole="header" style={{ color: C.text, fontSize: 24, fontWeight: '700' }}>
+        <Text accessibilityRole="header" variant="heading" style={{ color: C.text }}>
           {item.name}
         </Text>
+        {onUse ? (
+          <View style={{ gap: space.sm }}>
+            <Button
+              title="Use this instead"
+              accessibilityLabel="Use this instead"
+              onPress={() => {
+                const reason = onUse();
+                setRefused(typeof reason === 'string' ? reason : '');
+              }}
+            />
+            {refused ? <Text variant="subhead" style={{ color: C.text }}>{refused}</Text> : null}
+          </View>
+        ) : null}
         <View>
           {facts.map(([title, value]) => (
             <View
               key={title}
               style={{
                 flexDirection: 'row',
-                gap: 12,
-                paddingVertical: 10,
-                borderBottomWidth: 0.5,
+                gap: space.ms,
+                paddingVertical: space.ms,
+                borderBottomWidth: StyleSheet.hairlineWidth,
                 borderColor: C.line,
               }}
             >
-              <Text style={{ width: 88, color: C.muted, fontSize: 15 }}>{title}</Text>
-              <Text style={{ flex: 1, color: C.text, fontSize: 15 }}>{value}</Text>
+              <Text variant="subhead" style={{ width: 88, color: C.muted }}>{title}</Text>
+              <Text variant="subhead" style={{ flex: 1, color: C.text }}>{value}</Text>
             </View>
           ))}
           {info ? <ExerciseHowToSheet item={item} scheme={scheme} onClose={() => setInfo(false)} /> : null}
@@ -122,51 +142,51 @@ export function ExercisePage({
             <View
               style={{
                 flexDirection: 'row',
-                gap: 12,
-                paddingVertical: 10,
-                borderBottomWidth: 0.5,
+                gap: space.ms,
+                paddingVertical: space.ms,
+                borderBottomWidth: StyleSheet.hairlineWidth,
                 borderColor: C.line,
               }}
             >
-              <Text style={{ width: 88, color: C.muted, fontSize: 15 }}>Your last</Text>
-              <Text style={{ flex: 1, color: C.text, fontSize: 15 }}>{yourLastLine(last.sets)}</Text>
+              <Text variant="subhead" style={{ width: 88, color: C.muted }}>Your last</Text>
+              <Text variant="subhead" style={{ flex: 1, color: C.text }}>{yourLastLine(last.sets)}</Text>
             </View>
           )}
         </View>
-        <View style={{ alignItems: 'center', gap: 8 }}>
+        <View style={{ alignItems: 'center', gap: space.sm }}>
           <BodyMap main={muscles.main} helpers={muscles.helpers} width={220} />
           <View style={{ alignSelf: 'stretch' }}>
             <View
               style={{
                 flexDirection: 'row',
-                gap: 12,
-                paddingVertical: 10,
-                borderBottomWidth: 0.5,
+                gap: space.ms,
+                paddingVertical: space.ms,
+                borderBottomWidth: StyleSheet.hairlineWidth,
                 borderColor: C.line,
               }}
             >
-              <Text style={{ width: 88, color: C.muted, fontSize: 15 }}>Main</Text>
-              <Text style={{ flex: 1, color: C.text, fontSize: 15 }}>{muscles.main.map(areaTitle).join(', ')}</Text>
+              <Text variant="subhead" style={{ width: 88, color: C.muted }}>Main</Text>
+              <Text variant="subhead" style={{ flex: 1, color: C.text }}>{muscles.main.map(areaTitle).join(', ')}</Text>
             </View>
             {muscles.helpers.length > 0 && (
               <View
                 style={{
                   flexDirection: 'row',
-                  gap: 12,
-                  paddingVertical: 10,
-                  borderBottomWidth: 0.5,
+                  gap: space.ms,
+                  paddingVertical: space.ms,
+                  borderBottomWidth: StyleSheet.hairlineWidth,
                   borderColor: C.line,
                 }}
               >
-                <Text style={{ width: 88, color: C.muted, fontSize: 15 }}>Helps</Text>
-                <Text style={{ flex: 1, color: C.text, fontSize: 15 }}>
+                <Text variant="subhead" style={{ width: 88, color: C.muted }}>Helps</Text>
+                <Text variant="subhead" style={{ flex: 1, color: C.text }}>
                   {muscles.helpers.map(areaTitle).join(', ')}
                 </Text>
               </View>
             )}
           </View>
           {emphasisesAbs ? (
-            <Text style={{ alignSelf: 'stretch', color: C.muted, fontSize: 13, lineHeight: 18 }}>
+            <Text variant="footnote" style={{ alignSelf: 'stretch', color: C.muted }}>
               The abs work as one muscle. This shows which part this movement emphasises.
             </Text>
           ) : null}
@@ -205,16 +225,16 @@ function FoundIn({
         accessibilityLabel={`Open ${title}, ${detail}`}
         onPress={onPress}
         style={({ pressed }) => ({
-          minHeight: 48,
+          minHeight: hit,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 12,
-          opacity: pressed ? 0.6 : 1,
+          gap: space.ms,
+          opacity: pressed ? opacity.pressed : 1,
         })}
       >
-        <Text style={{ flex: 1, color: C.lime, fontSize: 16 }}>{title}</Text>
-        <Text style={{ color: C.muted, fontSize: 13 }}>{detail}</Text>
-        <Text style={{ color: C.muted, fontSize: 20 }}>›</Text>
+        <Text variant="callout" style={{ flex: 1, color: C.lime }}>{title}</Text>
+        <Text variant="footnote" style={{ color: C.muted }}>{detail}</Text>
+        <Glyph name={{ ios: 'chevron.right', android: 'chevron_right' }} fallback="›" color={C.muted} size={space.lg} />
       </Pressable>
     ) : (
       <View
@@ -222,24 +242,22 @@ function FoundIn({
         accessible
         accessibilityRole="text"
         accessibilityLabel={`${title}, ${detail}`}
-        style={{ minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 12 }}
+        style={{ minHeight: hit, flexDirection: 'row', alignItems: 'center', gap: space.ms }}
       >
-        <Text style={{ flex: 1, color: C.text, fontSize: 16 }}>{title}</Text>
-        <Text style={{ color: C.muted, fontSize: 13 }}>{detail}</Text>
+        <Text variant="callout" style={{ flex: 1, color: C.text }}>{title}</Text>
+        <Text variant="footnote" style={{ color: C.muted }}>{detail}</Text>
       </View>
     );
   const group = (title: string, rows: React.ReactNode[]) =>
     rows.length ? (
       <View style={{ gap: 0 }}>
-        <Text style={{ color: C.muted, fontSize: 13, fontWeight: '600', marginTop: 4 }}>{title}</Text>
+        <Text variant="footnote" style={{ color: C.muted, fontWeight: '600', marginTop: space.xs }}>{title}</Text>
         {rows}
       </View>
     ) : null;
   return (
-    <View style={{ gap: 8 }}>
-      <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>
-        Found in
-      </Text>
+    <View style={{ gap: space.sm }}>
+      <SectionHeader title="Found in" />
       {group(
         'Qram',
         qram.map(entry => {
@@ -261,18 +279,18 @@ function FoundIn({
 function ExerciseSearch({ query, onChange }: { query: string; onChange: (query: string) => void }) {
   const { colors: C } = useTheme();
   return (
-    <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+    <View style={{ paddingHorizontal: space.md, paddingBottom: space.sm }}>
       <View
         style={{
           height: 36,
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 6,
-          borderWidth: 1,
+          gap: space.sm,
+          borderWidth: stroke.line,
           borderColor: C.line,
           backgroundColor: C.card,
-          borderRadius: 18,
-          paddingHorizontal: 10,
+          borderRadius: radius.pill,
+          paddingHorizontal: space.ms,
         }}
       >
         <Svg width={14} height={14} viewBox="0 0 24 24" accessible={false}>
@@ -288,7 +306,7 @@ function ExerciseSearch({ query, onChange }: { query: string; onChange: (query: 
           autoCapitalize="none"
           autoCorrect={false}
           returnKeyType="search"
-          style={{ flex: 1, height: 36, paddingVertical: 0, color: C.text, fontSize: 14 }}
+          style={{ flex: 1, height: 36, paddingVertical: 0, color: C.text, fontSize: textRoles.subhead.fontSize }}
         />
         {query ? (
           <Pressable
@@ -297,7 +315,7 @@ function ExerciseSearch({ query, onChange }: { query: string; onChange: (query: 
             onPress={() => onChange('')}
             hitSlop={8}
           >
-            <Text style={{ color: C.muted, fontSize: 14 }}>✕</Text>
+            <Text variant="subhead" style={{ color: C.muted }}>✕</Text>
           </Pressable>
         ) : null}
       </View>
@@ -310,33 +328,75 @@ export function ExerciseCatalog({
   library,
   onBack,
   onView,
+  topInset,
+  pick,
 }: {
   library: HabitFlow[];
   onBack: () => void;
   onView: (flow: HabitFlow) => void;
+  /** Used when this catalog is opened inside another screen, such as a swap. */
+  topInset?: number;
+  /** Choosing a replacement. The list starts on this muscle, and a detail page can accept it. */
+  pick?: {
+    muscle?: MuscleArea | null;
+    onPick: (exerciseId: string) => void;
+    /** One sentence when this exercise cannot stand in. Null when it can. */
+    refuse?: (exerciseId: string) => string | null;
+  };
 }) {
   const { colors: C } = useTheme();
-  const inset = useRootListInset();
-  const [groupId, setGroupId] = usePaneState('exerciseGroup', 'all');
-  const [openedId, setOpenedId] = usePaneState<string | null>('exerciseOpen', null);
-  const [query, setQuery] = usePaneState('exerciseQuery', '');
+  const contextInset = useRootListInset();
+  const inset = topInset ?? contextInset;
+  const [paneGroup, setPaneGroup] = usePaneState('exerciseGroup', 'all');
+  const [paneOpen, setPaneOpen] = usePaneState<string | null>('exerciseOpen', null);
+  const [paneQuery, setPaneQuery] = usePaneState('exerciseQuery', '');
+  // Pick mode must not reuse the catalogue the member left open.
+  const [localGroup, setLocalGroup] = useState('all');
+  const [localOpen, setLocalOpen] = useState<string | null>(null);
+  const [localQuery, setLocalQuery] = useState('');
+  const [showMuscle, setShowMuscle] = useState(Boolean(pick?.muscle));
+  const groupId = pick ? localGroup : paneGroup;
+  const setGroupId = pick ? setLocalGroup : setPaneGroup;
+  const openedId = pick ? localOpen : paneOpen;
+  const setOpenedId = pick ? setLocalOpen : setPaneOpen;
+  const query = pick ? localQuery : paneQuery;
+  const setQuery = pick ? setLocalQuery : setPaneQuery;
   const [width, setWidth] = useState(0);
   const opened = openedId ? exercise(openedId) : undefined;
   if (opened)
-    return <ExercisePage item={opened} library={library} onBack={() => setOpenedId(null)} onView={onView} />;
+    return (
+      <ExercisePage
+        item={opened}
+        library={library}
+        topInset={topInset}
+        onBack={() => setOpenedId(null)}
+        onView={onView}
+        onUse={
+          pick
+            ? () => {
+                const reason = pick.refuse?.(opened.id);
+                if (reason) return reason;
+                pick.onPick(opened.id);
+              }
+            : undefined
+        }
+      />
+    );
   const group = equipmentGroups.find(entry => entry.id === groupId);
   const searching = query.trim().length > 0;
+  const muscle = pick?.muscle && showMuscle ? pick.muscle : null;
+  const keep = (items: GymExercise[]) => (muscle ? items.filter(item => muscleMapFor(item.id).main[0] === muscle) : items);
   // A group with several pieces of equipment names each one above its exercises.
   const sections: { title: string | null; items: GymExercise[] }[] = searching
-    ? [{ title: null, items: searchExercises(query) }]
+    ? [{ title: null, items: keep(searchExercises(query)) }]
     : !group
-      ? [{ title: null, items: exercisesAtStation('all') }]
+      ? [{ title: null, items: keep(exercisesAtStation('all')) }]
       : group.stations.map(id => ({
           title: group.stations.length > 1 ? (station(id)?.title ?? id) : null,
-          items: exercisesAtStation(id),
+          items: keep(exercisesAtStation(id)),
         }));
   const found = sections.some(section => section.items.length > 0);
-  const inner = width > 24 ? width - 24 : 0;
+  const inner = width > space.ms * 2 ? width - space.ms * 2 : 0;
   const cell = inner > gap ? (inner - gap) / 2 : 0;
   const grid: { title: string | null; leading: boolean; data: GymExercise[][] }[] = [];
   sections.forEach(section => {
@@ -349,7 +409,7 @@ export function ExerciseCatalog({
   });
   const rail = [{ id: 'all', title: 'All' }, ...equipmentGroups];
   return (
-    <View style={{ flex: 1, paddingTop: Math.max(0, inset - 12) }}>
+    <View style={{ flex: 1, paddingTop: Math.max(0, inset - space.ms) }}>
       <CatalogBar
         title="All Exercises"
         onBack={() => {
@@ -358,9 +418,38 @@ export function ExerciseCatalog({
         }}
       />
       <ExerciseSearch query={query} onChange={setQuery} />
-      <View style={{ flex: 1, flexDirection: 'row', borderTopWidth: 0.5, borderColor: C.line }}>
+      {pick?.muscle ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            showMuscle
+              ? `Showing ${areaTitle(pick.muscle)}. Show every exercise`
+              : `Only ${areaTitle(pick.muscle)}`
+          }
+          onPress={() => setShowMuscle(value => !value)}
+          style={({ pressed }) => ({
+            alignSelf: 'flex-start',
+            minHeight: hit,
+            marginHorizontal: space.md,
+            marginBottom: space.sm,
+            paddingHorizontal: space.md,
+            borderRadius: radius.pill,
+            borderWidth: stroke.line,
+            borderColor: showMuscle ? C.lime : C.line,
+            backgroundColor: showMuscle ? C.lime : C.card,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: pressed ? opacity.pressed : 1,
+          })}
+        >
+          <Text variant="subhead" style={{ color: showMuscle ? C.onAccent : C.text, fontWeight: '600' }}>
+            {showMuscle ? `${areaTitle(pick.muscle)} ✕` : `Only ${areaTitle(pick.muscle)}`}
+          </Text>
+        </Pressable>
+      ) : null}
+      <View style={{ flex: 1, flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderColor: C.line }}>
         <ScrollView
-          style={{ width: railWidth, flexGrow: 0, borderRightWidth: 0.5, borderColor: C.line }}
+          style={{ width: railWidth, flexGrow: 0, borderRightWidth: StyleSheet.hairlineWidth, borderColor: C.line }}
           contentContainerStyle={{ paddingBottom: 128 }}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -378,19 +467,19 @@ export function ExerciseCatalog({
                   setGroupId(entry.id);
                 }}
                 style={{
-                  minHeight: 56,
+                  minHeight: size.button,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  paddingVertical: 10,
-                  paddingHorizontal: 6,
+                  paddingVertical: space.ms,
+                  paddingHorizontal: space.sm,
                 }}
               >
                 <Text
                   numberOfLines={2}
+                  variant="footnote"
                   style={{
                     color: selected ? C.lime : C.muted,
-                    fontSize: 13,
-                    fontWeight: selected ? '700' : '500',
+                    fontWeight: selected ? '600' : '400',
                     textAlign: 'center',
                   }}
                 >
@@ -401,8 +490,8 @@ export function ExerciseCatalog({
                     style={{
                       position: 'absolute',
                       right: 0,
-                      top: 10,
-                      bottom: 10,
+                      top: space.ms,
+                      bottom: space.ms,
                       width: 3,
                       borderTopLeftRadius: 3,
                       borderBottomLeftRadius: 3,
@@ -420,7 +509,7 @@ export function ExerciseCatalog({
               key={searching ? 'search' : (group?.id ?? 'all')}
               style={{ flex: 1 }}
               sections={grid}
-              contentContainerStyle={{ padding: 12, paddingBottom: 128 }}
+              contentContainerStyle={{ padding: space.ms, paddingBottom: 128 }}
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"
               stickySectionHeadersEnabled={false}
@@ -429,12 +518,12 @@ export function ExerciseCatalog({
                 section.title ? (
                   <Text
                     accessibilityRole="header"
+                    variant="subhead"
                     style={{
                       color: C.text,
-                      fontSize: 15,
-                      fontWeight: '700',
-                      marginTop: section.leading ? 20 : 0,
-                      marginBottom: 10,
+                      fontWeight: '600',
+                      marginTop: section.leading ? space.lg : 0,
+                      marginBottom: space.ms,
                     }}
                   >
                     {section.title}
@@ -449,20 +538,22 @@ export function ExerciseCatalog({
                       accessibilityRole="button"
                       accessibilityLabel={`Open ${item.name}`}
                       onPress={() => setOpenedId(item.id)}
-                      style={({ pressed }) => ({ width: cell, gap: 6, opacity: pressed ? 0.75 : 1 })}
+                      style={({ pressed }) => ({ width: cell, gap: space.sm, opacity: pressed ? opacity.pressed : 1 })}
                     >
                       <ExerciseSquare item={item} />
-                      <Text style={{ color: C.text, fontSize: 14, fontWeight: '600', lineHeight: 19 }}>
+                      <Text variant="subhead" style={{ color: C.text, fontWeight: '600' }}>
                         {item.name}
                       </Text>
-                      <Text style={{ color: C.muted, fontSize: 12 }}>{label(item.muscles[0])}</Text>
+                      <Text variant="caption" style={{ color: C.muted }}>{label(item.muscles[0])}</Text>
                     </Pressable>
                   ))}
                 </View>
               )}
               ListEmptyComponent={
                 searching && !found ? (
-                  <Text style={{ color: C.muted, fontSize: 14 }}>No exercises found.</Text>
+                  <Text variant="subhead" style={{ color: C.muted }}>No exercises found.</Text>
+                ) : muscle && !found ? (
+                  <Text variant="subhead" style={{ color: C.muted }}>No exercises for this muscle.</Text>
                 ) : undefined
               }
             />

@@ -1,6 +1,8 @@
 import type { HabitFlow } from './mobile';
 import { exercise } from './exercises';
+import { restFor as exerciseRestFor } from './exercise-rest';
 import { amountListLabel, schemeById, spreadAmounts } from './set-scheme-math';
+import { catalogueSessions, intermediateBackBiceps } from './gym-flow-sessions';
 
 export type SetTarget =
   | { kind: 'reps'; min: number; max: number }
@@ -17,6 +19,11 @@ export type GymFlowItem = {
   target?: SetTarget;
   /** How reps and weight change across the sets. Missing means they stay put. */
   scheme?: string;
+  /**
+   * Superset label. Items that share a label and sit next to each other alternate
+   * by set (A1, A2). A label on its own is just another exercise.
+   */
+  superset?: string;
 };
 
 export type GymFlow = {
@@ -26,15 +33,6 @@ export type GymFlow = {
   level: string;
   items: GymFlowItem[];
 };
-
-const item = (
-  exerciseId: string,
-  sets: number,
-  repsMin: number,
-  repsMax: number,
-  restSeconds = 90,
-  scheme?: string,
-): GymFlowItem => ({ exerciseId, sets, repsMin, repsMax, restSeconds, ...(scheme ? { scheme } : {}) });
 
 const aimed = (exerciseId: string, sets: number, target: SetTarget, restSeconds = 60, scheme?: string): GymFlowItem => {
   const marked = scheme ? { scheme } : {};
@@ -56,21 +54,7 @@ const aimed = (exerciseId: string, sets: number, target: SetTarget, restSeconds 
 };
 
 export const gymFlows: GymFlow[] = [
-  {
-    id: 'gym-back-biceps',
-    title: 'Back + Biceps',
-    goal: 'Pull thicker and curl stronger, adding weight only after every set reaches the top of the range.',
-    level: 'Intermediate',
-    items: [
-      item('single-arm-lat-pulldown', 3, 10, 10, 90, 'pyramid'),
-      item('mid-width-lat-pulldown', 3, 10, 12, 90, 'pyramid'),
-      item('mid-width-cable-row', 3, 10, 12, 90, 'pyramid'),
-      item('dual-pulley-straight-arm-pulldown', 3, 10, 12, 90, 'pyramid'),
-      item('reverse-pec-deck-fly', 3, 10, 12, 90, 'pyramid'),
-      item('rope-hammer-curl', 3, 10, 12, 90, 'pyramid'),
-      item('reverse-cable-curl', 3, 10, 12, 90, 'pyramid'),
-    ],
-  },
+  intermediateBackBiceps,
   {
     id: 'cal-upper-beginner',
     title: 'Upper Body at Home',
@@ -98,10 +82,32 @@ export const gymFlows: GymFlow[] = [
       aimed('forearm-plank', 3, { kind: 'hold', minSeconds: 45, maxSeconds: 60 }, 60, 'descending'),
     ],
   },
+  ...catalogueSessions,
 ];
 
 export function gymFlowById(id: string) {
   return gymFlows.find(flow => flow.id === id);
+}
+
+/** Live exactly when the gym flow exists and already has exercises. */
+export function gymFlowIsLive(id: string | undefined) {
+  const flow = id ? gymFlowById(id) : undefined;
+  return Boolean(flow && flow.items.length > 0);
+}
+
+/**
+ * Minutes for a session: each set is 45 seconds of work plus that exercise's rest,
+ * then 6 minutes to warm up and set up. Six minutes is the middle of the 5–8 minute
+ * range in the gym catalogue. A superset still counts each exercise's own rest.
+ */
+export function gymEstimatedMinutes(flow: { items: Pick<GymFlowItem, 'exerciseId' | 'sets' | 'restSeconds'>[] }) {
+  const work = flow.items.reduce((total, entry) => total + entry.sets * (45 + gymRestSeconds(entry)), 0);
+  return Math.round((work + 6 * 60) / 60);
+}
+
+/** The item's own rest, or the exercise's rest class when the flow didn't set one. */
+export function gymRestSeconds(item: Pick<GymFlowItem, 'exerciseId' | 'restSeconds'>) {
+  return item.restSeconds ?? exerciseRestFor(item.exerciseId);
 }
 
 export function resolveTarget(item: Pick<GymFlowItem, 'repsMin' | 'repsMax' | 'target'>): SetTarget {
@@ -150,8 +156,11 @@ export function gymExerciseId(cardId: string) {
   const flowId = cardId.slice(0, split);
   const exerciseId = cardId.slice(split + 1);
   const flow = gymFlowById(flowId);
-  if (!flow?.items.some(entry => entry.exerciseId === exerciseId)) return null;
-  return exerciseId;
+  if (!flow) return null;
+  if (flow.items.some(entry => entry.exerciseId === exerciseId)) return exerciseId;
+  // A Customflow swap puts the replacement's id on the card. It is still this flow's exercise.
+  if (exercise(exerciseId)) return exerciseId;
+  return null;
 }
 
 export function gymFlowItem(flowId: string, exerciseId: string) {
@@ -205,15 +214,13 @@ export function gymHabitFlow(flow: GymFlow): HabitFlow {
     area: 'Fitness',
     pathId: 'workout',
     level: flow.level,
-    rhythm: flow.id === 'gym-back-biceps' ? 'One back and biceps session' : 'One session at home',
-    milestone:
-      flow.id === 'gym-back-biceps'
-        ? 'Finish the seven exercises and keep the weights you used.'
-        : 'Finish the exercises and keep what you did.',
-    review:
-      flow.id === 'gym-back-biceps'
-        ? 'Next time, raise a weight only if every set reached the top of its range.'
-        : 'Next time, do a little more only when the last session felt easy.',
+    rhythm: flow.id.startsWith('cal-') ? 'One session at home' : 'One gym session',
+    milestone: flow.id.startsWith('cal-')
+      ? 'Finish the exercises and keep what you did.'
+      : `Finish the ${cards.length} exercises and keep the weights you used.`,
+    review: flow.id.startsWith('cal-')
+      ? 'Next time, do a little more only when the last session felt easy.'
+      : 'Next time, raise a weight only if every set reached the top of its range.',
     guidance:
       'A general gym session, not a personal programme. Choose loads you can control and leave room for recovery. Stop if a movement hurts.',
     sources: [
@@ -227,7 +234,7 @@ export function gymHabitFlow(flow: GymFlow): HabitFlow {
       collection: flow.title,
       label: flow.level,
       format: `${cards.length} exercises`,
-      equipment: flow.id === 'gym-back-biceps' ? 'Cables and a machine' : 'A clear floor',
+      equipment: flow.id.startsWith('cal-') ? 'A clear floor' : 'A gym',
       reviewedOn: '2026-11-06',
       cards: [
         {
@@ -247,4 +254,5 @@ export function gymHabitFlow(flow: GymFlow): HabitFlow {
   };
 }
 
-export const gymHabitFlows: HabitFlow[] = gymFlows.map(gymHabitFlow);
+/** Only sessions that have exercises join the library. Empty shells stay in the catalogue. */
+export const gymHabitFlows: HabitFlow[] = gymFlows.filter(flow => flow.items.length > 0).map(gymHabitFlow);

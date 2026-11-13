@@ -6,7 +6,7 @@ import { api } from './api';
 import { Button, Chip, Field } from './design/components';
 import { Text } from './design/Text';
 import { Disclosure } from './Disclosure';
-import { useTheme } from './design/theme';
+import { space, useTheme } from './design/theme';
 import { useToast } from './design/states';
 export function ReportIssue({ kind, itemId }: { kind: 'pick' | 'event'; itemId: string }) {
   const { colors: C } = useTheme();
@@ -66,7 +66,7 @@ export function ReportIssue({ kind, itemId }: { kind: 'pick' | 'event'; itemId: 
   }
   return (
     <Disclosure title="Report an issue">
-      <View style={{ gap: 12 }}>
+      <View style={{ gap: space.ms }}>
         {report ? (
           <>
             <Text style={{ color: C.muted }}>
@@ -77,7 +77,7 @@ export function ReportIssue({ kind, itemId }: { kind: 'pick' | 'event'; itemId: 
         ) : ready ? (
           <>
             <Text style={{ color: C.muted }}>Your identity is not shared with creators.</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
               {reportReasons.map(value => (
                 <Chip
                   key={value}

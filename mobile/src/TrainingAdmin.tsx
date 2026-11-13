@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import type { TrainingPlan, TrainingSession, TrainingType } from '../../shared/training';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { Button, SectionHeader } from './design/components';
+import { hit, radius, space, stroke, textRoles, useTheme } from './design/theme';
 import { saveTrainingDefinition, setTrainingStatus, trainingManage } from './training-api';
 
 type Kind = 'type' | 'session' | 'plan';
@@ -56,43 +57,41 @@ export function TrainingAdmin() {
     }
   }
   return (
-    <View style={{ gap: 12 }}>
-      <Text accessibilityRole="header" style={{ color: C.text, fontSize: 22, fontWeight: '700' }}>
-        Training
-      </Text>
-      <View style={{ flexDirection: 'row', gap: 12 }}>
+    <View style={{ gap: space.ms }}>
+      <SectionHeader title="Training" />
+      <View style={{ flexDirection: 'row', gap: space.ms }}>
         {(['type', 'session', 'plan'] as const).map(option => (
-          <Pressable key={option} accessibilityRole="button" accessibilityLabel={option} onPress={() => setKind(option)} style={{ minHeight: 44, justifyContent: 'center' }}>
-            <Text style={{ color: kind === option ? C.lime : C.text, fontWeight: '700' }}>{option}</Text>
+          <Pressable key={option} accessibilityRole="button" accessibilityLabel={option} onPress={() => setKind(option)} style={{ minHeight: hit, justifyContent: 'center' }}>
+            <Text style={{ color: kind === option ? C.lime : C.text, fontWeight: '600' }}>{option}</Text>
           </Pressable>
         ))}
       </View>
       <ScrollView style={{ maxHeight: 240 }}>
         {rows.map(row => (
-          <View key={row.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44 }}>
-            <Pressable accessibilityRole="button" accessibilityLabel={`${row.title}, ${row.status}`} onPress={() => open(row)} style={{ flex: 1, minHeight: 44, justifyContent: 'center' }}>
+          <View key={row.id} style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: hit }}>
+            <Pressable accessibilityRole="button" accessibilityLabel={`${row.title}, ${row.status}`} onPress={() => open(row)} style={{ flex: 1, minHeight: hit, justifyContent: 'center' }}>
               <Text style={{ color: C.text }}>{row.title}</Text>
-              <Text style={{ color: C.muted, fontSize: 13 }}>{row.status}</Text>
+              <Text variant="footnote" style={{ color: C.muted }}>{row.status}</Text>
             </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel={row.status === 'live' ? `Unpublish ${row.title}` : `Publish ${row.title}`} onPress={() => void publish(row.id, row.status === 'live' ? 'draft' : 'live')} style={{ minHeight: 44, justifyContent: 'center' }}>
-              <Text style={{ color: C.lime }}>{row.status === 'live' ? 'Unpublish' : 'Publish'}</Text>
-            </Pressable>
+            <Button
+              variant="text"
+              size="regular"
+              title={row.status === 'live' ? 'Unpublish' : 'Publish'}
+              accessibilityLabel={row.status === 'live' ? `Unpublish ${row.title}` : `Publish ${row.title}`}
+              onPress={() => void publish(row.id, row.status === 'live' ? 'draft' : 'live')}
+            />
           </View>
         ))}
       </ScrollView>
-      <Pressable accessibilityRole="button" accessibilityLabel={`New ${kind}`} onPress={() => open(blank[kind])} style={{ minHeight: 44, justifyContent: 'center' }}>
-        <Text style={{ color: C.lime, fontWeight: '600' }}>New {kind}</Text>
-      </Pressable>
+      <Button variant="text" size="regular" title={`New ${kind}`} accessibilityLabel={`New ${kind}`} onPress={() => open(blank[kind])} />
       <TextInput
         value={text}
         onChangeText={setText}
         multiline
         accessibilityLabel="Training JSON"
-        style={{ minHeight: 180, color: C.text, fontSize: 13, borderWidth: 1, borderColor: C.line, borderRadius: 12, padding: 12 }}
+        style={{ minHeight: 180, color: C.text, fontSize: textRoles.footnote.fontSize, borderWidth: stroke.line, borderColor: C.line, borderRadius: radius.small, padding: space.ms }}
       />
-      <Pressable accessibilityRole="button" accessibilityLabel="Save training JSON" onPress={() => void save()} style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 24, backgroundColor: C.lime }}>
-        <Text style={{ color: C.onAccent, fontWeight: '700' }}>Save</Text>
-      </Pressable>
+      <Button title="Save" accessibilityLabel="Save training JSON" onPress={() => void save()} />
       {error ? (
         <Text accessibilityRole="alert" style={{ color: C.danger }}>
           {error}

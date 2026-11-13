@@ -1,3 +1,4 @@
+import { designMock, designTokens } from './support/design-mocks';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -82,10 +83,11 @@ function mount(component: string, props: object) {
           ],
         };
       if (name === 'react-native') return { View: 'View', Pressable: 'Pressable' };
-      if (name === './design/theme') return { useTheme: () => ({ colors: {} }) };
+      if (name === './design/theme') return { ...designTokens, useTheme: () => ({ colors: {} }) };
       if (name === './design/Text') return { Text: 'Text' };
       if (name === './design/components') return { Button: 'Button', Sheet: 'Sheet' };
       if (name === '../../shared/animal-movement-context') return { animalMovementContext };
+      { const mock = designMock(name); if (mock) return mock; }
       throw new Error(`Unexpected import ${name}`);
     },
     loaded,

@@ -35,7 +35,7 @@ test('Slider replaces the segments beside the pose count, not in a separate foot
   assert.match(row, /controlMode === 'slider'/);
   assert.match(row, /controlMode === 'tilt'/);
   assert.match(row, /StepMarker=\{MovementFrameMarker\}/);
-  assert.match(row, /height: 44/);
+  assert.match(row, /height: (44|hit)/);
   assert.match(row, /disabled=\{disabled\}/, 'Disable scrubbing during a card swipe');
 });
 

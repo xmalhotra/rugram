@@ -6,7 +6,7 @@ import { checkedAgo } from '../../shared/format';
 import { eventProvider } from '../../shared/event-discovery';
 import { Button, Sheet } from './design/components';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { space, useTheme } from './design/theme';
 import { useSession } from './session';
 import { useToast } from './design/states';
 import { api } from './api';
@@ -87,8 +87,8 @@ export function OutboundProvider({ children }: { children: React.ReactNode }) {
       {children}
       {request && host && (
         <Sheet title="Leaving Qram" onClose={close}>
-          <View style={{ gap: 18, paddingVertical: 16 }}>
-            <Text style={{ color: C.text, fontSize: 24, fontWeight: '600' }}>{host}</Text>
+          <View style={{ gap: space.md, paddingVertical: space.md }}>
+            <Text variant="heading" style={{ color: C.text }}>{host}</Text>
             {event && (
               <Text style={{ color: C.muted }}>
                 Registration happens on {eventProvider(request.url)}.
@@ -101,7 +101,7 @@ export function OutboundProvider({ children }: { children: React.ReactNode }) {
               </Text>
             )}
             {affiliate && <Text style={{ color: C.text }}>{trustCopy.affiliate}</Text>}
-            <Text style={{ color: C.muted, fontSize: 12, lineHeight: 18 }}>
+            <Text variant="caption" style={{ color: C.muted }}>
               {trustCopy.commercial}
             </Text>
             <Button
@@ -124,10 +124,10 @@ export function useOutbound() {
 export function CommercialDisclosure() {
   const { colors: C } = useTheme();
   return (
-    <Text style={{ color: C.muted, fontSize: 12, lineHeight: 18 }}>{trustCopy.commercial}</Text>
+    <Text variant="caption" style={{ color: C.muted }}>{trustCopy.commercial}</Text>
   );
 }
 export function HealthNote() {
   const { colors: C } = useTheme();
-  return <Text style={{ color: C.muted, fontSize: 13, lineHeight: 19 }}>{trustCopy.health}</Text>;
+  return <Text variant="footnote" style={{ color: C.muted }}>{trustCopy.health}</Text>;
 }

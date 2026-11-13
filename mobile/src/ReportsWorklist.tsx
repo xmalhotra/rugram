@@ -5,7 +5,7 @@ import { formatDate } from '../../shared/format';
 import { api } from './api';
 import { Button, Card } from './design/components';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { space, useTheme } from './design/theme';
 import { useToast } from './design/states';
 import { Disclosure } from './Disclosure';
 type Worklist = { items: MemberReport[]; total: number; nextCursor: string | null };
@@ -50,8 +50,8 @@ export function ReportsWorklist() {
   }
   const groups = [...new Set(value?.items.map(item => `${item.kind}:${item.itemId}`) ?? [])];
   return (
-    <View style={{ gap: 16 }}>
-      <Text accessibilityRole="header" style={{ color: C.text, fontSize: 23, fontWeight: '600' }}>
+    <View style={{ gap: space.md }}>
+      <Text accessibilityRole="header" variant="heading" style={{ color: C.text }}>
         Member reports{value ? ` · ${value.total}` : ''}
       </Text>
       <Text style={{ color: C.muted }}>
@@ -62,7 +62,7 @@ export function ReportsWorklist() {
         const rows = value!.items.filter(item => `${item.kind}:${item.itemId}` === key);
         return (
           <Card key={key}>
-            <Text style={{ color: C.text, fontSize: 18, fontWeight: '600' }}>{rows[0].title}</Text>
+            <Text variant="headline" style={{ color: C.text }}>{rows[0].title}</Text>
             <Text style={{ color: C.muted }}>
               {rows.length} loaded report{rows.length === 1 ? '' : 's'} · {rows[0].kind}
             </Text>

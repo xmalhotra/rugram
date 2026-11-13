@@ -13,7 +13,8 @@ import { morningDrinksFlow, morningDrinkFlows } from './morning-drinks';
 import { trainingSupplementFlows, trainingSupplementTopicFlows } from './training-supplements';
 import { codingFlows, codingCardFlows } from './coding-flows';
 import { techResourceFlows } from './tech-resources';
-import { gymHabitFlows } from './gym-flows';
+import { gymEstimatedMinutes, gymFlowById, gymFlowIsLive, gymHabitFlows, type GymFlowItem } from './gym-flows';
+import { goalsForCatalogFlow, type FlowGoal } from './flow-defaults';
 
 export const flowAreas: { id: FlowArea; title: string; description: string; symbol: string }[] = [
   {
@@ -491,6 +492,8 @@ export type CatalogFlow = {
   flowId?: string;
   /** Catalog ids to suggest after this one. Unused in the UI for now. */
   next?: string[];
+  /** Strength, size, fitness or mobility. Set for every gym catalogue flow. */
+  goals?: FlowGoal[];
 };
 export type CatalogTile = {
   id: string;
@@ -535,6 +538,7 @@ export const catalogTiles: CatalogTile[] = [
   tile('gym-shoulders', 'Shoulders', 'gym'),
   tile('gym-legs', 'Legs', 'gym'),
   tile('gym-core', 'Core', 'gym'),
+  tile('gym-arms', 'Arms', 'gym'),
   tile('gym-supersets', 'Supersets', 'gym', [
     'Back + Biceps',
     'Chest + Triceps',
@@ -542,6 +546,7 @@ export const catalogTiles: CatalogTile[] = [
     'Legs + Core',
   ]),
   tile('gym-full', 'Full Body', 'gym'),
+  tile('gym-splits', 'Splits', 'gym'),
   tile('cal-upper', 'Upper Body', 'calisthenics'),
   tile('cal-pull', 'Pull', 'calisthenics'),
   tile('cal-push', 'Push', 'calisthenics'),
@@ -592,53 +597,96 @@ function coming(
   }));
 }
 
+/** A gym catalogue row. `flowId` is the GymFlow it points at, and status is filled in afterwards. */
+function gymEntry(
+  id: string,
+  title: string,
+  tileId: string,
+  level: CatalogLevel,
+  tags: string[] = [],
+  flowId = id,
+): CatalogFlow {
+  return { id, title, tileId, level, tags, flowId, status: 'coming-soon' };
+}
+
+function gymComing(tileId: string, items: [string, CatalogLevel, string[]?][]): CatalogFlow[] {
+  return coming(tileId, items).map(flow => ({ ...flow, flowId: flow.id }));
+}
+
+/** One pairing at Beginner, Intermediate and Advanced. The intermediate id keeps the old "-superset" suffix. */
+function superset(title: string, slug: string): CatalogFlow[] {
+  return levelOrder.map(level => {
+    const suffix = level === 'Intermediate' ? 'superset' : level.toLowerCase();
+    const id = `gym-supersets-${slug}-${suffix}`;
+    const flowId = id === 'gym-supersets-back-biceps-superset' ? 'gym-back-biceps' : id;
+    return gymEntry(id, title, 'gym-supersets', level, [title], flowId);
+  });
+}
+
+function fullBodyDays(): CatalogFlow[] {
+  return levelOrder.flatMap(level =>
+    [1, 2, 3].map(day => gymEntry(`gym-full-${level.toLowerCase()}-day-${day}`, `Day ${day}`, 'gym-full', level)),
+  );
+}
+
+function splitDay(id: string, title: string): CatalogFlow {
+  return gymEntry(id, title, 'gym-splits', 'Intermediate');
+}
+
 export const catalogFlows: CatalogFlow[] = [
-  ...coming('gym-back', [
+  ...gymComing('gym-back', [
     ['Chest-supported row', 'Beginner'],
     ['Pull-up and row day', 'Intermediate'],
     ['Weighted pull-up strength', 'Advanced'],
   ]),
-  ...coming('gym-biceps', [
+  ...gymComing('gym-biceps', [
     ['First curls', 'Beginner'],
     ['Arm day curls', 'Intermediate'],
     ['Peak contraction finishers', 'Advanced'],
   ]),
-  ...coming('gym-chest', [
+  ...gymComing('gym-chest', [
     ['Push-up to bench', 'Beginner'],
     ['Flat and incline press', 'Intermediate'],
     ['Heavy bench cycle', 'Advanced'],
   ]),
-  ...coming('gym-triceps', [
+  ...gymComing('gym-triceps', [
     ['Press-down basics', 'Beginner'],
     ['Close-grip press', 'Intermediate'],
     ['Dips and extensions', 'Advanced'],
   ]),
-  ...coming('gym-shoulders', [
+  ...gymComing('gym-shoulders', [
     ['Shoulder press start', 'Beginner'],
     ['Overhead and raises', 'Intermediate'],
     ['Strict press strength', 'Advanced'],
   ]),
-  ...coming('gym-legs', [
+  ...gymComing('gym-legs', [
     ['Squat pattern start', 'Beginner'],
     ['Squat and hinge day', 'Intermediate'],
     ['Lower body strength', 'Advanced'],
   ]),
-  ...coming('gym-core', [
+  ...gymComing('gym-core', [
     ['Dead bug and plank', 'Beginner'],
     ['Anti-rotation core', 'Intermediate'],
     ['Hanging core strength', 'Advanced'],
   ]),
-  ...coming('gym-supersets', [
-    ['Back + Biceps superset', 'Intermediate', ['Back + Biceps']],
-    ['Chest + Triceps superset', 'Intermediate', ['Chest + Triceps']],
-    ['Shoulders + Arms superset', 'Intermediate', ['Shoulders + Arms']],
-    ['Legs + Core superset', 'Intermediate', ['Legs + Core']],
-  ]),
-  ...coming('gym-full', [
-    ['Full body three days', 'Beginner'],
-    ['Full body strength', 'Intermediate'],
-    ['Full body density', 'Advanced'],
-  ]),
+  ...levelOrder.map(level => gymEntry(`gym-arms-${level.toLowerCase()}`, 'Arms', 'gym-arms', level)),
+  ...superset('Back + Biceps', 'back-biceps'),
+  ...superset('Chest + Triceps', 'chest-triceps'),
+  ...superset('Shoulders + Arms', 'shoulders-arms'),
+  ...superset('Legs + Core', 'legs-core'),
+  ...fullBodyDays(),
+  splitDay('gym-splits-upper-a', 'Upper A'),
+  splitDay('gym-splits-lower-a', 'Lower A'),
+  splitDay('gym-splits-upper-b', 'Upper B'),
+  splitDay('gym-splits-lower-b', 'Lower B'),
+  splitDay('gym-splits-push', 'Push'),
+  splitDay('gym-splits-pull', 'Pull'),
+  splitDay('gym-splits-legs', 'Legs'),
+  splitDay('gym-splits-power-upper', 'Power upper'),
+  splitDay('gym-splits-power-lower', 'Power lower'),
+  splitDay('gym-splits-size-upper', 'Size upper'),
+  splitDay('gym-splits-size-lower', 'Size lower'),
+  splitDay('gym-splits-strength-conditioning', 'Strength + conditioning'),
   ...coming('cal-pull', [
     ['First pull-up', 'Beginner'],
     ['Pull-up volume', 'Intermediate'],
@@ -794,16 +842,79 @@ export const catalogFlows: CatalogFlow[] = [
   },
 ];
 
-const backAndBiceps = catalogFlows.find(flow => flow.id === 'gym-supersets-back-biceps-superset');
-if (backAndBiceps) backAndBiceps.flowId = 'gym-back-biceps';
+// Live is not stored by hand. A catalogue flow that points at a gym flow is live exactly when that flow has exercises.
+for (const flow of catalogFlows) {
+  if (flow.tileId.startsWith('gym-')) flow.goals = goalsForCatalogFlow(flow);
+  if (!flow.flowId || !gymFlowById(flow.flowId)) continue;
+  flow.status = gymFlowIsLive(flow.flowId) ? 'live' : 'coming-soon';
+}
 
 for (const flow of catalogFlows) {
   const rank = levelOrder.indexOf(flow.level);
-  const step = catalogFlows.find(
+  const candidates = catalogFlows.filter(
     item => item.tileId === flow.tileId && levelOrder.indexOf(item.level) === rank + 1,
   );
+  const tagged = flow.tags.length
+    ? candidates.find(item => item.tags.length === flow.tags.length && flow.tags.every(tag => item.tags.includes(tag)))
+    : undefined;
+  const titled = candidates.find(item => item.title === flow.title);
+  const step = tagged ?? (candidates.length === 1 ? candidates[0] : titled) ?? candidates[0];
   if (step) flow.next = [step.id];
 }
+
+/**
+ * Coming-soon cards keep the level. A live gym flow also shows its length and how many
+ * exercises it has. Length is sets × (45 s + rest) + 6 min, from the gym catalogue.
+ * Pass the member's items when a priority finisher (or a removal) changes the list.
+ */
+export function catalogFlowLine(flow: CatalogFlow, items?: Pick<GymFlowItem, 'exerciseId' | 'sets' | 'restSeconds'>[]) {
+  if (flow.status !== 'live' || !flow.flowId) return flow.level;
+  const gym = gymFlowById(flow.flowId);
+  if (!gym || gym.items.length === 0) return flow.level;
+  const shown = items?.length ? items : gym.items;
+  const count = shown.length;
+  return `${flow.level} · ${gymEstimatedMinutes({ items: shown })} min · ${count} ${count === 1 ? 'exercise' : 'exercises'}`;
+}
+
+/** A split is several days. The tile shows one card per programme, and each day is its own flow. */
+export type CatalogProgramme = {
+  id: string;
+  title: string;
+  tileId: string;
+  level: CatalogLevel;
+  days: string[];
+};
+
+export const catalogProgrammes: CatalogProgramme[] = [
+  {
+    id: 'split-upper-lower',
+    title: 'Upper/Lower 4-day',
+    tileId: 'gym-splits',
+    level: 'Intermediate',
+    days: ['gym-splits-upper-a', 'gym-splits-lower-a', 'gym-splits-upper-b', 'gym-splits-lower-b'],
+  },
+  {
+    id: 'split-push-pull-legs',
+    title: 'Push/Pull/Legs',
+    tileId: 'gym-splits',
+    level: 'Intermediate',
+    days: ['gym-splits-push', 'gym-splits-pull', 'gym-splits-legs'],
+  },
+  {
+    id: 'split-power-size',
+    title: 'Power + size',
+    tileId: 'gym-splits',
+    level: 'Intermediate',
+    days: ['gym-splits-power-upper', 'gym-splits-power-lower', 'gym-splits-size-upper', 'gym-splits-size-lower'],
+  },
+  {
+    id: 'split-strength-conditioning',
+    title: 'Strength + conditioning',
+    tileId: 'gym-splits',
+    level: 'Intermediate',
+    days: ['gym-splits-strength-conditioning'],
+  },
+];
 
 export function sectionsWithTiles() {
   return catalogSections.map(section => ({
@@ -822,6 +933,10 @@ export function tilesInSection(id: string) {
 
 export function flowsInTile(id: string) {
   return catalogFlows.filter(item => item.tileId === id);
+}
+
+export function programmesInTile(id: string) {
+  return catalogProgrammes.filter(item => item.tileId === id);
 }
 
 export function catalogFlow(id: string) {

@@ -75,7 +75,7 @@ test('the back and biceps movements exist', () => {
   for (const name of required) assert.ok(gymExercises.some(item => item.name === name), name);
   for (const name of catalogNames) assert.ok(gymExercises.some(item => item.name === name), name);
   const flow = gymFlowById('gym-back-biceps');
-  assert.equal(flow?.items.length, 7);
+  assert.equal(flow?.items.length, 6);
   for (const entry of flow?.items ?? []) assert.ok(exercise(entry.exerciseId), entry.exerciseId);
   assert.equal(exercise('missing'), undefined);
 });

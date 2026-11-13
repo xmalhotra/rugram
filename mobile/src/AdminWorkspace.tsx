@@ -4,7 +4,7 @@ import { Alert, View } from 'react-native';
 import { Text } from './design/Text';
 import { api } from './api';
 import { Badge, Button, Card, Chip, Choice, Field, Heading, Sheet } from './design/components';
-import { useTheme } from './design/theme';
+import { space, useTheme } from './design/theme';
 import { reviewCodes } from '../../shared/moderation';
 import { useToast } from './design/states';
 import { eventInterests } from '../../shared/event-interests';
@@ -78,8 +78,8 @@ export function AdminWorkspace({
   const [activity, setActivity] = useState('All activities');
   const [stats, setStats] = useState<ItemAnalytics | null>(null);
   const [history, setHistory] = useState<ContentAudit[]>([]);
-  const copy = { color: C.muted, fontSize: 16, lineHeight: 24 } as const;
-  const title = { color: C.text, fontSize: 21, fontWeight: '600' } as const;
+  const copy = { color: C.muted } as const;
+  const title = { color: C.text } as const;
   async function load(offset = 0) {
     if (!['Content', 'People', 'Events'].includes(section)) return;
     setBusy(true);
@@ -462,7 +462,7 @@ export function AdminWorkspace({
                     }
                   : {};
   return (
-    <View style={{ gap: 16 }}>
+    <View style={{ gap: space.md }}>
       <Heading
         eyebrow="ADMIN WORKSPACE"
         title="Manage the app."
@@ -493,8 +493,8 @@ export function AdminWorkspace({
       {section === 'Simulation' && (
         <>
           <Card>
-            <Text style={title}>Try the complete journey</Text>
-            <Text style={copy}>
+            <Text variant="section" style={title}>Try the complete journey</Text>
+            <Text variant="callout" style={copy}>
               Creates clearly labelled fictional Picks, a focus/flow, 12 free events inside the next
               year and four mock-phone accounts. It tests creator approval, guest privacy,
               cancellation, stories and comparisons. It does not book Luma tickets, create real
@@ -506,7 +506,7 @@ export function AdminWorkspace({
               onPress={() =>
                 Alert.alert(
                   'Add simulation examples?',
-                  'This adds clearly labelled DEMO records and test accounts to this local demo. Existing real catalog entries and your own routine are not changed.',
+                  'This adds clearly labelled DEMO records and test accounts to this local demo. Existing real catalog entries and your own Daily flow are not changed.',
                   [
                     { text: 'Cancel', style: 'cancel' },
                     {
@@ -526,19 +526,19 @@ export function AdminWorkspace({
               </Badge>
               {simulation.checks.map(check => (
                 <Card key={check}>
-                  <Text style={copy}>Passed · {check}</Text>
+                  <Text variant="callout" style={copy}>Passed · {check}</Text>
                 </Card>
               ))}
-              <Text style={title}>Test with these mock OTP accounts</Text>
+              <Text variant="section" style={title}>Test with these mock OTP accounts</Text>
               {simulation.accounts.map(account => (
                 <Card key={account.phone}>
-                  <Text style={title}>{account.name}</Text>
+                  <Text variant="section" style={title}>{account.name}</Text>
                   <Badge>
                     {account.role} · {account.phone}
                   </Badge>
                 </Card>
               ))}
-              <Text style={copy}>
+              <Text variant="callout" style={copy}>
                 Log out, enter a test phone, and use the code in the Mock SMS card. Your normal
                 admin account can review everything in Content → Events → Guests.
               </Text>
@@ -552,7 +552,7 @@ export function AdminWorkspace({
         <TrainingAdmin />
       ) : section === 'Overview' ? (
         <>
-          <Text style={title}>Last 30 days</Text>
+          <Text variant="section" style={title}>Last 30 days</Text>
           {[
             ['Active users', data.analytics?.activeUsers],
             ['Recorded actions', data.analytics?.actions],
@@ -560,11 +560,11 @@ export function AdminWorkspace({
             ['Product saves', data.analytics?.saves],
           ].map(([label, value]) => (
             <Card key={String(label)}>
-              <Text style={title}>{value ?? 0}</Text>
-              <Text style={copy}>{label}</Text>
+              <Text variant="section" style={title}>{value ?? 0}</Text>
+              <Text variant="callout" style={copy}>{label}</Text>
             </Card>
           ))}
-          <Text style={copy}>
+          <Text variant="callout" style={copy}>
             Open an item in Content → Analytics for its own actions and daily breakdown. No inferred
             purchases, attendance or outcomes.
           </Text>
@@ -636,9 +636,9 @@ export function AdminWorkspace({
                     {item.pending ? 'pending review' : item.status}
                     {item.hasDraft ? ' · unpublished changes' : ''} · revision {item.version}
                   </Badge>
-                  <Text style={title}>{item.title}</Text>
+                  <Text variant="section" style={title}>{item.title}</Text>
                   {item.pending && (
-                    <Text style={copy}>
+                    <Text variant="callout" style={copy}>
                       {fieldLabel(item.kind)} from {item.submittedByName ?? 'an unknown creator'}
                       {item.submittedAt ? ` · ${waiting(item.submittedAt)}` : ''}
                     </Text>
@@ -677,7 +677,7 @@ export function AdminWorkspace({
           )}
           {section === 'People' && (
             <>
-              <Text style={copy}>
+              <Text variant="callout" style={copy}>
                 Sorted by username, 50 at a time. Suspension blocks sign-in; it does not delete a
                 person’s history. Role and suspension changes need a reason and are recorded. Your
                 own admin access is protected.
@@ -688,8 +688,8 @@ export function AdminWorkspace({
                     {user.role === 'member' ? 'user' : user.role} ·{' '}
                     {user.disabled ? 'suspended' : 'active'}
                   </Badge>
-                  <Text style={title}>{user.name}</Text>
-                  <Text style={copy}>@{user.handle}</Text>
+                  <Text variant="section" style={title}>{user.name}</Text>
+                  <Text variant="callout" style={copy}>@{user.handle}</Text>
                   <Button
                     title="Edit profile & permissions"
                     secondary
@@ -711,7 +711,7 @@ export function AdminWorkspace({
       )}
       {error && !selected && !person && (
         <Card>
-          <Text accessibilityRole="alert" style={{ ...copy, color: C.danger }}>
+          <Text accessibilityRole="alert" variant="callout" style={{ color: C.danger }}>
             {error}
           </Text>
         </Card>
@@ -736,7 +736,7 @@ export function AdminWorkspace({
           </Badge>
           {view === 'Edit' && (
             <>
-              <Text style={copy}>
+              <Text variant="callout" style={copy}>
                 Save drafts privately. Publish only after checking claims and source links. Stable
                 references preserve existing links and history.
               </Text>
@@ -824,7 +824,7 @@ export function AdminWorkspace({
           )}
           {view === 'Preview' && (
             <>
-              <Text style={copy}>
+              <Text variant="callout" style={copy}>
                 Field preview of your current draft—not a live user screen. Nothing changes publicly
                 until published.
               </Text>
@@ -867,7 +867,7 @@ export function AdminWorkspace({
               />
               {stats && (
                 <>
-                  <Text style={title}>
+                  <Text variant="section" style={title}>
                     {stats.actions} actions · {stats.uniqueUsers} distinct accounts
                   </Text>
                   {Object.entries(stats.byAction).map(([action, count]) => (
@@ -875,16 +875,16 @@ export function AdminWorkspace({
                       {action.replaceAll('_', ' ')} · {count}
                     </Badge>
                   ))}
-                  <Text style={title}>Daily activity · India time</Text>
+                  <Text variant="section" style={title}>Daily activity · India time</Text>
                   {stats.daily.map(day => (
                     <Text key={day.date} style={copy}>
                       {day.date} · {day.count} actions
                     </Text>
                   ))}
-                  <Text style={copy}>{stats.note}</Text>
+                  <Text variant="callout" style={copy}>{stats.note}</Text>
                 </>
               )}
-              {!stats && !busy && <Text style={copy}>No item analytics loaded yet.</Text>}
+              {!stats && !busy && <Text variant="callout" style={copy}>No item analytics loaded yet.</Text>}
             </>
           )}
           {view === 'Guests' && (
@@ -903,18 +903,18 @@ export function AdminWorkspace({
                 onPress={() => void details()}
               />
               {history.length === 0 && (
-                <Text style={copy}>No administrative revisions recorded yet.</Text>
+                <Text variant="callout" style={copy}>No administrative revisions recorded yet.</Text>
               )}
               {history.map(item => (
                 <Card key={item.id}>
                   <Badge>
                     {item.action} · revision {item.version}
                   </Badge>
-                  <Text style={copy}>
+                  <Text variant="callout" style={copy}>
                     {formatEventTime(new Date(item.at))} · {item.actorName ?? `admin ${item.actor}`}
                   </Text>
                   {typeof item.data?.reviewNote === 'string' && item.action === 'archive' && (
-                    <Text style={copy}>Reason: {item.data.reviewNote}</Text>
+                    <Text variant="callout" style={copy}>Reason: {item.data.reviewNote}</Text>
                   )}
                   <Button
                     title="Restore this revision as a draft"
@@ -927,7 +927,7 @@ export function AdminWorkspace({
             </>
           )}
           {error && (
-            <Text accessibilityRole="alert" style={{ ...copy, color: C.danger }}>
+            <Text accessibilityRole="alert" variant="callout" style={{ color: C.danger }}>
               {error}
             </Text>
           )}
@@ -943,7 +943,7 @@ export function AdminWorkspace({
               setDirty(true);
             }}
           />
-          <Text style={copy}>
+          <Text variant="callout" style={copy}>
             Member means the ordinary user role. Creator can submit for review. Admin can manage the
             app. Never grant admin access without verifying the person.
           </Text>
@@ -962,24 +962,24 @@ export function AdminWorkspace({
             onPress={savePerson}
           />
           {error && (
-            <Text accessibilityRole="alert" style={{ ...copy, color: C.danger }}>
+            <Text accessibilityRole="alert" variant="callout" style={{ color: C.danger }}>
               {error}
             </Text>
           )}
-          <Text style={title}>Account history</Text>
+          <Text variant="section" style={title}>Account history</Text>
           {personHistory.length === 0 && (
-            <Text style={copy}>No recorded account changes yet.</Text>
+            <Text variant="callout" style={copy}>No recorded account changes yet.</Text>
           )}
           {personHistory.map(entry => (
             <Card key={entry.id}>
               <Badge>{accountChangeSummary(entry)}</Badge>
-              <Text style={copy}>
+              <Text variant="callout" style={copy}>
                 {formatEventTime(new Date(entry.at))} · {entry.actorName ?? 'a removed admin'}
                 {entry.sessionsRevoked
                   ? ` · ${entry.sessionsRevoked} session${entry.sessionsRevoked === 1 ? '' : 's'} signed out`
                   : ''}
               </Text>
-              {entry.reason && <Text style={copy}>Reason: {entry.reason}</Text>}
+              {entry.reason && <Text variant="callout" style={copy}>Reason: {entry.reason}</Text>}
             </Card>
           ))}
         </Sheet>

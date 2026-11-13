@@ -15,6 +15,7 @@ import { getItem } from './catalog';
 import { trackMobile } from './analytics';
 import { state, initialProfile, sqlClient } from './state';
 import { completionDay } from '../../../shared/completion-input';
+import { purposes } from '../../../shared/purposes';
 
 export async function getProfile(user: PublicUser): Promise<MobileProfile> {
   if (isDemoMode()) return structuredClone((state.profiles[user.id] ??= initialProfile()));
@@ -34,7 +35,7 @@ export async function editAppearance(user: PublicUser, preference: AppearancePre
 }
 export async function editProfile(
   user: PublicUser,
-  action: 'city' | 'focus' | 'flow' | 'save' | 'complete' | 'equipment' | 'save-event',
+  action: 'city' | 'focus' | 'purpose' | 'flow' | 'save' | 'complete' | 'equipment' | 'save-event',
   id: string,
   enabled = true,
   timeZone = 'Asia/Kolkata',
@@ -120,6 +121,27 @@ export async function editProfile(
           await sqlClient()`UPDATE mobile_profiles SET data=jsonb_set(data,'{focusId}',${JSON.stringify(id)}::jsonb),updated_at=now() WHERE user_id=${user.id} AND data->>'focusId' IS DISTINCT FROM ${id} RETURNING user_id`
         ).length > 0;
     if (changed) await trackMobile(user, 'focus_selected', { kind: 'focus', id });
+    return;
+  }
+  if (action === 'purpose') {
+    const purpose = purposes.find(item => item.id === id);
+    if (!purpose) throw new Error('Purpose not available.');
+    if (!dynamic.focus.some(option => option.id === purpose.focusId)) throw new Error('Focus not available.');
+    const started = new Date().toISOString().slice(0, 10);
+    let changed = false;
+    if (isDemoMode()) {
+      const profile = state.profiles[user.id];
+      const nextStarted = profile.purposeStartedOn ?? started;
+      changed = profile.purposeId !== purpose.id || profile.focusId !== purpose.focusId || profile.purposeStartedOn !== nextStarted;
+      profile.purposeId = purpose.id;
+      profile.focusId = purpose.focusId;
+      profile.purposeStartedOn = nextStarted;
+    } else {
+      const rows =
+        await sqlClient()`UPDATE mobile_profiles SET data=jsonb_set(jsonb_set(jsonb_set(data,'{purposeId}',${JSON.stringify(purpose.id)}::jsonb),'{focusId}',${JSON.stringify(purpose.focusId)}::jsonb),'{purposeStartedOn}',COALESCE(data->'purposeStartedOn',${JSON.stringify(started)}::jsonb)),updated_at=now() WHERE user_id=${user.id} AND (data->>'purposeId' IS DISTINCT FROM ${purpose.id} OR data->>'focusId' IS DISTINCT FROM ${purpose.focusId} OR data->>'purposeStartedOn' IS NULL) RETURNING user_id`;
+      changed = rows.length > 0;
+    }
+    if (changed) await trackMobile(user, 'purpose_selected', { kind: 'purpose', id: purpose.id });
     return;
   }
   if (action === 'flow' && !availableFlows.some(flow => flow.id === id))

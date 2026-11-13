@@ -3,6 +3,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 import { readExerciseSessions } from '../src/lib/exercise-log-store';
+import { changeCustomflow } from '../src/lib/customflow-store';
 import { resetTrainingMemory, trainingGet, trainingPost } from '../src/lib/training-store';
 import type { PublicUser } from '../src/lib/types';
 import { catalogTile } from '../shared/flow-catalog';
@@ -331,6 +332,37 @@ test('plyometrics for runners is seed data on the drills tile', async () => {
   assert.equal(JSON.stringify(posted).includes('30'), false);
   assert.equal(JSON.stringify(posted).includes('seconds'), false);
   assert.equal(posted[0]?.title, 'Plyometrics for Runners');
+});
+
+test('a session swap is logged on the replacement, and a ticked set can keep the original', async () => {
+  const member = user('session-log-member');
+  const source = { kind: 'qram-session' as const, id: 'lower-body', version: null };
+  await changeCustomflow(member, { action: 'reset', source });
+  await changeCustomflow(member, { action: 'swap', source, key: 'press', exerciseId: 'goblet-squat' });
+  const session = trainingCatalog().sessions.find(item => item.id === 'lower-body');
+  assert.ok(session);
+  const blocks = session.blocks.map(block => ({
+    id: block.id,
+    sets: Array.from({ length: block.sets }, (_, index) => ({ index: index + 1, values: { weight: 40, reps: 8 } })),
+  }));
+  const logged = await trainingPost(member, { action: 'log', sessionId: 'lower-body', planDate: '2026-11-03', blocks }, { demo: true });
+  assert.equal(logged.status, 200);
+  const first = await readExerciseSessions(member, ['goblet-squat', 'leg-press'], { demo: true });
+  assert.equal(first.sessions.find(item => item.exerciseId === 'goblet-squat')?.sets.length, 3);
+  assert.equal(first.sessions.find(item => item.exerciseId === 'leg-press'), undefined);
+  const kept = blocks.map(block => (block.id === 'press' ? { ...block, exerciseId: 'leg-press' } : block));
+  const again = await trainingPost(member, { action: 'log', sessionId: 'lower-body', planDate: '2026-11-04', blocks: kept }, { demo: true });
+  assert.equal(again.status, 200);
+  const second = await readExerciseSessions(member, ['goblet-squat', 'leg-press'], { demo: true });
+  assert.equal(second.sessions.find(item => item.exerciseId === 'leg-press')?.sets.length, 3);
+  assert.equal(second.sessions.find(item => item.exerciseId === 'goblet-squat')?.sets.length, 3);
+  const refused = await trainingPost(
+    member,
+    { action: 'log', sessionId: 'lower-body', planDate: '2026-11-05', blocks: blocks.map(block => (block.id === 'press' ? { ...block, exerciseId: 'air-squat' } : block)) },
+    { demo: true },
+  );
+  assert.equal(refused.status, 400);
+  await changeCustomflow(member, { action: 'reset', source });
 });
 
 test('parsers reject a missing exercise and a backwards range', () => {

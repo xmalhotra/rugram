@@ -1,22 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Image, Pressable, ScrollView, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { cardShelfIcons } from './picks-icons';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import type { CreditCard } from '../../shared/credit-cards';
 import { cardCell, formatFee, type SpendCategory } from '../../shared/card-table';
 import { cardShelves, type CardShelf } from '../../shared/card-shelves';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { SectionHeader } from './design/components';
+import { hit, opacity, radius, space, stroke, useTheme } from './design/theme';
 import { usePaneState } from './pane-state';
 import { useRootListInset } from './RootList';
 import { CatalogBar } from './FlowCatalogTile';
 import { CardComparisonTable } from './CardComparisonTable';
 
-const gap = 10;
-const gridGap = 12;
+const gap = space.ms;
+const gridGap = space.ms;
 const railWidth = 88;
 /** The space App leaves under the glass top bar, part of the list inset. */
-const rootListGap = 12;
+const rootListGap = space.ms;
 
 type Glyph = 'groceries' | 'food' | 'shopping' | 'fuel' | 'travel' | 'movies' | 'wallet' | 'card';
 
@@ -104,11 +105,11 @@ function CardFace({ card, width }: { card: CreditCard; width: number }) {
     );
   }
   return (
-    <View style={{ flex: 1, padding: 10, justifyContent: 'space-between' }}>
-      <Text numberOfLines={1} style={{ color: C.muted, fontSize: 11 }}>
+    <View style={{ flex: 1, padding: space.ms, justifyContent: 'space-between' }}>
+      <Text numberOfLines={1} variant="caption" style={{ color: C.muted }}>
         {card.issuer}
       </Text>
-      <Text numberOfLines={2} style={{ color: C.text, fontSize: 13, fontWeight: '600' }}>
+      <Text numberOfLines={2} variant="footnote" style={{ color: C.text, fontWeight: '600' }}>
         {card.name}
       </Text>
     </View>
@@ -184,12 +185,10 @@ function ShelfHome({
       onScroll={event => {
         if (!restore.current) setOffset(event.nativeEvent.contentOffset.y);
       }}
-      contentContainerStyle={{ paddingHorizontal: 16, paddingTop: inset, paddingBottom: 128, gap: 24 }}
+      contentContainerStyle={{ paddingHorizontal: space.md, paddingTop: inset, paddingBottom: 128, gap: space.xl }}
     >
-      <View style={{ gap: 12 }}>
-        <Text accessibilityRole="header" style={{ color: C.text, fontSize: 22, fontWeight: '700' }}>
-          Credit cards
-        </Text>
+      <View style={{ gap: space.ms }}>
+        <SectionHeader title="Credit cards" />
         <View
           onLayout={event => setWidth(event.nativeEvent.layout.width)}
           style={{ flexDirection: 'row', flexWrap: 'wrap', gap }}
@@ -201,13 +200,13 @@ function ShelfHome({
                 accessibilityRole="button"
                 accessibilityLabel={shelf.title}
                 onPress={() => onOpen(shelf.id)}
-                style={{ width: column, gap: 6 }}
+                style={{ width: column, gap: space.sm }}
               >
                 <View
                   style={{
                     width: '100%',
                     aspectRatio: 1,
-                    borderRadius: 14,
+                    borderRadius: radius.control,
                     overflow: 'hidden',
                     backgroundColor: C.card,
                     alignItems: 'center',
@@ -227,11 +226,9 @@ function ShelfHome({
                 </View>
                 <Text
                   numberOfLines={2}
+                  variant="footnote"
                   style={{
                     color: C.text,
-                    fontSize: 13,
-                    fontWeight: '500',
-                    lineHeight: 17,
                     textAlign: 'center',
                   }}
                 >
@@ -245,9 +242,9 @@ function ShelfHome({
         accessibilityRole="button"
         accessibilityLabel="Compare all cards"
         onPress={onCompare}
-        style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', opacity: pressed ? 0.7 : 1 })}
+        style={({ pressed }) => ({ minHeight: hit, justifyContent: 'center', opacity: pressed ? opacity.pressed : 1 })}
       >
-        <Text style={{ color: C.muted, fontSize: 15 }}>Compare all cards ›</Text>
+        <Text variant="subhead" style={{ color: C.muted }}>Compare all cards ›</Text>
       </Pressable>
     </ScrollView>
   );
@@ -272,9 +269,9 @@ function ShelfPage({
   return (
     <View style={{ flex: 1, paddingTop: Math.max(0, inset - rootListGap) }}>
       <CatalogBar title="Credit cards" onBack={onBack} />
-      <View style={{ flex: 1, flexDirection: 'row', borderTopWidth: 0.5, borderColor: C.line }}>
+      <View style={{ flex: 1, flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, borderColor: C.line }}>
         <ScrollView
-          style={{ width: railWidth, flexGrow: 0, borderRightWidth: 0.5, borderColor: C.line }}
+          style={{ width: railWidth, flexGrow: 0, borderRightWidth: StyleSheet.hairlineWidth, borderColor: C.line }}
           contentContainerStyle={{ paddingBottom: 128 }}
           showsVerticalScrollIndicator={false}
         >
@@ -287,7 +284,7 @@ function ShelfPage({
                 accessibilityLabel={item.title}
                 accessibilityState={{ selected }}
                 onPress={() => onShelf(item.id)}
-                style={{ alignItems: 'center', gap: 6, paddingVertical: 10, paddingHorizontal: 6 }}
+                style={{ alignItems: 'center', gap: space.sm, paddingVertical: space.ms, paddingHorizontal: space.sm }}
               >
                 {cardShelfIcons[item.id] ? (
                   <Image
@@ -297,8 +294,8 @@ function ShelfPage({
                     style={{
                       width: 48,
                       height: 48,
-                      borderRadius: 10,
-                      borderWidth: selected ? 1.5 : 0,
+                      borderRadius: radius.small,
+                      borderWidth: selected ? stroke.line : 0,
                       borderColor: C.lime,
                     }}
                   />
@@ -307,10 +304,10 @@ function ShelfPage({
                 )}
                 <Text
                   numberOfLines={2}
+                  variant="caption"
                   style={{
                     color: selected ? C.lime : C.muted,
-                    fontSize: 12,
-                    fontWeight: selected ? '700' : '500',
+                    fontWeight: selected ? '600' : '400',
                     textAlign: 'center',
                   }}
                 >
@@ -353,7 +350,7 @@ function CardGrid({
   const [width, setWidth] = useState(0);
   const cell = width > 0 ? (width - gridGap) / 2 : 0;
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 12, paddingBottom: 128 }}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: space.ms, paddingBottom: 128 }}>
       <View
         onLayout={event => setWidth(event.nativeEvent.layout.width)}
         style={{ flexDirection: 'row', flexWrap: 'wrap', gap: gridGap }}
@@ -367,13 +364,13 @@ function CardGrid({
                 accessibilityRole="button"
                 accessibilityLabel={`Open ${card.name}`}
                 onPress={() => onCard(card)}
-                style={({ pressed }) => ({ width: cell, gap: 6, opacity: pressed ? 0.75 : 1 })}
+                style={({ pressed }) => ({ width: cell, gap: space.sm, opacity: pressed ? opacity.pressed : 1 })}
               >
                 <View
                   style={{
                     width: '100%',
                     aspectRatio: 1.586,
-                    borderRadius: 10,
+                    borderRadius: radius.small,
                     overflow: 'hidden',
                     backgroundColor: C.card,
                   }}
@@ -382,13 +379,14 @@ function CardGrid({
                 </View>
                 <Text
                   numberOfLines={2}
-                  style={{ color: C.text, fontSize: 15, fontWeight: '600', lineHeight: 20 }}
+                  variant="subhead"
+                  style={{ color: C.text, fontWeight: '600' }}
                 >
                   {card.name}
                 </Text>
-                <Text style={{ color: C.muted, fontSize: 13 }}>{formatFee(card.annualFee)} a year</Text>
+                <Text variant="footnote" style={{ color: C.muted }}>{formatFee(card.annualFee)} a year</Text>
                 {benefit ? (
-                  <Text style={{ color: C.lime, fontSize: 13 }}>{benefit.label}</Text>
+                  <Text variant="footnote" style={{ color: C.lime }}>{benefit.label}</Text>
                 ) : null}
               </Pressable>
             );
@@ -413,7 +411,7 @@ function ComparePage({
   return (
     <View style={{ flex: 1, paddingTop: Math.max(0, inset - rootListGap) }}>
       <CatalogBar title="All cards" onBack={onBack} />
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: 128 }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: space.md, paddingBottom: 128 }}>
         <CardComparisonTable cards={cards} onCard={onCard} onLink={onLink} />
       </ScrollView>
     </View>

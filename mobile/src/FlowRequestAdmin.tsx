@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 import { Text } from './design/Text';
-import { Card } from './design/components';
-import { useTheme } from './design/theme';
+import { Button, Card, SectionHeader, Skeleton } from './design/components';
+import { space, useTheme } from './design/theme';
 import { useToast } from './design/states';
 import { flowInterestAdmin, notifyCatalogFlow, type FlowInterestAdmin } from './flow-interest';
 
@@ -48,37 +48,27 @@ export function FlowRequestAdmin() {
         {error}
       </Text>
     );
-  if (!queue) return <Text style={{ color: C.muted }}>Loading flow requests…</Text>;
+  if (!queue) return <Skeleton shape="block" />;
   return (
-    <View style={{ gap: 16 }}>
-      <Text accessibilityRole="header" style={{ color: C.text, fontSize: 21, fontWeight: '600' }}>
-        Flow requests
-      </Text>
+    <View style={{ gap: space.md }}>
+      <SectionHeader title="Flow requests" />
       {queue.flows.length ? (
         queue.flows.map(flow => (
           <Card key={flow.catalogFlowId}>
-            <Text style={{ color: C.text, fontSize: 17, fontWeight: '600' }}>{flow.title}</Text>
+            <Text variant="headline" style={{ color: C.text }}>
+              {flow.title}
+            </Text>
             <Text style={{ color: C.muted }}>
               {flow.count} {flow.count === 1 ? 'request' : 'requests'}
             </Text>
-            <Pressable
-              accessibilityRole="button"
+            <Button
+              title="Notify requesters"
               accessibilityLabel={`Notify requesters for ${flow.title}`}
-              accessibilityState={{ disabled: busyId === flow.catalogFlowId }}
               disabled={busyId === flow.catalogFlowId}
+              fit
+              size="regular"
               onPress={() => void notify(flow.catalogFlowId)}
-              style={{
-                alignSelf: 'flex-start',
-                minHeight: 40,
-                justifyContent: 'center',
-                paddingHorizontal: 14,
-                borderRadius: 18,
-                backgroundColor: C.lime,
-                opacity: busyId === flow.catalogFlowId ? 0.5 : 1,
-              }}
-            >
-              <Text style={{ color: C.onAccent, fontWeight: '700' }}>Notify requesters</Text>
-            </Pressable>
+            />
           </Card>
         ))
       ) : (

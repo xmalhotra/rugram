@@ -137,7 +137,7 @@ test('detail sheets keep back and close navigation', () => {
   assert.doesNotMatch(app, /!isFitnessVisualFlow\(selectedFlow.id\)/);
   assert.match(app, /navigation=\{selectedFlow \? 'back' : 'close'\}/);
   const sheet = readFileSync('mobile/src/design/components.shared.tsx', 'utf8');
-  assert.match(sheet, /accessibilityLabel="Go back"/);
+  assert.match(sheet, /label="Go back"/);
   assert.match(sheet.replaceAll(/\s/g, ''), /navigation==='back'/);
   assert.match(sheet.replaceAll(/\s/g, ''), /navigation==='close'/);
 });

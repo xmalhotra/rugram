@@ -1,476 +1,445 @@
-import { useState } from 'react';
-import { Pressable, View } from 'react-native';
-import { router } from 'expo-router';
-import { Text } from './design/Text';
+import { useEffect, useState } from 'react';
+import { Pressable, View, useWindowDimensions } from 'react-native';
+import { elapsedSeconds } from '../../shared/flow-run';
+import { addedFlows } from '../../shared/home-feed';
+import { flowCreationEnabled, catalogFlows } from '../../shared/flow-catalog';
 import type { HabitFlow, MobilePayload } from '../../shared/mobile';
-import { addedFlows, homeFlowSummary } from '../../shared/home-feed';
-import { flowCreationEnabled } from '../../shared/flow-catalog';
+import type { PersonalFlow } from '../../shared/personal-flows';
+import { areaPicture, pictureHeadline } from '../../shared/body-flow';
+import { coverageForTarget, type CoverageSource } from '../../shared/body-flow-actions';
+import { dailyCount, addDailyItem, tickDailyItem } from '../../shared/daily-checks';
+import { helpsLine, itemForCheck } from '../../shared/daily-flow-item';
+import { dailyFlowItems } from '../../shared/daily-flow-item-data';
+import { calendarWeekday, addCalendarDays } from '../../shared/flow-series';
+import { localDate } from '../../shared/flow-habits';
+import { gymFlowById } from '../../shared/gym-flows';
+import { focusLevelFor } from '../../shared/member-level';
+import { dailyFlowOn, followedMapFlow, plannedExerciseIds, type MapFlow } from '../../shared/map-flow';
+import type { MuscleArea } from '../../shared/muscle-map';
+import { memberPurposeId } from '../../shared/purposes';
+import { starterWeeklyLine, suggestStarter } from '../../shared/starter-flow';
+import {
+  chooseToday,
+  type TodayEntry,
+  type TodayFacts,
+  type TodaySuggestion,
+} from '../../shared/today';
+import { BodyPicture } from './BodyMap';
+import { BodyFlowSheet } from './BodyFlow';
+import { ColdStart, useRoutinePresence } from './ColdStart';
 import { liveFlowIds } from './catalog-live';
-import { Sheet } from './design/components';
-import { useTheme } from './design/theme';
-import { routineCheckpoints, type RoutineCheckpoint } from '../../shared/routines';
-import { FlowIllustration } from './FlowIllustration';
-import { FlowMindMap, type FlowMindBranchView } from './FlowMindMap';
-import { flowMindMap } from '../../shared/flow-mind-map';
-import { flowCategoryGroups } from '../../shared/flow-categories';
-import { focusOptions } from '../../shared/focus';
-import { resolvePersonalFlow, type PersonalFlow } from '../../shared/personal-flows';
-import {
-  doneToday,
-  flowWeight,
-  isStale,
-  localDate,
-  onStreak,
-} from '../../shared/flow-habits';
-import {
-  dailyCount,
-  dailySections,
-  dailySlot,
-  moveDailyItem,
-  removeDailyItem,
-  setDailyTimes,
-  tickDailyItem,
-} from '../../shared/daily-checks';
-import { checkpointRoute, emptyRoutineRoute, sectionRoute, type RoutineRoute } from './routine-route';
-import { useFlowHabits } from './flow-habits';
 import { useDailyChecks } from './daily-checks';
+import { Button, Card, EmptyState, ReasonLine, SectionHeader, Skeleton } from './design/components';
+import { Text } from './design/Text';
+import { hit, opacity, space, useTheme } from './design/theme';
+import { describedCatalogFlow, useFlowMember } from './flow-member';
+import { useFlowSeries } from './flow-series';
+import { stopFollow, useFlowFollows } from './follow';
+import { FocusReviewCard } from './FocusReview';
+import { MapFlowShelf } from './MapFlowShelf';
+import { ShareSection } from './ShareFlow';
+import { followedPlanAreas, useMapFlows } from './map-flows';
 import { usePaneState } from './pane-state';
-import { TrainingWeek } from './TrainingWeek';
-import { useTrainingRoute } from './training-route';
+import { usePersonalMetrics } from './personal-metrics';
+import { SeriesSheet } from './SeriesSheet';
+import { useActiveRun } from './active-run';
+import { useBodyFlow } from './body-flow';
+import { useTrainingSessionPane } from './training-route';
 
-type YoursMode = 'map' | 'daily';
-type RunTarget = { kind: 'flow' | 'personal'; id: string; title: string };
-
-export function useYoursMode() {
-  return usePaneState<YoursMode>('yoursMode', 'map', 'account');
+function clock(seconds: number) {
+  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 }
 
-/** The two sides of Yours, held above the tab bar. */
-export function YoursSwitch() {
-  const { colors: C } = useTheme();
-  const [mode, setMode] = useYoursMode();
-  const options: { id: YoursMode; label: string }[] = [
-    { id: 'map', label: 'Flow map' },
-    { id: 'daily', label: 'Daily' },
-  ];
-  return (
-    <View
-      pointerEvents="box-none"
-      style={{ position: 'absolute', left: 0, right: 0, bottom: 92, alignItems: 'center' }}
-    >
-      <View
-        style={{
-          flexDirection: 'row',
-          gap: 4,
-          padding: 4,
-          borderRadius: 24,
-          borderWidth: 1,
-          borderColor: C.line,
-          backgroundColor: C.card,
-        }}
-      >
-        {options.map(option => {
-          const selected = mode === option.id;
-          return (
-            <Pressable
-              key={option.id}
-              accessibilityRole="button"
-              accessibilityLabel={option.label}
-              accessibilityState={{ selected }}
-              onPress={() => setMode(option.id)}
-              style={{
-                minHeight: 40,
-                minWidth: 104,
-                alignItems: 'center',
-                justifyContent: 'center',
-                paddingHorizontal: 16,
-                borderRadius: 20,
-                backgroundColor: selected ? C.lime : 'transparent',
-              }}
-            >
-              <Text style={{ color: selected ? C.onAccent : C.text, fontSize: 15, fontWeight: '600' }}>
-                {option.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
-  );
+function useNow(active: boolean) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!active) return undefined;
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [active]);
+  return now;
 }
 
-function StartButton({ label, onPress }: { label: string; onPress: () => void }) {
-  const { colors: C } = useTheme();
-  return (
-    <View style={{ alignItems: 'center', paddingVertical: 160 }}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={label}
-        onPress={onPress}
-        style={({ pressed }) => ({
-          minHeight: 56,
-          minWidth: 180,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: 28,
-          backgroundColor: C.lime,
-          opacity: pressed ? 0.75 : 1,
-        })}
-      >
-        <Text style={{ color: C.onAccent, fontSize: 18, fontWeight: '700' }}>Start</Text>
-      </Pressable>
-    </View>
-  );
+function flowTitle(id: string, library: readonly HabitFlow[], fallback: string) {
+  return gymFlowById(id)?.title ?? library.find(item => item.id === id)?.title ?? fallback;
 }
 
-function AddMore({ label, onPress }: { label: string; onPress: () => void }) {
-  const { colors: C } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        minHeight: 44,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 14,
-        borderWidth: 1,
-        borderColor: C.line,
-        opacity: pressed ? 0.7 : 1,
-      })}
-    >
-      <Text style={{ color: C.text, fontSize: 15, fontWeight: '500' }}>{label}</Text>
-    </Pressable>
-  );
-}
-
-function FlowMapTab({
-  data,
-  onExplore,
-  onFlow,
-  onPersonalFlow,
-  onStart,
-}: {
-  data: MobilePayload;
-  onExplore: () => void;
-  onFlow: (flow: HabitFlow) => void;
-  onPersonalFlow: (flow: PersonalFlow) => void;
-  onStart?: (target: RunTarget) => void;
-}) {
-  const { colors: C } = useTheme();
-  const { habits } = useFlowHabits(data.user?.id);
-  const now = Date.now();
-  // Only flows live in the new catalog show here; the old library stays out of sight.
-  const flows = addedFlows(data).filter(flow => liveFlowIds.has(flow.id));
-  const personalFlows = flowCreationEnabled
-    ? [...(data.profile.personalFlows ?? [])].reverse()
-    : [];
-  if (!flows.length && !personalFlows.length) return <StartButton label="Start" onPress={onExplore} />;
-  const focuses =
-    data.library?.focus ?? focusOptions.map(item => ({ ...item, flowIds: [...item.flowIds] }));
-  const groups = flowCategoryGroups(focuses, data.library?.settings.flowCategoryGroups);
-  const startAction = (target: RunTarget) => (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Start ${target.title}`}
-      onPress={() => onStart?.(target)}
-      style={{
-        minHeight: 36,
-        justifyContent: 'center',
-        paddingHorizontal: 14,
-        borderRadius: 18,
-        backgroundColor: C.lime,
-      }}
-    >
-      <Text style={{ color: C.onAccent, fontSize: 14, fontWeight: '700' }}>Start</Text>
-    </Pressable>
-  );
-  const hints = (id: string) => ({
-    weight: flowWeight(habits, id, now),
-    stale: isStale(habits, id, now),
-    streak: onStreak(habits, id, now),
-  });
-  const branches: FlowMindBranchView[] = [
-    ...(personalFlows.length
-      ? [
-          {
-            id: 'yours',
-            title: 'Made by you',
-            nodes: personalFlows.map(flow => {
-              const cover = resolvePersonalFlow(flow, data.flows).cards[0];
-              return {
-                id: flow.id,
-                title: flow.name,
-                detail: doneToday(habits, flow.id, now)
-                  ? '✓ Done today'
-                  : `${flow.cards.length} ${flow.cards.length === 1 ? 'card' : 'cards'}`,
-                onPress: () => onPersonalFlow(flow),
-                art: cover ? <FlowIllustration flow={cover} /> : null,
-                action: startAction({ kind: 'personal', id: flow.id, title: flow.name }),
-                ...hints(flow.id),
-              };
-            }),
-          },
-        ]
-      : []),
-    ...flowMindMap(flows, groups, focuses).map(branch => ({
-      id: branch.id,
-      title: branch.title,
-      nodes: branch.flowIds.flatMap(id => {
-        const flow = flows.find(item => item.id === id);
-        return flow
-          ? [
-              {
-                id: flow.id,
-                title: flow.title,
-                detail: doneToday(habits, flow.id, now) ? '✓ Done today' : homeFlowSummary(flow),
-                onPress: () => onFlow(flow),
-                art: <FlowIllustration flow={flow} />,
-                action: startAction({ kind: 'flow', id: flow.id, title: flow.title }),
-                ...hints(flow.id),
-              },
-            ]
-          : [];
-      }),
-    })),
-  ];
-  return (
-    <View style={{ gap: 16 }}>
-      <FlowMindMap branches={branches} />
-      <AddMore label="+ Add flows" onPress={onExplore} />
-    </View>
-  );
-}
-
-function DailyTab({
-  userId,
-  flows,
-  onStartFlow,
-}: {
-  userId: string | undefined;
-  flows: HabitFlow[];
-  onStartFlow: (id: string, title: string) => void;
-}) {
-  const { colors: C } = useTheme();
-  const { checks, update } = useDailyChecks(userId);
-  const [, setRoute] = usePaneState<RoutineRoute>('routineRoute', emptyRoutineRoute, 'account');
-  const [, setTraining] = useTrainingRoute();
-  const [, setFlowsTab] = usePaneState<'qram' | 'community'>('flowsTab', 'qram', 'account');
-  const [editing, setEditing] = useState(false);
-  const [opened, setOpened] = useState<string | null>(null);
-  const today = localDate(new Date());
-  const openedItem = checks.items.find(item => item.id === opened);
-  function openCatalog(next: RoutineRoute) {
-    setRoute(next);
-    setFlowsTab('qram');
-    router.push('/(tabs)/flows');
+function coverMiss(area: MuscleArea, reason: string, flow: MapFlow, library: readonly HabitFlow[]): TodaySuggestion | null {
+  const seen = new Set<string>();
+  const own: CoverageSource[] = [];
+  for (const day of flow.days) {
+    for (const ref of day.flows) {
+      if (seen.has(ref.id)) continue;
+      seen.add(ref.id);
+      const listed = plannedExerciseIds(ref);
+      const blocks = library.find(item => item.id === ref.id)?.workout?.blocks.flatMap(block => (block.exerciseId ? [block.exerciseId] : [])) ?? [];
+      const exerciseIds = listed.length ? listed : blocks;
+      if (!exerciseIds.length) continue;
+      own.push({
+        kind: ref.kind === 'session' ? 'session' : 'flow',
+        id: ref.id,
+        title: flowTitle(ref.id, library, day.name),
+        exerciseIds,
+      });
+    }
   }
-  const stepper = (label: string, change: number) => (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={() => {
-        if (!openedItem) return;
-        update(current => setDailyTimes(current, openedItem.id, openedItem.timesPerDay + change));
-      }}
-      style={{
-        width: 44,
-        height: 44,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: 22,
-        borderWidth: 1,
-        borderColor: C.line,
-      }}
-    >
-      <Text style={{ color: C.text, fontSize: 22 }}>{change > 0 ? '+' : '−'}</Text>
-    </Pressable>
-  );
-  const sections = dailySections(checks.items, editing);
-  return (
-    <View style={{ gap: 16 }}>
-      <TrainingWeek
-        flows={flows}
-        onStartFlow={onStartFlow}
-        onBrowse={() => {
-          setTraining({ page: 'plans' });
-          setFlowsTab('qram');
-          router.push('/(tabs)/flows');
-        }}
-      />
-      {!checks.items.length ? <StartButton label="Start" onPress={() => openCatalog(sectionRoute())} /> : null}
-      {checks.items.length ? <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={editing ? 'Done editing' : 'Edit'}
-          onPress={() => setEditing(current => !current)}
-          style={{ minHeight: 44, justifyContent: 'center', paddingHorizontal: 4 }}
-        >
-          <Text style={{ color: C.lime, fontSize: 16, fontWeight: '600' }}>{editing ? 'Done' : 'Edit'}</Text>
-        </Pressable>
-      </View> : null}
-      {sections.map(section => {
-        const anytime = section.checkpoint === 'anytime';
-        const label = anytime ? 'Anytime' : section.checkpoint;
-        return (
-          <View key={section.checkpoint} style={{ gap: 4 }}>
-            {anytime ? (
-              <Text style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>{label}</Text>
-            ) : (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={editing ? `Add to ${label}` : label}
-                onPress={() => openCatalog(checkpointRoute(section.checkpoint as RoutineCheckpoint))}
-                style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center' }}
-              >
-                <Text style={{ flex: 1, color: C.text, fontSize: 18, fontWeight: '700' }}>{label}</Text>
-                {editing && <Text style={{ color: C.lime, fontSize: 28, fontWeight: '600' }}>+</Text>}
-              </Pressable>
-            )}
-            {section.items.map(item => {
-              const count = dailyCount(checks, item.id, today);
-              const done = count >= item.timesPerDay;
-              return (
-                <View
-                  key={item.id}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 12,
-                    paddingVertical: 8,
-                    borderBottomWidth: 0.5,
-                    borderColor: C.line,
-                  }}
-                >
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${item.name}, options`}
-                    onPress={() => setOpened(item.id)}
-                    style={{ flex: 1, minHeight: 44, justifyContent: 'center' }}
-                  >
-                    <Text
-                      numberOfLines={1}
-                      style={{ color: done ? C.muted : C.text, fontSize: 17, fontWeight: '600' }}
-                    >
-                      {item.name}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`${item.name}, ${count} of ${item.timesPerDay} today. Tick one more`}
-                    onPress={() => update(current => tickDailyItem(current, item.id, today))}
-                    style={{ minHeight: 44, justifyContent: 'center' }}
-                  >
-                    <View style={{ flexDirection: 'row', gap: 6 }}>
-                      {Array.from({ length: item.timesPerDay }, (_, index) => (
-                        <View
-                          key={index}
-                          style={{
-                            width: 22,
-                            height: 22,
-                            borderRadius: 11,
-                            borderWidth: 1.5,
-                            borderColor: index < count ? C.lime : C.line,
-                            backgroundColor: index < count ? C.lime : 'transparent',
-                          }}
-                        />
-                      ))}
-                    </View>
-                  </Pressable>
-                </View>
-              );
-            })}
-          </View>
-        );
-      })}
-      {openedItem && (
-        <Sheet title={openedItem.name} presentation="modal" onClose={() => setOpened(null)}>
-          <View style={{ gap: 8 }}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Swap ${openedItem.name}`}
-              onPress={() => {
-                const slot = dailySlot(openedItem);
-                setOpened(null);
-                openCatalog(checkpointRoute(slot === 'anytime' ? 'Wake up' : slot, openedItem.id));
-              }}
-              style={{ minHeight: 48, justifyContent: 'center' }}
-            >
-              <Text style={{ color: C.text, fontSize: 17 }}>Swap</Text>
-            </Pressable>
-            <Text style={{ color: C.muted, fontSize: 13 }}>Move</Text>
-            {routineCheckpoints.map(checkpoint => (
-              <Pressable
-                key={checkpoint}
-                accessibilityRole="button"
-                accessibilityLabel={`Move to ${checkpoint}`}
-                onPress={() => {
-                  update(current => moveDailyItem(current, openedItem.id, checkpoint));
-                  setOpened(null);
-                }}
-                style={{ minHeight: 44, justifyContent: 'center' }}
-              >
-                <Text style={{ color: C.text, fontSize: 16 }}>{checkpoint}</Text>
-              </Pressable>
-            ))}
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 8 }}>
-              <Text style={{ flex: 1, color: C.text, fontSize: 16 }}>Times a day</Text>
-              {stepper('One fewer time a day', -1)}
-              <Text style={{ color: C.text, fontSize: 20, fontWeight: '700' }}>{openedItem.timesPerDay}</Text>
-              {stepper('One more time a day', 1)}
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`Remove ${openedItem.name}`}
-              onPress={() => {
-                update(current => removeDailyItem(current, openedItem.id));
-                setOpened(null);
-              }}
-              style={{ minHeight: 48, justifyContent: 'center' }}
-            >
-              <Text style={{ color: C.muted, fontSize: 17 }}>Remove</Text>
-            </Pressable>
-          </View>
-        </Sheet>
-      )}
-    </View>
-  );
+  const catalogue: CoverageSource[] = [];
+  for (const item of catalogFlows) {
+    const id = item.flowId;
+    if (!id || seen.has(id)) continue;
+    const exerciseIds = plannedExerciseIds({ kind: 'flow', id });
+    if (!exerciseIds.length) continue;
+    seen.add(id);
+    catalogue.push({ kind: 'flow', id, title: item.title, exerciseIds });
+  }
+  const best = coverageForTarget({ kind: 'area', id: area }, own)[0] ?? coverageForTarget({ kind: 'area', id: area }, catalogue)[0];
+  if (!best || best.kind === 'session') return best ? { id: best.id, title: best.title, reason } : null;
+  return { id: best.id, title: best.title, reason };
 }
 
-/** Yours: your flow map, and your daily check-ins. */
+/** Yours: the figure, one Today card, then the Map flow shelf. */
 export function HomeFeed({
   data,
   onExplore,
   onFlow,
-  onPersonalFlow,
   onStart,
+  onSavePurpose,
 }: {
   data: MobilePayload;
   onExplore: () => void;
   onFlow: (flow: HabitFlow) => void;
   onPersonalFlow: (flow: PersonalFlow) => void;
-  onStart?: (target: RunTarget) => void;
+  onStart?: (target: { kind: 'flow' | 'personal'; id: string; title: string; version?: number; resume?: boolean }) => void;
+  onSavePurpose?: (id: string) => Promise<boolean>;
 }) {
-  const [mode] = useYoursMode();
+  const { colors: C } = useTheme();
+  const { width } = useWindowDimensions();
+  const today = localDate(new Date());
+  const tomorrowDate = addCalendarDays(today, 1);
+  const map = useMapFlows(today);
+  const week = useBodyFlow('week');
+  const { run } = useActiveRun();
+  const now = useNow(Boolean(run));
+  const { member } = useFlowMember(data.profile.focusId);
+  const { checks, update } = useDailyChecks(data.user?.id);
+  const series = useFlowSeries(today, tomorrowDate);
+  const follows = useFlowFollows(today);
+  const trial = follows.follows.find(item => item.status === 'active');
+  const priorityOrder = usePersonalMetrics()['gym.priorities']?.areas ?? [];
+  const routine = useRoutinePresence();
+  const [coldDone, setColdDone] = usePaneState('coldStartDone', false, 'account');
+  const [bodyOpen, setBodyOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [, setSession] = useTrainingSessionPane();
+  const purposeId = memberPurposeId({ purposeId: data.profile.purposeId, demoMode: data.demoMode });
+  const followed = map.list ? followedMapFlow(map.list.flows, map.list.follows, today) : null;
+  const progress = followed ? { doneDates: followed.flow.doneDates, letGo: followed.flow.released } : null;
+  const placement = followed && progress ? dailyFlowOn(followed.flow, followed.from, progress, today) : null;
+
+  function entriesOn(date: string, day: NonNullable<typeof placement>): TodayEntry[] {
+    const flows = day.flows.map(ref => ({
+      id: ref.id,
+      kind: 'flow' as const,
+      title: flowTitle(ref.id, data.flows, day.name),
+      detail: day.name,
+      done: series.occurrences.some(row => row.date === date && row.itemId === ref.id && row.status === 'done'),
+      ...(ref.version != null ? { version: ref.version } : {}),
+    }));
+    const items = day.items.map(item => {
+      const known = itemForCheck(dailyFlowItems, item.itemId, item.name);
+      const help = known ? helpsLine(known, purposeId) : '';
+      const local = checks.items.find(
+        row => row.id === item.itemId || row.name.trim().toLowerCase() === item.name.trim().toLowerCase(),
+      );
+      const count = local ? dailyCount(checks, local.id, date) : 0;
+      const amount = known ? `${known.amount} · ${known.timing}` : item.checkpoint;
+      const dose = item.timesPerDay > 1 ? `${Math.min(count, item.timesPerDay)} of ${item.timesPerDay}` : '';
+      return {
+        id: item.itemId,
+        kind: 'item' as const,
+        title: known?.name ?? item.name,
+        detail: [amount, help, dose].filter(Boolean).join('. '),
+        done: Boolean(local) && count >= item.timesPerDay,
+      };
+    });
+    return [...flows, ...items];
+  }
+
+  const todayList = !followed ? null : placement ? entriesOn(today, placement) : [];
+  const flowsDone = (todayList ?? []).every(entry => entry.kind !== 'flow' || entry.done);
+  const tomorrowProgress = followed
+    ? {
+        doneDates: flowsDone ? [...new Set([...followed.flow.doneDates, today])] : followed.flow.doneDates,
+        letGo: followed.flow.released,
+      }
+    : null;
+  const tomorrowPlacement = followed && tomorrowProgress ? dailyFlowOn(followed.flow, followed.from, tomorrowProgress, tomorrowDate) : null;
+  const tomorrowEntries = tomorrowPlacement ? entriesOn(tomorrowDate, tomorrowPlacement) : [];
+  const tomorrow = tomorrowEntries.find(entry => entry.kind === 'flow') ?? tomorrowEntries[0] ?? null;
+  const planned = new Set(followedPlanAreas(map.list, today, week.data ? { from: week.data.from, to: week.data.to } : undefined, data.flows));
+  const started = Boolean(week.data?.dayZero);
+  const pictures = (week.data?.areas ?? []).map(area => {
+    const picture = areaPicture({
+      sets: area.sets,
+      band: area.band,
+      weeks: 1,
+      priority: started && priorityOrder.includes(area.area),
+      planned: started && planned.has(area.area),
+    });
+    return { area: area.area, state: picture.state, step: picture.step };
+  });
+  const headline = !week.data
+    ? null
+    : !started
+      ? { text: 'Finish a flow and your Body flow starts today.', area: null as MuscleArea | null }
+      : pictureHeadline(pictures, priorityOrder, 'this week');
+  const missed = headline?.area && followed ? coverMiss(headline.area, headline.text, followed.flow, data.flows) : null;
+  const described = catalogFlows.flatMap(flow => {
+    const row = describedCatalogFlow(flow);
+    return row ? [row] : [];
+  });
+  const pick = suggestStarter(described, member);
+  // Only flows live in the new catalog count. Self-made flows stay out while creating is off.
+  const liveAdded = addedFlows(data).filter(flow => liveFlowIds.has(flow.id));
+  const personalFlows = flowCreationEnabled ? (data.profile.personalFlows ?? []) : [];
+  const maybeNew =
+    Boolean(onSavePurpose) &&
+    !map.loading &&
+    !coldDone &&
+    liveAdded.length === 0 &&
+    personalFlows.length === 0 &&
+    (map.list?.flows.length ?? 0) === 0;
+  const fresh = maybeNew && routine.ready && routine.empty;
+  const starter =
+    maybeNew && !routine.ready
+      ? null
+      : pick?.flow.flowId
+        ? {
+            id: pick.flow.flowId,
+            title: pick.flow.title,
+            reason: (pick as { reason?: string }).reason || starterWeeklyLine(focusLevelFor(member.level)),
+          }
+        : null;
+  const question = fresh
+    ? {
+        id: 'opening',
+        title: 'Qram means sequence',
+        reason: 'This app gives you a sequence for your day, starting with training.',
+      }
+    : null;
+  const workout = run
+    ? {
+        title: run.title,
+        exercise: run.state.index + 1,
+        exerciseCount: Math.max(run.state.cards.length, 1),
+        timer: clock(elapsedSeconds(run.state, now)),
+      }
+    : null;
+  const waiting = !workout && map.loading && !map.list;
+  const blocked = !workout && Boolean(map.error) && !map.list;
+  const facts: TodayFacts = {
+    workout,
+    question,
+    today: todayList,
+    tomorrow,
+    missed,
+    starter,
+    doneSummary: placement ? (placement.flows.length === 0 ? `${placement.name} today` : `${placement.name} is done`) : 'Nothing scheduled today',
+  };
+  const choice = waiting || blocked ? null : chooseToday(facts);
+  const featured = choice?.rule === 'start' ? choice.entry : null;
+  const shownStarter = choice?.rule === 'starter' ? choice.starter : null;
+  const remaining = (todayList ?? []).filter(entry => !entry.done && (entry.kind !== featured?.kind || entry.id !== featured.id));
+  const outline = (followed?.flow.figure ?? []).filter(area => area.state === 'worked').map(area => area.area);
+  const figureWidth = Math.min(260, Math.max(180, width - 32));
+  const sunday = calendarWeekday(today) === 7;
+
+  function startFlow(id: string, title: string, version?: number) {
+    const ref = followed?.flow.days.flatMap(day => [...day.flows]).find(item => item.id === id);
+    if (ref?.kind === 'session') {
+      setSession({ id, date: today });
+      return;
+    }
+    onStart?.({ kind: 'flow', id, title, ...(version != null ? { version } : {}) });
+  }
+
+  function tick(entry: TodayEntry) {
+    const item = placement?.items.find(row => row.itemId === entry.id);
+    if (!item) return;
+    update(current => {
+      const existing = current.items.find(
+        row => row.id === item.itemId || row.name.trim().toLowerCase() === item.name.trim().toLowerCase(),
+      );
+      const ready = existing ? current : addDailyItem(current, item.name, item.timesPerDay, item.itemId, item.checkpoint);
+      return tickDailyItem(ready, existing?.id ?? item.itemId, today);
+    });
+  }
+
+  const figureLabel = headline ? `Body flow. ${headline.text}` : 'Body flow';
+
   return (
-    // Leaves room for the buttons held above the tab bar.
-    <View style={{ paddingBottom: 64 }}>
-      {mode === 'daily' ? (
-        <DailyTab
-          userId={data.user?.id}
-          flows={data.flows}
-          onStartFlow={(id, title) => onStart?.({ kind: 'flow', id, title })}
+    // The page leaves room for the tab bar and the run bar (useFloatingInsets in App).
+    <View style={{ gap: space.lg }}>
+      <Pressable accessibilityRole="button" accessibilityLabel={figureLabel} onPress={() => setBodyOpen(true)}>
+        <View style={{ alignItems: 'center', gap: space.sm }}>
+          <BodyPicture areas={pictures} outline={outline} width={figureWidth} />
+          {headline ? (
+            <Text variant="headline" style={{ color: C.text, textAlign: 'center' }}>{headline.text}</Text>
+          ) : null}
+        </View>
+      </Pressable>
+      {waiting ? (
+        <Card>
+          <SectionHeader title="Today" />
+          <Skeleton shape="line" />
+        </Card>
+      ) : null}
+      {blocked ? (
+        <Card>
+          <SectionHeader title="Today" />
+          <Text accessibilityRole="alert" variant="subhead" style={{ color: C.danger }}>
+            {map.error}
+          </Text>
+          <Button title="Try again" onPress={() => void map.reload()} />
+        </Card>
+      ) : null}
+      {choice?.rule === 'continue' && run ? (
+        <Card>
+          <SectionHeader title={run.title} />
+          <Text variant="body" style={{ color: C.text }}>
+            Exercise {choice.workout.exercise} of {choice.workout.exerciseCount}
+          </Text>
+          <Text variant="subhead" numeric style={{ color: C.muted }}>
+            {choice.workout.timer}
+          </Text>
+          <Button title="Continue" onPress={() => onStart?.({ kind: run.kind, id: run.id, title: run.title, resume: true })} />
+        </Card>
+      ) : null}
+      {choice?.rule === 'question' && onSavePurpose ? (
+        <Card>
+          <ColdStart
+            onSavePurpose={onSavePurpose}
+            onExplore={onExplore}
+            onStart={(id, title) => startFlow(id, title)}
+            onUse={async templateId => {
+              const next = await map.change({ action: 'create', templateId, slot: 1, start: today });
+              const made = next.flows.find(flow => flow.slot === 1);
+              if (made) await map.change({ action: 'follow', mapFlowId: made.id, from: today });
+            }}
+            onDone={() => setColdDone(true)}
+          />
+        </Card>
+      ) : null}
+      {choice?.rule === 'start' && choice.entry.kind === 'flow' ? (
+        <Card>
+          <SectionHeader title={choice.entry.title} />
+          <ReasonLine>{choice.entry.detail}</ReasonLine>
+          <Button title="Start" onPress={() => startFlow(choice.entry.id, choice.entry.title, choice.entry.version)} />
+        </Card>
+      ) : null}
+      {choice?.rule === 'start' && choice.entry.kind === 'item' ? (
+        <Card>
+          <SectionHeader title={choice.entry.title} />
+          <ReasonLine>{choice.entry.detail}</ReasonLine>
+          <Button title="Tick" onPress={() => tick(choice.entry)} />
+        </Card>
+      ) : null}
+      {choice?.rule === 'suggest' ? (
+        <Card>
+          <SectionHeader title={choice.suggestion.title} />
+          <ReasonLine>{choice.suggestion.reason}</ReasonLine>
+          <Button title="Start" onPress={() => startFlow(choice.suggestion.id, choice.suggestion.title)} />
+        </Card>
+      ) : null}
+      {shownStarter ? (
+        <Card>
+          <SectionHeader title={shownStarter.title} />
+          <ReasonLine>{shownStarter.reason}</ReasonLine>
+          <Button title="Start" onPress={() => startFlow(shownStarter.id, shownStarter.title)} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Add ${shownStarter.title} to Daily flow`}
+            onPress={() => setAdding(true)}
+            style={({ pressed }) => ({ minHeight: hit, justifyContent: 'center', opacity: pressed ? opacity.pressed : 1 })}
+          >
+            <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>Add to Daily flow</Text>
+          </Pressable>
+        </Card>
+      ) : null}
+      {maybeNew && !routine.ready ? (
+        <Card>
+          <SectionHeader title="Today" />
+          <Skeleton shape="line" />
+        </Card>
+      ) : null}
+      {choice?.rule === 'starter' && !shownStarter && !(maybeNew && !routine.ready) ? (
+        <Card>
+          <EmptyState
+            title="No Daily flow yet"
+            description="A Daily flow is the flows and items for one day. There is no starter for this focus yet."
+            action={{ label: 'Browse flows', onPress: onExplore }}
+          />
+        </Card>
+      ) : null}
+      {choice?.rule === 'done' ? (
+        <Card>
+          <SectionHeader title={choice.summary} />
+          {choice.tomorrow ? (
+            <Text variant="callout" style={{ color: C.text }}>
+              Tomorrow: {choice.tomorrow.title}
+              {choice.tomorrow.detail ? ` · ${choice.tomorrow.detail}` : ''}
+            </Text>
+          ) : (
+            <Text variant="callout" style={{ color: C.muted }}>Tomorrow is open.</Text>
+          )}
+        </Card>
+      ) : null}
+      {trial ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Stop following ${trial.title}`}
+          onPress={() => void stopFollow(trial.id, today)}
+          style={({ pressed }) => ({ minHeight: hit, justifyContent: 'center', opacity: pressed ? opacity.pressed : 1 })}
+        >
+          <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>Stop following</Text>
+        </Pressable>
+      ) : null}
+      {remaining.length ? (
+        <View style={{ gap: space.sm }}>
+          <Text variant="footnote" style={{ color: C.muted, fontWeight: '600' }}>Also today</Text>
+          {remaining.map(entry => (
+            <View key={`${entry.kind}:${entry.id}`} style={{ gap: space.xxs }}>
+              <Text variant="callout" style={{ color: C.text }}>{entry.title}</Text>
+              {entry.detail ? <Text variant="subhead" style={{ color: C.muted }}>{entry.detail}</Text> : null}
+            </View>
+          ))}
+        </View>
+      ) : null}
+      {sunday && !fresh ? <FocusReviewCard /> : null}
+      <MapFlowShelf purposeId={purposeId} level={member.level} />
+      {fresh ? null : <ShareSection />}
+      {adding && shownStarter ? (
+        <SeriesSheet
+          mode="create"
+          title={shownStarter.title}
+          itemKind="flow"
+          itemId={shownStarter.id}
+          start={today}
+          onClose={() => {
+            setAdding(false);
+            void map.reload();
+          }}
         />
-      ) : (
-        <FlowMapTab
-          data={data}
-          onExplore={onExplore}
-          onFlow={onFlow}
-          onPersonalFlow={onPersonalFlow}
-          onStart={onStart}
+      ) : null}
+      {bodyOpen ? (
+        <BodyFlowSheet
+          library={data.flows}
+          focusId={data.profile.focusId}
+          onClose={() => setBodyOpen(false)}
+          onStartFlow={(id, title) => startFlow(id, title)}
+          onOpenFlow={onFlow}
         />
-      )}
+      ) : null}
     </View>
   );
 }

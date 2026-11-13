@@ -11,9 +11,10 @@ import {
   sectionsWithTiles,
   tilesInSection,
 } from '../shared/flow-catalog';
+import { gymFlowById } from '../shared/gym-flows';
 
 const tileTitles = [
-  ['Gym', ['Back', 'Biceps', 'Chest', 'Triceps', 'Shoulders', 'Legs', 'Core', 'Supersets', 'Full Body']],
+  ['Gym', ['Back', 'Biceps', 'Chest', 'Triceps', 'Shoulders', 'Legs', 'Core', 'Arms', 'Supersets', 'Full Body', 'Splits']],
   ['Calisthenics', ['Upper Body', 'Pull', 'Push', 'Legs', 'Core', 'Skills', 'Full Body']],
   ['CrossFit', ['Benchmark WODs', 'AMRAP', 'EMOM', 'For Time', 'Hero WODs']],
   ['Home Workouts', ['No Equipment', 'Dumbbells', 'Resistance Bands', 'Under 20 Minutes']],
@@ -21,7 +22,7 @@ const tileTitles = [
   ['Endurance Events', ['Sprint Triathlon', 'Olympic Triathlon', 'Half Ironman', 'Ironman', 'Duathlon', 'HYROX']],
 ] as const;
 
-test('fitness catalog ids are unique and nothing is live yet', () => {
+test('fitness catalog ids are unique and a gym flow is live only when it has exercises', () => {
   const ids = [
     ...catalogSections.map(section => section.id),
     ...catalogTiles.map(tile => tile.id),
@@ -29,7 +30,11 @@ test('fitness catalog ids are unique and nothing is live yet', () => {
   ];
   assert.equal(new Set(ids).size, ids.length);
   assert.ok(catalogFlows.length > 0);
-  assert.ok(catalogFlows.every(flow => flow.status === 'coming-soon'));
+  for (const flow of catalogFlows) {
+    const gym = flow.flowId ? gymFlowById(flow.flowId) : undefined;
+    if (gym) assert.equal(flow.status, gym.items.length > 0 ? 'live' : 'coming-soon', flow.id);
+    else assert.equal(flow.status, 'coming-soon', flow.id);
+  }
   assert.equal(catalogFlow('missing'), undefined);
 });
 
@@ -53,6 +58,14 @@ test('every section has its tiles and every flow points at a real tile', () => {
     const count = flowsInTile(tile.id).length;
     if (tile.id === 'run-drills') {
       assert.equal(count, 0);
+      continue;
+    }
+    if (tile.id === 'gym-supersets' || tile.id === 'gym-splits') {
+      assert.equal(count, 12, tile.title);
+      continue;
+    }
+    if (tile.id === 'gym-full') {
+      assert.equal(count, 9, tile.title);
       continue;
     }
     assert.ok(count >= 2 && count <= 4, tile.title);

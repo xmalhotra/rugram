@@ -7,7 +7,7 @@ import { registrationPresentation } from '../../shared/event-presentation';
 import { api } from './api';
 import { useSession } from './session';
 import { Badge, Button, Card, Choice } from './design/components';
-import { useTheme } from './design/theme';
+import { radius, space, useTheme } from './design/theme';
 import { Disclosure } from './Disclosure';
 import { EventHosts } from './EventHosts';
 import { AddToCalendar } from './AddToCalendar';
@@ -31,8 +31,8 @@ function RegistrationSession({ event, showHosts }: { event: CityEvent; showHosts
   const revision = useRef(0);
   const [now, setNow] = useState(Date.now());
   const [guestFilter, setGuestFilter] = useState('Pending');
-  const copy = { color: C.muted, fontSize: 16, lineHeight: 24 } as const;
-  const heading = { color: C.text, fontSize: 21, fontWeight: '600' } as const;
+  const copy = { color: C.muted } as const;
+  const heading = { color: C.text } as const;
   const load = useCallback(async () => {
     if (event.registrationMode !== 'approval') return;
     const request = ++revision.current;
@@ -106,14 +106,14 @@ function RegistrationSession({ event, showHosts }: { event: CityEvent; showHosts
           : ['cancelled', 'declined'].includes(guest.status),
     ) ?? [];
   return (
-    <View style={{ gap: 20 }}>
+    <View style={{ gap: space.lg }}>
       {showHosts && <EventHosts event={event} />}
       {event.simulation && <Badge>DEMO EVENT · no real ticket or booking</Badge>}
       <Card>
         <Badge>{value?.canManage ? 'HOST WORKSPACE · FREE EVENT' : 'REGISTRATION · FREE'}</Badge>
         {value && (
-          <View style={{ gap: 8 }}>
-            <Text style={heading}>
+          <View style={{ gap: space.sm }}>
+            <Text variant="section" style={heading}>
               {approved} / {capacity} places confirmed
             </Text>
             <View
@@ -127,32 +127,33 @@ function RegistrationSession({ event, showHosts }: { event: CityEvent; showHosts
                 }}
               />
             </View>
-            <Text style={{ ...copy, fontSize: 13 }}>
+            <Text variant="footnote" style={copy}>
               {Math.max(0, capacity - approved)} places remaining · pending requests do not reserve
               a place
             </Text>
           </View>
         )}
         {!value && !error && (
-          <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center', minHeight: 48 }}>
+          <View style={{ flexDirection: 'row', gap: space.ms, alignItems: 'center', minHeight: 48 }}>
             <ActivityIndicator color={C.lime} />
-            <Text style={copy}>Checking your place…</Text>
+            <Text variant="callout" style={copy}>Checking your place…</Text>
           </View>
         )}
         {value && state && !value.canManage && (
           <>
             <Text
               accessibilityLiveRegion="polite"
+              variant="section"
               style={{ ...heading, color: state.title === 'You’re going' ? C.lime : C.text }}
             >
               {state.title}
             </Text>
-            <Text style={copy}>{state.detail}</Text>
+            <Text variant="callout" style={copy}>{state.detail}</Text>
             {confirming && state.canRequest ? (
               <>
-                <Text style={heading}>Your request</Text>
-                <Text style={copy}>{data?.user.name ?? 'Your signed-in profile'}</Text>
-                <Text style={copy}>
+                <Text variant="section" style={heading}>Your request</Text>
+                <Text variant="callout" style={copy}>{data?.user.name ?? 'Your signed-in profile'}</Text>
+                <Text variant="callout" style={copy}>
                   If approved, your display name is visible to other approved guests. Your phone
                   number stays private.
                 </Text>
@@ -198,7 +199,7 @@ function RegistrationSession({ event, showHosts }: { event: CityEvent; showHosts
         )}
         {error && (
           <>
-            <Text accessibilityRole="alert" style={{ ...copy, color: C.danger }}>
+            <Text accessibilityRole="alert" variant="callout" style={{ ...copy, color: C.danger }}>
               {error}
             </Text>
             <Button title="Try again" secondary disabled={busy} onPress={() => void load()} />
@@ -216,13 +217,13 @@ function RegistrationSession({ event, showHosts }: { event: CityEvent; showHosts
                 value.guests.map(guest => (
                   <View
                     key={guest.id}
-                    style={{ minHeight: 48, flexDirection: 'row', gap: 12, alignItems: 'center' }}
+                    style={{ minHeight: 48, flexDirection: 'row', gap: space.ms, alignItems: 'center' }}
                   >
                     <View
                       style={{
                         width: 34,
                         height: 34,
-                        borderRadius: 17,
+                        borderRadius: radius.pill,
                         backgroundColor: C.card,
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -232,14 +233,14 @@ function RegistrationSession({ event, showHosts }: { event: CityEvent; showHosts
                         {guest.name.slice(0, 1)}
                       </Text>
                     </View>
-                    <Text style={{ color: C.text, fontSize: 16, flex: 1 }}>{guest.name}</Text>
+                    <Text variant="callout" style={{ color: C.text, flex: 1 }}>{guest.name}</Text>
                   </View>
                 ))
               ) : (
-                <Text style={copy}>You’ll see guests here once places are confirmed.</Text>
+                <Text variant="callout" style={copy}>You’ll see guests here once places are confirmed.</Text>
               )
             ) : (
-              <Text style={copy}>Guest names unlock after the host approves you.</Text>
+              <Text variant="callout" style={copy}>Guest names unlock after the host approves you.</Text>
             )}
             <Badge>Confirmed registrations, not checked-in attendance.</Badge>
           </Disclosure>
@@ -258,10 +259,10 @@ function RegistrationSession({ event, showHosts }: { event: CityEvent; showHosts
                 options={['Pending', 'Going', 'Not going']}
                 onChange={setGuestFilter}
               />
-              {visibleRequests.length === 0 && <Text style={copy}>No guests in this group.</Text>}
+              {visibleRequests.length === 0 && <Text variant="callout" style={copy}>No guests in this group.</Text>}
               {visibleRequests.map(guest => (
                 <Card key={guest.id}>
-                  <Text style={heading}>{guest.name}</Text>
+                  <Text variant="section" style={heading}>{guest.name}</Text>
                   <Badge>{guest.status}</Badge>
                   {guest.status === 'pending' && (
                     <Button
@@ -303,7 +304,7 @@ function RegistrationSession({ event, showHosts }: { event: CityEvent; showHosts
           )}
           {value.canManage && (
             <Disclosure title="Event controls">
-              <Text style={copy}>
+              <Text variant="callout" style={copy}>
                 {currentEvent.status === 'pending'
                   ? 'Awaiting admin publication. Guest registration opens only after approval.'
                   : currentEvent.registrationStatus === 'Cancelled'

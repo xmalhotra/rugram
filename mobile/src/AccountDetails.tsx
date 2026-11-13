@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, TextInput, View } from 'react-native';
+import { TextInput, View } from 'react-native';
 import type { MobilePayload } from '../../shared/mobile';
 import { normalizeUsername, usernameProblem } from '../../shared/usernames';
+import { Button } from './design/components';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { hit, radius, space, textRoles, useTheme } from './design/theme';
 
 function usernameField(handle: string) {
   const value = handle.trim().toLowerCase().replace(/^@/, '');
@@ -48,7 +49,7 @@ export function AccountDetails({
   }
 
   return (
-    <View style={{ gap: 16 }}>
+    <View style={{ gap: space.md }}>
       <Field label="Name">
         <TextInput
           accessibilityLabel="Member name"
@@ -59,33 +60,27 @@ export function AccountDetails({
           autoCapitalize="words"
           style={input(C)}
         />
-        <Pressable
-          accessibilityRole="button"
+        <Button
+          title="Save name"
+          variant="text"
           accessibilityLabel="Save name"
           disabled={busy || name.trim().length < 2}
           onPress={() => void onSaveName(name)}
-          style={({ pressed }) => ({
-            minHeight: 44,
-            justifyContent: 'center',
-            opacity: busy || name.trim().length < 2 ? 0.5 : pressed ? 0.6 : 1,
-          })}
-        >
-          <Text style={{ color: C.lime, fontSize: 16 }}>Save name</Text>
-        </Pressable>
+        />
       </Field>
       <Field label="Username">
         <View
           style={{
-            minHeight: 48,
+            minHeight: hit,
             borderWidth: 1,
             borderColor: C.line,
-            borderRadius: 12,
+            borderRadius: radius.small,
             backgroundColor: C.card,
             flexDirection: 'row',
             alignItems: 'center',
           }}
         >
-          <Text style={{ color: C.muted, fontSize: 16, paddingLeft: 14 }}>q_</Text>
+          <Text variant="callout" style={{ color: C.muted, paddingLeft: space.md }}>q_</Text>
           <TextInput
             accessibilityLabel="Username"
             value={part}
@@ -95,26 +90,20 @@ export function AccountDetails({
             autoCapitalize="none"
             autoCorrect={false}
             autoComplete="off"
-            style={{ flex: 1, minHeight: 48, paddingRight: 14, color: C.text, fontSize: 16 }}
+            style={{ flex: 1, minHeight: hit, paddingRight: space.md, color: C.text, fontSize: textRoles.callout.fontSize }}
           />
         </View>
-        <Text style={{ color: C.muted, fontSize: 13 }}>
+        <Text variant="footnote" style={{ color: C.muted }}>
           Starts with q_. 4–18 letters, numbers or underscores. You can change it once every 30 days.
         </Text>
-        {problem ? <Text style={{ color: C.danger, fontSize: 14 }}>{problem}</Text> : null}
-        <Pressable
-          accessibilityRole="button"
+        {problem ? <Text variant="subhead" style={{ color: C.danger }}>{problem}</Text> : null}
+        <Button
+          title="Save"
+          variant="text"
           accessibilityLabel="Save username"
           disabled={busy || Boolean(problem) || !usernameChanged}
           onPress={() => void onSaveUsername(proposed)}
-          style={({ pressed }) => ({
-            minHeight: 44,
-            justifyContent: 'center',
-            opacity: busy || Boolean(problem) || !usernameChanged ? 0.5 : pressed ? 0.6 : 1,
-          })}
-        >
-          <Text style={{ color: C.lime, fontSize: 16 }}>Save</Text>
-        </Pressable>
+        />
       </Field>
       <Field label="Mobile number">
         <TextInput
@@ -141,29 +130,23 @@ export function AccountDetails({
           style={input(C)}
         />
         {verified ? (
-          <Text style={{ color: C.muted, fontSize: 14 }}>Verified</Text>
+          <Text variant="subhead" style={{ color: C.muted }}>Verified</Text>
         ) : (
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            title="Send verification code"
+            variant="text"
             accessibilityLabel="Send verification code"
             disabled={busy || !email.includes('@')}
             onPress={() => void sendCode()}
-            style={({ pressed }) => ({
-              minHeight: 44,
-              justifyContent: 'center',
-              opacity: busy || !email.includes('@') ? 0.5 : pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={{ color: C.lime, fontSize: 16 }}>Send verification code</Text>
-          </Pressable>
+          />
         )}
         {challengeId ? (
-          <View style={{ gap: 8 }}>
-            <Text style={{ color: C.muted, fontSize: 14 }}>
+          <View style={{ gap: space.sm }}>
+            <Text variant="subhead" style={{ color: C.muted }}>
               Enter the 6-digit code sent to {email.trim()}.
             </Text>
             {mockCode ? (
-              <Text style={{ color: C.muted, fontSize: 14 }}>
+              <Text variant="subhead" style={{ color: C.muted }}>
                 Demo code {mockCode}. Email delivery is not configured on this server.
               </Text>
             ) : null}
@@ -177,8 +160,9 @@ export function AccountDetails({
               placeholderTextColor={C.muted}
               style={input(C)}
             />
-            <Pressable
-              accessibilityRole="button"
+            <Button
+              title="Verify mail ID"
+              variant="text"
               accessibilityLabel="Verify mail ID"
               disabled={busy || code.length !== 6}
               onPress={() =>
@@ -190,14 +174,7 @@ export function AccountDetails({
                   }
                 })
               }
-              style={({ pressed }) => ({
-                minHeight: 44,
-                justifyContent: 'center',
-                opacity: busy || code.length !== 6 ? 0.5 : pressed ? 0.6 : 1,
-              })}
-            >
-              <Text style={{ color: C.lime, fontSize: 16 }}>Verify mail ID</Text>
-            </Pressable>
+            />
           </View>
         ) : null}
       </Field>
@@ -208,8 +185,8 @@ export function AccountDetails({
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   const { colors: C } = useTheme();
   return (
-    <View style={{ gap: 8 }}>
-      <Text style={{ color: C.muted, fontSize: 13 }}>{label}</Text>
+    <View style={{ gap: space.sm }}>
+      <Text variant="footnote" style={{ color: C.muted }}>{label}</Text>
       {children}
     </View>
   );
@@ -217,13 +194,13 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function input(C: { text: string; line: string; card: string }) {
   return {
-    minHeight: 48,
+    minHeight: hit,
     borderWidth: 1,
     borderColor: C.line,
-    borderRadius: 12,
-    paddingHorizontal: 14,
+    borderRadius: radius.small,
+    paddingHorizontal: space.md,
     color: C.text,
     backgroundColor: C.card,
-    fontSize: 16,
+    fontSize: textRoles.callout.fontSize,
   };
 }

@@ -3,12 +3,12 @@ import {View} from 'react-native';
 import {Text} from './design/Text';
 import {emptyPurchaseDraft,readPurchaseDrafts,storeLabel,type PurchaseDraft} from '../../shared/purchases';
 import {Badge,Button,Card,Field} from './design/components';
-import {useTheme} from './design/theme';
+import {space,useTheme} from './design/theme';
 export function PurchaseFields({form,onChange}:{form:Record<string,string>;onChange:(changes:Record<string,string>)=>void}){
   const {colors:C}=useTheme();const drafts=readPurchaseDrafts(form.purchaseOptions);
   function update(index:number,key:keyof PurchaseDraft,value:string){onChange({purchaseOptions:JSON.stringify(drafts.map((draft,i)=>i===index?{...draft,[key]:value}:draft))});}
-  return <View style={{gap:14}}>
-    <Text style={{color:C.text,fontSize:21,fontWeight:'600'}}>Where can someone buy it?</Text>
+  return <View style={{gap:space.md}}>
+    <Text variant="section" style={{color:C.text}}>Where can someone buy it?</Text>
     <Field label="Exact variant / pack all links refer to" maxLength={160} value={form.variantLabel??''} onChange={variantLabel=>onChange({variantLabel})}/>
     <Badge>All links must match this product and variant. Enter the normal listed price; do not deduct a bank or coupon offer everyone may not qualify for.</Badge>
     {drafts.map((draft,index)=><Card key={index}><Badge>SELLER {index+1}{draft.url?` · ${storeLabel(draft.url)}`:''}</Badge>

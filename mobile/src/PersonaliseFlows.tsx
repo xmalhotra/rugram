@@ -3,14 +3,23 @@ import { Pressable, ScrollView, TextInput, View } from 'react-native';
 import type { Lifestyle } from '../../shared/flow-benchmarks';
 import { formatKg } from '../../shared/progression';
 import { strengthPatterns, type StrengthPattern } from '../../shared/strength';
+import { muscleAreas, type MuscleArea } from '../../shared/muscle-map';
 import { lifestyles } from './AboutYou';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { Button, ReasonLine, SectionHeader, Sheet } from './design/components';
+import { Glyph } from './design/Glyph';
+import { hit, opacity, radius, space, textRoles, useTheme } from './design/theme';
 import { CatalogBar } from './FlowCatalogTile';
 import { useRootListInset } from './RootList';
 import { AnchorEditor, StrengthProfile } from './StrengthProfile';
 import { saveBody, useStrength } from './strength';
 import { savePersonalMetric, usePersonalMetrics } from './personal-metrics';
+import { catalogFlows } from '../../shared/flow-catalog';
+import { defaultFlowView, trainPlaceChoices, type TrainPlace } from '../../shared/flow-defaults';
+import { flowsNowFit, priorityAddedLine } from '../../shared/first-run';
+import { gymFlows } from '../../shared/gym-flows';
+import { finisherFor, flowLevelOf } from '../../shared/priority-finisher';
+import { describedCatalogFlow, useFlowMember, useFlowOverrides } from './flow-member';
 import { clockText, intensityShare, paceRange, paceText, riegel, swimPace, vdot } from '../../shared/running-paces';
 
 /**
@@ -38,20 +47,20 @@ export function PersonaliseRow({ onOpen }: { onOpen: () => void }) {
         minHeight: 64,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
-        padding: 14,
-        borderRadius: 16,
+        gap: space.ms,
+        padding: space.md,
+        borderRadius: radius.control,
         borderWidth: 1,
         borderColor: lifts || estimated ? C.line : C.lime,
         backgroundColor: C.card,
-        opacity: pressed ? 0.7 : 1,
+        opacity: pressed ? opacity.pressed : 1,
       })}
     >
-      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-        <Text style={{ color: lifts || estimated ? C.text : C.lime, fontSize: 16, fontWeight: '700' }}>{title}</Text>
-        <Text style={{ color: C.muted, fontSize: 14, lineHeight: 19 }}>{detail}</Text>
+      <View style={{ flex: 1, minWidth: 0, gap: space.xxs }}>
+        <Text variant="callout" style={{ color: lifts || estimated ? C.text : C.lime, fontWeight: '600' }}>{title}</Text>
+        <Text variant="subhead" style={{ color: C.muted }}>{detail}</Text>
       </View>
-      <Text style={{ color: C.muted, fontSize: 22 }}>›</Text>
+      <Glyph name={{ ios: 'chevron.right', android: 'chevron_right' }} fallback="›" color={C.muted} size={space.md} />
     </Pressable>
   );
 }
@@ -63,9 +72,9 @@ export function PersonaliseRow({ onOpen }: { onOpen: () => void }) {
 export function PersonalisePage({ onBack }: { onBack: () => void }) {
   const inset = useRootListInset();
   return (
-    <View style={{ flex: 1, paddingTop: Math.max(0, inset - 12) }}>
+    <View style={{ flex: 1, paddingTop: Math.max(0, inset - space.ms) }}>
       <CatalogBar title="Personalise" onBack={onBack} />
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 128 }}>
+      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingHorizontal: space.md, paddingTop: space.sm, paddingBottom: 128 }}>
         <PersonaliseContent />
       </ScrollView>
     </View>
@@ -83,11 +92,15 @@ export function PersonaliseContent() {
   const [open, setOpen] = useState<'gym' | 'running' | null>(null);
   const lifts = strength?.anchors.length ?? 0;
   const run = metrics['run.recent'];
+  const place = trainPlaceChoices.find(item => item.id === metrics['gym.place']?.place)?.label;
+  const minutes = metrics['gym.minutes']?.minutes;
+  const gymExtras = [place, minutes ? `${minutes} min` : null].filter(Boolean).join(' · ');
+  const gymStatus = lifts ? `${lifts} lift${lifts === 1 ? '' : 's'} set` : strength?.body ? 'From your body weight' : 'Weights: one lift you know';
   const rows = [
     {
       id: 'gym' as const,
       title: 'Gym',
-      status: lifts ? `${lifts} lift${lifts === 1 ? '' : 's'} set` : strength?.body ? 'From your body weight' : 'Weights: one lift you know',
+      status: [gymStatus, gymExtras].filter(Boolean).join(' · '),
       body: <GymSetup />,
     },
     {
@@ -98,53 +111,169 @@ export function PersonaliseContent() {
     },
   ];
   return (
-    <View style={{ gap: 16 }}>
-      <View style={{ gap: 6 }}>
-        <Text accessibilityRole="header" style={{ color: C.text, fontSize: 22, fontWeight: '700' }}>
-          Make every flow fit you
-        </Text>
-        <Text style={{ color: C.muted, fontSize: 15, lineHeight: 21 }}>
-          Answer only for what you do. Each takes one number, and what you log keeps it current.
-        </Text>
-      </View>
+    <View style={{ gap: space.md }}>
+      <SectionHeader
+        title="Make every flow fit you"
+        detail="Answer only for what you do. Each takes one number, and what you log keeps it current."
+      />
       {rows.map(row => {
         const expanded = open === row.id;
         return (
-          <View key={row.id} style={{ borderRadius: 16, borderWidth: 1, borderColor: C.line, backgroundColor: C.card }}>
+          <View key={row.id} style={{ borderRadius: radius.control, borderWidth: 1, borderColor: C.line, backgroundColor: C.card }}>
             <Pressable
               accessibilityRole="button"
               accessibilityState={{ expanded }}
               accessibilityLabel={`${row.title}. ${row.status}`}
               onPress={() => setOpen(expanded ? null : row.id)}
-              style={({ pressed }) => ({ minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14, opacity: pressed ? 0.7 : 1 })}
+              style={({ pressed }) => ({ minHeight: 60, flexDirection: 'row', alignItems: 'center', gap: space.ms, padding: space.md, opacity: pressed ? opacity.pressed : 1 })}
             >
-              <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                <Text style={{ color: C.text, fontSize: 16, fontWeight: '700' }}>{row.title}</Text>
-                <Text numberOfLines={1} style={{ color: C.muted, fontSize: 14 }}>
+              <View style={{ flex: 1, minWidth: 0, gap: space.xxs }}>
+                <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>{row.title}</Text>
+                <Text numberOfLines={1} variant="subhead" style={{ color: C.muted }}>
                   {row.status}
                 </Text>
               </View>
-              <Text style={{ color: C.muted, fontSize: 20 }}>{expanded ? '⌃' : '›'}</Text>
+              {expanded ? (
+                <Text variant="section" style={{ color: C.muted }}>⌃</Text>
+              ) : (
+                <Glyph name={{ ios: 'chevron.right', android: 'chevron_right' }} fallback="›" color={C.muted} size={space.md} />
+              )}
             </Pressable>
-            {expanded ? <View style={{ paddingHorizontal: 14, paddingBottom: 14 }}>{row.body}</View> : null}
+            {expanded ? <View style={{ paddingHorizontal: space.md, paddingBottom: space.md }}>{row.body}</View> : null}
           </View>
         );
       })}
-      <Text style={{ color: C.muted, fontSize: 13, lineHeight: 18 }}>
+      <Text variant="footnote" style={{ color: C.muted }}>
         Calisthenics and CrossFit are next. Anything you change yourself in a flow stays exactly as you set it.
       </Text>
     </View>
   );
 }
 
+/** The six groups on Body flow, covering all 24 areas. */
+const priorityGroups: { title: string; areas: MuscleArea[] }[] = [
+  { title: 'Back', areas: ['lats', 'mid-back', 'lower-back', 'traps', 'neck'] },
+  { title: 'Chest', areas: ['upper-chest', 'chest'] },
+  { title: 'Shoulders', areas: ['front-delts', 'side-delts', 'rear-delts'] },
+  { title: 'Arms', areas: ['biceps', 'triceps', 'forearms'] },
+  { title: 'Core', areas: ['upper-abs', 'lower-abs', 'obliques'] },
+  { title: 'Legs', areas: ['glutes', 'quads', 'hamstrings', 'calves', 'hip-flexors', 'abductors', 'adductors', 'shins'] },
+];
+
+function priorityLabel(areas: readonly MuscleArea[] | undefined) {
+  if (!areas?.length) return 'None';
+  return areas.map(id => muscleAreas.find(area => area.id === id)?.title ?? id).join(', ');
+}
+
+/** Up to three areas. A flow that already trains a neighbour gets a short finisher for each. */
+function PriorityAreasSheet({
+  selected,
+  onClose,
+  onChange,
+}: {
+  selected: readonly MuscleArea[];
+  onClose: () => void;
+  onChange: (areas: MuscleArea[] | null) => Promise<unknown>;
+}) {
+  const { colors: C } = useTheme();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const full = selected.length >= 3;
+  async function save(next: MuscleArea[] | null) {
+    setBusy(true);
+    setError('');
+    try {
+      await onChange(next);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not save. Try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Sheet title="Priority areas" onClose={onClose}>
+      <Text variant="subhead" style={{ color: C.muted }}>
+        Flows that train nearby muscles get a short finisher for these.
+      </Text>
+      {error ? (
+        <Text accessibilityRole="alert" variant="subhead" style={{ color: C.danger }}>
+          {error}
+        </Text>
+      ) : null}
+      {priorityGroups.map(group => (
+        <View key={group.title}>
+          <Text accessibilityRole="header" variant="footnote" style={{ color: C.muted, fontWeight: '600', paddingTop: space.md, paddingBottom: space.xs }}>
+            {group.title}
+          </Text>
+          {group.areas.map(id => {
+            const title = muscleAreas.find(area => area.id === id)?.title ?? id;
+            const on = selected.includes(id);
+            const locked = full && !on;
+            return (
+              <Pressable
+                key={id}
+                accessibilityRole="button"
+                accessibilityLabel={locked ? `${title}, three priorities already` : title}
+                accessibilityState={{ selected: on, disabled: locked || busy }}
+                disabled={locked || busy}
+                onPress={() => void save(on ? selected.filter(area => area !== id) : [...selected, id])}
+                style={({ pressed }) => ({
+                  minHeight: hit,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  opacity: locked ? 0.4 : pressed ? opacity.pressed : 1,
+                })}
+              >
+                <Text variant="callout" style={{ flex: 1, color: C.text }}>{title}</Text>
+                {on ? <Glyph name={{ ios: 'checkmark', android: 'check' }} fallback="✓" color={C.lime} size={space.md} /> : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      ))}
+      <Button
+        title="Clear"
+        variant="text"
+        accessibilityLabel="Clear priority areas"
+        disabled={busy}
+        onPress={() => void save(null)}
+      />
+    </Sheet>
+  );
+}
+
 /** Gym: one lift sets every weight; body weight if none; more lifts optional. */
+function priorityFlowCount(areas: readonly MuscleArea[]) {
+  if (!areas.length) return 0;
+  return gymFlows.filter(flow => finisherFor(flow.items, areas, flowLevelOf(flow.level)).length > 0).length;
+}
+
 function GymSetup() {
   const { colors: C } = useTheme();
   const strength = useStrength();
+  const metrics = usePersonalMetrics();
+  const { member } = useFlowMember();
+  const [, setOverrides] = useFlowOverrides();
+  const [fitWhere, setFitWhere] = useState<null | 'level' | 'setup'>(null);
+  const [priorityLine, setPriorityLine] = useState('');
+  const described = catalogFlows.flatMap(flow => {
+    const row = describedCatalogFlow(flow);
+    return row ? [row] : [];
+  });
+  const fitLine = flowsNowFit(defaultFlowView(described, member).length);
+  function forget(key: 'place' | 'minutes') {
+    setOverrides(current => {
+      if (!(key in current)) return current;
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  }
   const [choosing, setChoosing] = useState<StrengthPattern | null>(null);
   const [others, setOthers] = useState(false);
   const [more, setMore] = useState(false);
   const [editingBody, setEditingBody] = useState(false);
+  const [prioritiesOpen, setPrioritiesOpen] = useState(false);
   const anchors = strength?.anchors ?? [];
   const body = strength?.body ?? null;
   const title = (pattern: StrengthPattern) => strengthPatterns.find(item => item.id === pattern)?.title ?? pattern;
@@ -158,52 +287,49 @@ function GymSetup() {
         accessibilityLabel={title(pattern)}
         onPress={() => setChoosing(selected ? null : pattern)}
         style={{
-          minHeight: 40,
+          minHeight: hit,
           justifyContent: 'center',
-          paddingHorizontal: 14,
-          borderRadius: 20,
+          paddingHorizontal: space.md,
+          borderRadius: radius.pill,
           borderWidth: 1,
           borderColor: selected ? C.lime : C.line,
           backgroundColor: selected ? C.lime : C.card,
         }}
       >
-        <Text style={{ color: selected ? C.onAccent : C.text, fontSize: 15 }}>{title(pattern)}</Text>
+        <Text variant="subhead" style={{ color: selected ? C.onAccent : C.text }}>{title(pattern)}</Text>
       </Pressable>
     );
   };
   return (
-    <View style={{ gap: 20 }}>
+    <View style={{ gap: space.lg }}>
 
-        <View style={{ gap: 10 }}>
-          <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>
-            {anchors.length ? 'Your lifts' : 'A lift you know'}
-          </Text>
+        <View style={{ gap: space.ms }}>
+          <SectionHeader title={anchors.length ? 'Your lifts' : 'A lift you know'} />
           {anchors.map(anchor => (
             <Pressable
               key={anchor.pattern}
               accessibilityRole="button"
               accessibilityLabel={`${title(anchor.pattern)}, ${formatKg(anchor.weightKg)} kilograms for ${anchor.reps} reps. Change`}
               onPress={() => setChoosing(choosing === anchor.pattern ? null : anchor.pattern)}
-              style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', opacity: pressed ? 0.6 : 1 })}
+              style={({ pressed }) => ({ minHeight: hit, flexDirection: 'row', alignItems: 'center', opacity: pressed ? opacity.pressed : 1 })}
             >
-              <Text style={{ flex: 1, color: C.text, fontSize: 16 }}>{title(anchor.pattern)}</Text>
-              <Text style={{ color: C.text, fontSize: 16 }}>{`${formatKg(anchor.weightKg)} kg × ${anchor.reps}`}</Text>
+              <Text variant="callout" style={{ flex: 1, color: C.text }}>{title(anchor.pattern)}</Text>
+              <Text variant="callout" style={{ color: C.text }}>{`${formatKg(anchor.weightKg)} kg × ${anchor.reps}`}</Text>
             </Pressable>
           ))}
           {anchors.length ? null : (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
               {quickPicks.map(chip)}
               {others ? (
                 strengthPatterns.filter(item => !quickPicks.includes(item.id)).map(item => chip(item.id))
               ) : (
-                <Pressable
-                  accessibilityRole="button"
+                <Button
+                  title="Other lift"
+                  variant="text"
+                  size="regular"
                   accessibilityLabel="Other lift"
                   onPress={() => setOthers(true)}
-                  style={{ minHeight: 40, justifyContent: 'center', paddingHorizontal: 14 }}
-                >
-                  <Text style={{ color: C.lime, fontSize: 15, fontWeight: '600' }}>Other lift</Text>
-                </Pressable>
+                />
               )}
             </View>
           )}
@@ -212,46 +338,104 @@ function GymSetup() {
               pattern={choosing}
               title={title(choosing)}
               initial={anchors.find(anchor => anchor.pattern === choosing) ?? null}
-              onDone={() => setChoosing(null)}
+              onDone={() => {
+                setChoosing(null);
+                setFitWhere('level');
+              }}
             />
           ) : null}
+          {fitWhere === 'level' ? <ReasonLine>{fitLine}</ReasonLine> : null}
         </View>
 
         {anchors.length ? null : (
-          <View style={{ gap: 10 }}>
-            <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>
-              Don’t know any lifts?
-            </Text>
+          <View style={{ gap: space.ms }}>
+            <SectionHeader title="Don’t know any lifts?" />
             {body && !editingBody ? (
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Body weight ${formatKg(body.weightKg)} kilograms, ${lifestyleLabel(body.lifestyle)}. Change`}
                 onPress={() => setEditingBody(true)}
-                style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', opacity: pressed ? 0.6 : 1 })}
+                style={({ pressed }) => ({ minHeight: hit, flexDirection: 'row', alignItems: 'center', opacity: pressed ? opacity.pressed : 1 })}
               >
-                <Text style={{ flex: 1, color: C.text, fontSize: 16 }}>
+                <Text variant="callout" style={{ flex: 1, color: C.text }}>
                   {`${formatKg(body.weightKg)} kg · ${lifestyleLabel(body.lifestyle)}`}
                 </Text>
-                <Text style={{ color: C.lime, fontSize: 15, fontWeight: '600' }}>Change</Text>
+                <Text variant="subhead" style={{ color: C.lime, fontWeight: '600' }}>Change</Text>
               </Pressable>
             ) : (
-              <BodyForm initial={body} onDone={() => setEditingBody(false)} />
+              <BodyForm
+                initial={body}
+                onDone={() => {
+                  setEditingBody(false);
+                  setFitWhere('level');
+                }}
+              />
             )}
           </View>
         )}
 
-        <View style={{ gap: 6 }}>
+        <ChoiceChips
+          label="Where do you train?"
+          options={trainPlaceChoices.map(item => ({ id: item.id, label: item.label }))}
+          selected={metrics['gym.place']?.place ?? null}
+          onSelect={async id => {
+            const place = id as TrainPlace;
+            if (metrics['gym.place']?.place === place) await savePersonalMetric('gym.place', null);
+            else await savePersonalMetric('gym.place', { place });
+            forget('place');
+            setFitWhere('setup');
+          }}
+        />
+        <ChoiceChips
+          label="Time for a workout"
+          options={[
+            { id: '30', label: '30 min' },
+            { id: '45', label: '45 min' },
+            { id: '60', label: '60 min' },
+            { id: 'varies', label: 'Varies' },
+          ]}
+          selected={metrics['gym.minutes'] ? String(metrics['gym.minutes'].minutes) : 'varies'}
+          onSelect={async id => {
+            if (id === 'varies') await savePersonalMetric('gym.minutes', null);
+            else await savePersonalMetric('gym.minutes', { minutes: Number(id) as 30 | 45 | 60 });
+            forget('minutes');
+            setFitWhere('setup');
+          }}
+        />
+        {fitWhere === 'setup' ? <ReasonLine>{fitLine}</ReasonLine> : null}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Priority areas, ${priorityLabel(metrics['gym.priorities']?.areas)}`}
+          onPress={() => setPrioritiesOpen(true)}
+          style={({ pressed }) => ({ minHeight: hit, flexDirection: 'row', alignItems: 'center', gap: space.ms, opacity: pressed ? opacity.pressed : 1 })}
+        >
+          <Text variant="callout" style={{ flex: 1, color: C.text, fontWeight: '600' }}>Priority areas</Text>
+          <Text variant="subhead" style={{ color: C.muted }}>{priorityLabel(metrics['gym.priorities']?.areas)}</Text>
+        </Pressable>
+        {priorityLine ? <ReasonLine>{priorityLine}</ReasonLine> : null}
+        {prioritiesOpen ? (
+          <PriorityAreasSheet
+            selected={metrics['gym.priorities']?.areas ?? []}
+            onClose={() => setPrioritiesOpen(false)}
+            onChange={async areas => {
+              await savePersonalMetric('gym.priorities', areas?.length ? { areas } : null);
+              setPriorityLine(priorityAddedLine(priorityFlowCount(areas ?? [])));
+            }}
+          />
+        ) : null}
+
+        <View style={{ gap: space.sm }}>
           <Pressable
             accessibilityRole="button"
             accessibilityState={{ expanded: more }}
             accessibilityLabel={more ? 'Hide more lifts' : 'Add more lifts, optional'}
             onPress={() => setMore(value => !value)}
-            style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', opacity: pressed ? 0.6 : 1 })}
+            style={({ pressed }) => ({ minHeight: hit, flexDirection: 'row', alignItems: 'center', opacity: pressed ? opacity.pressed : 1 })}
           >
-            <Text style={{ flex: 1, color: C.text, fontSize: 16, fontWeight: '600' }}>Add more lifts</Text>
-            <Text style={{ color: C.muted, fontSize: 14 }}>{more ? 'Hide' : 'Optional'}</Text>
+            <Text variant="callout" style={{ flex: 1, color: C.text, fontWeight: '600' }}>Add more lifts</Text>
+            <Text variant="subhead" style={{ color: C.muted }}>{more ? 'Hide' : 'Optional'}</Text>
           </Pressable>
-          {more ? <StrengthProfile embedded /> : null}
+          {more ? <StrengthProfile embedded onSaved={() => setFitWhere('level')} /> : null}
         </View>
     </View>
   );
@@ -259,6 +443,67 @@ function GymSetup() {
 
 /** The three lifts most people know; the rest sit behind "Other lift". */
 const quickPicks: StrengthPattern[] = ['hinge', 'squat', 'press'];
+
+/** One optional choice, saved as soon as it's tapped. Tapping the current place again clears it. */
+function ChoiceChips({
+  label,
+  options,
+  selected,
+  onSelect,
+}: {
+  label: string;
+  options: { id: string; label: string }[];
+  selected: string | null;
+  onSelect: (id: string) => Promise<unknown>;
+}) {
+  const { colors: C } = useTheme();
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  async function choose(id: string) {
+    setBusy(true);
+    setError('');
+    try {
+      await onSelect(id);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not save. Try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <View style={{ gap: space.ms }}>
+      <SectionHeader title={label} />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+        {options.map(option => {
+          const on = selected === option.id;
+          return (
+            <Pressable
+              key={option.id}
+              accessibilityRole="button"
+              accessibilityState={{ selected: on, disabled: busy }}
+              accessibilityLabel={option.label}
+              disabled={busy}
+              onPress={() => void choose(option.id)}
+              style={{
+                minHeight: hit,
+                justifyContent: 'center',
+                paddingHorizontal: space.md,
+                borderRadius: radius.pill,
+                borderWidth: 1,
+                borderColor: on ? C.lime : C.line,
+                backgroundColor: on ? C.lime : C.card,
+                opacity: busy ? 0.5 : 1,
+              }}
+            >
+              <Text variant="subhead" style={{ color: on ? C.onAccent : C.text }}>{option.label}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+      {error ? <Text variant="footnote" style={{ color: C.danger }}>{error}</Text> : null}
+    </View>
+  );
+}
 
 function lifestyleLabel(id: Lifestyle) {
   return lifestyles.find(item => item.id === id)?.label ?? id;
@@ -287,7 +532,7 @@ function BodyForm({ initial, onDone }: { initial: { weightKg: number; lifestyle:
     }
   }
   return (
-    <View style={{ gap: 10 }}>
+    <View style={{ gap: space.ms }}>
       <TextInput
         accessibilityLabel="Body weight in kilograms"
         value={weight}
@@ -295,9 +540,9 @@ function BodyForm({ initial, onDone }: { initial: { weightKg: number; lifestyle:
         placeholder="Body weight, kg"
         placeholderTextColor={C.muted}
         keyboardType="decimal-pad"
-        style={{ minHeight: 44, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingHorizontal: 12, color: C.text, fontSize: 16 }}
+        style={{ minHeight: hit, borderWidth: 1, borderColor: C.line, borderRadius: radius.small, paddingHorizontal: space.ms, color: C.text, fontSize: textRoles.callout.fontSize }}
       />
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
         {lifestyles.map(item => {
           const selected = lifestyle === item.id;
           return (
@@ -308,30 +553,28 @@ function BodyForm({ initial, onDone }: { initial: { weightKg: number; lifestyle:
               accessibilityLabel={item.label}
               onPress={() => setLifestyle(item.id)}
               style={{
-                minHeight: 40,
+                minHeight: hit,
                 justifyContent: 'center',
-                paddingHorizontal: 14,
-                borderRadius: 20,
+                paddingHorizontal: space.md,
+                borderRadius: radius.pill,
                 borderWidth: 1,
                 borderColor: selected ? C.lime : C.line,
                 backgroundColor: selected ? C.lime : C.card,
               }}
             >
-              <Text style={{ color: selected ? C.onAccent : C.text, fontSize: 15 }}>{item.label}</Text>
+              <Text variant="subhead" style={{ color: selected ? C.onAccent : C.text }}>{item.label}</Text>
             </Pressable>
           );
         })}
       </View>
-      {error ? <Text style={{ color: C.danger, fontSize: 13 }}>{error}</Text> : null}
-      <Pressable
-        accessibilityRole="button"
+      {error ? <Text variant="footnote" style={{ color: C.danger }}>{error}</Text> : null}
+      <Button
+        title="Save"
+        variant="text"
         accessibilityLabel="Save body weight"
         disabled={busy}
         onPress={() => void save()}
-        style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', opacity: busy ? 0.5 : pressed ? 0.6 : 1 })}
-      >
-        <Text style={{ color: C.lime, fontSize: 16, fontWeight: '600' }}>Save</Text>
-      </Pressable>
+      />
     </View>
   );
 }
@@ -388,13 +631,13 @@ function RunningSetup() {
       setBusy(false);
     }
   }
-  const field = { minHeight: 44, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingHorizontal: 12, color: C.text, fontSize: 16 } as const;
+  const field = { minHeight: hit, borderWidth: 1, borderColor: C.line, borderRadius: radius.small, paddingHorizontal: space.ms, color: C.text, fontSize: textRoles.callout.fontSize } as const;
   return (
-    <View style={{ gap: 14 }}>
+    <View style={{ gap: space.md }}>
       {editing ? (
-        <View style={{ gap: 10 }}>
-          <Text style={{ color: C.text, fontSize: 15, lineHeight: 21 }}>A recent run you went hard on, like a race or a timed run.</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+        <View style={{ gap: space.ms }}>
+          <Text variant="subhead" style={{ color: C.text }}>A recent run you went hard on, like a race or a timed run.</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
             {[...runDistances, { metres: null, label: 'Other' }].map(item => {
               const selected = distance === item.metres;
               return (
@@ -405,16 +648,16 @@ function RunningSetup() {
                   accessibilityLabel={item.label}
                   onPress={() => setDistance(item.metres)}
                   style={{
-                    minHeight: 40,
+                    minHeight: hit,
                     justifyContent: 'center',
-                    paddingHorizontal: 14,
-                    borderRadius: 20,
+                    paddingHorizontal: space.md,
+                    borderRadius: radius.pill,
                     borderWidth: 1,
                     borderColor: selected ? C.lime : C.line,
                     backgroundColor: selected ? C.lime : C.bg,
                   }}
                 >
-                  <Text style={{ color: selected ? C.onAccent : C.text, fontSize: 15 }}>{item.label}</Text>
+                  <Text variant="subhead" style={{ color: selected ? C.onAccent : C.text }}>{item.label}</Text>
                 </Pressable>
               );
             })}
@@ -423,36 +666,34 @@ function RunningSetup() {
             <TextInput accessibilityLabel="Distance in kilometres" value={other} onChangeText={setOther} placeholder="Distance, km" placeholderTextColor={C.muted} keyboardType="decimal-pad" style={field} />
           ) : null}
           <TextInput accessibilityLabel="Time, minutes and seconds" value={time} onChangeText={setTime} placeholder="Time, like 25:00 or 1:52:30" placeholderTextColor={C.muted} keyboardType="numbers-and-punctuation" style={field} />
-          {error ? <Text style={{ color: C.danger, fontSize: 13 }}>{error}</Text> : null}
-          <Pressable
-            accessibilityRole="button"
+          {error ? <Text variant="footnote" style={{ color: C.danger }}>{error}</Text> : null}
+          <Button
+            title="Save"
+            variant="text"
             accessibilityLabel="Save run"
             disabled={busy}
             onPress={() => void save()}
-            style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', opacity: busy ? 0.5 : pressed ? 0.6 : 1 })}
-          >
-            <Text style={{ color: C.lime, fontSize: 16, fontWeight: '600' }}>Save</Text>
-          </Pressable>
+          />
         </View>
       ) : run && value ? (
-        <View style={{ gap: 8 }}>
+        <View style={{ gap: space.sm }}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${formatDistance(run.distanceM)} in ${clockText(run.seconds)}. Change`}
             onPress={() => setEditing(true)}
-            style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', opacity: pressed ? 0.6 : 1 })}
+            style={({ pressed }) => ({ minHeight: hit, flexDirection: 'row', alignItems: 'center', opacity: pressed ? opacity.pressed : 1 })}
           >
-            <Text style={{ flex: 1, color: C.text, fontSize: 16 }}>{`${formatDistance(run.distanceM)} in ${clockText(run.seconds)}`}</Text>
-            <Text style={{ color: C.lime, fontSize: 15, fontWeight: '600' }}>Change</Text>
+            <Text variant="callout" style={{ flex: 1, color: C.text }}>{`${formatDistance(run.distanceM)} in ${clockText(run.seconds)}`}</Text>
+            <Text variant="subhead" style={{ color: C.lime, fontWeight: '600' }}>Change</Text>
           </Pressable>
-          <Text style={{ color: C.muted, fontSize: 13 }}>Your paces</Text>
+          <Text variant="footnote" style={{ color: C.muted }}>Your paces</Text>
           {(['easy', 'marathon', 'threshold', 'interval'] as const).map(intensity => (
-            <View key={intensity} style={{ flexDirection: 'row', paddingVertical: 4 }}>
-              <Text style={{ flex: 1, color: C.text, fontSize: 15 }}>{intensityShare[intensity].title}</Text>
-              <Text style={{ color: C.text, fontSize: 15 }}>{paceText(paceRange(value, intensity))}</Text>
+            <View key={intensity} style={{ flexDirection: 'row', paddingVertical: space.xs }}>
+              <Text variant="subhead" style={{ flex: 1, color: C.text }}>{intensityShare[intensity].title}</Text>
+              <Text variant="subhead" style={{ color: C.text }}>{paceText(paceRange(value, intensity))}</Text>
             </View>
           ))}
-          <Text style={{ color: C.muted, fontSize: 13, lineHeight: 18 }}>
+          <Text variant="footnote" style={{ color: C.muted }}>
             {`Likely today: ${runDistances
               .filter(item => Math.abs(item.metres - run.distanceM) > 1)
               .slice(0, 3)
@@ -461,19 +702,19 @@ function RunningSetup() {
           </Text>
         </View>
       ) : null}
-      <View style={{ gap: 8 }}>
+      <View style={{ gap: space.sm }}>
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ expanded: extras }}
           accessibilityLabel={extras ? 'Hide optional running details' : 'Optional: weekly distance and swim time'}
           onPress={() => setExtras(valueNow => !valueNow)}
-          style={({ pressed }) => ({ minHeight: 44, flexDirection: 'row', alignItems: 'center', opacity: pressed ? 0.6 : 1 })}
+          style={({ pressed }) => ({ minHeight: hit, flexDirection: 'row', alignItems: 'center', opacity: pressed ? opacity.pressed : 1 })}
         >
-          <Text style={{ flex: 1, color: C.text, fontSize: 15, fontWeight: '600' }}>Weekly distance, swim time</Text>
-          <Text style={{ color: C.muted, fontSize: 14 }}>{extras ? 'Hide' : 'Optional'}</Text>
+          <Text variant="subhead" style={{ flex: 1, color: C.text, fontWeight: '600' }}>Weekly distance, swim time</Text>
+          <Text variant="subhead" style={{ color: C.muted }}>{extras ? 'Hide' : 'Optional'}</Text>
         </Pressable>
         {extras ? (
-          <View style={{ gap: 10 }}>
+          <View style={{ gap: space.ms }}>
             <MetricField
               label="Km you run in a week"
               placeholder="About how many km"
@@ -535,9 +776,9 @@ function MetricField({
     }
   }
   return (
-    <View style={{ gap: 6 }}>
-      <Text style={{ color: C.muted, fontSize: 13 }}>{label}</Text>
-      <View style={{ flexDirection: 'row', gap: 10, alignItems: 'center' }}>
+    <View style={{ gap: space.sm }}>
+      <Text variant="footnote" style={{ color: C.muted }}>{label}</Text>
+      <View style={{ flexDirection: 'row', gap: space.ms, alignItems: 'center' }}>
         <TextInput
           accessibilityLabel={label}
           value={text}
@@ -545,20 +786,19 @@ function MetricField({
           placeholder={placeholder}
           placeholderTextColor={C.muted}
           keyboardType="numbers-and-punctuation"
-          style={{ flex: 1, minHeight: 44, borderWidth: 1, borderColor: C.line, borderRadius: 12, paddingHorizontal: 12, color: C.text, fontSize: 16 }}
+          style={{ flex: 1, minHeight: hit, borderWidth: 1, borderColor: C.line, borderRadius: radius.small, paddingHorizontal: space.ms, color: C.text, fontSize: textRoles.callout.fontSize }}
         />
-        <Pressable
-          accessibilityRole="button"
+        <Button
+          title="Save"
+          variant="text"
+          size="regular"
           accessibilityLabel={`Save ${label}`}
           disabled={busy}
           onPress={() => void save()}
-          style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', opacity: busy ? 0.5 : pressed ? 0.6 : 1 })}
-        >
-          <Text style={{ color: C.lime, fontSize: 15, fontWeight: '600' }}>Save</Text>
-        </Pressable>
+        />
       </View>
-      {message ? <Text style={{ color: C.muted, fontSize: 13 }}>{message}</Text> : null}
-      {note ? <Text style={{ color: C.muted, fontSize: 13 }}>{note}</Text> : null}
+      {message ? <Text variant="footnote" style={{ color: C.muted }}>{message}</Text> : null}
+      {note ? <Text variant="footnote" style={{ color: C.muted }}>{note}</Text> : null}
     </View>
   );
 }

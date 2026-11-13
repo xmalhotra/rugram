@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, Share, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import type { HabitFlow, MobilePayload } from '../../shared/mobile';
 import {
@@ -22,7 +22,7 @@ import {
 import { flowCreationEnabled } from '../../shared/flow-catalog';
 import { liveFlowIds } from './catalog-live';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { hit, opacity, radius, space, stroke, textRoles, useTheme } from './design/theme';
 import { Avatar as ProfilePhoto, Button, EmptyState, Sheet, useToast } from './design/components';
 import { DetailSurface } from './design/DetailSurface';
 import { ScreenBackground } from './design/ScreenBackground';
@@ -42,8 +42,30 @@ import {
   usePeopleSearch,
 } from './community';
 import { personalCardInformation } from './PersonalFlowDetails';
+import { SeriesSheet } from './SeriesSheet';
+import { FollowSheet } from './FollowSheet';
+import { localDate } from '../../shared/flow-habits';
+import { gymExerciseId } from '../../shared/gym-flows';
+import { exercisesPlaceLabel } from '../../shared/flow-defaults';
+import { setsFromCards } from '../../shared/series-impact';
+import { attachmentToTheirFlow, mergeShareFeed } from '../../shared/share-attachment';
+import { AttachmentCard, ShareDetail } from './ShareFlow';
+import { useShareFeed, type SharePost } from './share';
+import { usePersonalMetrics } from './personal-metrics';
 
 type Copy = Feed['copies'][number];
+
+function communityExerciseIds(cards: { cardId: string }[]) {
+  return cards.flatMap(card => {
+    const id = gymExerciseId(card.cardId);
+    return id ? [id] : [];
+  });
+}
+
+function useCommunityPlaceLabel(cards: { cardId: string }[]) {
+  const place = usePersonalMetrics()['gym.place']?.place;
+  return exercisesPlaceLabel(communityExerciseIds(cards), place);
+}
 
 function resolveCards(flow: CommunityFlow, library: HabitFlow[]) {
   return resolvePersonalFlow(
@@ -56,7 +78,7 @@ function shortDate(at: string) {
   return new Date(at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 }
 
-type IconKind = 'upvote' | 'repost' | 'add' | 'share';
+type IconKind = 'upvote' | 'repost' | 'add';
 function Icon({ kind, active }: { kind: IconKind; active: boolean }) {
   const { colors: C } = useTheme();
   const color = active ? C.lime : C.muted;
@@ -65,9 +87,7 @@ function Icon({ kind, active }: { kind: IconKind; active: boolean }) {
       ? 'M12 4 19 12h-4.5v8h-5v-8H5Z'
       : kind === 'repost'
         ? 'M4 9V7.5A2.5 2.5 0 0 1 6.5 5H18m0 0-3-3m3 3-3 3M20 15v1.5a2.5 2.5 0 0 1-2.5 2.5H6m0 0 3 3m-3-3 3-3'
-        : kind === 'share'
-          ? 'M12 15V4m0 0L8 8m4-4 4 4M5 13v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5'
-          : 'M12 5v14M5 12h14';
+        : 'M12 5v14M5 12h14';
   return (
     <Svg width={20} height={20} viewBox="0 0 24 24" accessible={false}>
       <Path
@@ -120,17 +140,17 @@ function Action({
       onPress={onPress}
       hitSlop={4}
       style={({ pressed }) => ({
-        minHeight: 44,
+        minHeight: hit,
         minWidth: 64,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
-        opacity: disabled ? 0.4 : pressed ? 0.6 : 1,
+        gap: space.sm,
+        opacity: disabled ? 0.4 : pressed ? opacity.pressed : 1,
       })}
     >
       <Icon kind={kind} active={active} />
       {count !== undefined && (
-        <Text style={{ color: active ? C.lime : C.muted, fontSize: 14 }}>{count}</Text>
+        <Text variant="subhead" style={{ color: active ? C.lime : C.muted }}>{count}</Text>
       )}
     </Pressable>
   );
@@ -271,16 +291,6 @@ function Actions({ actions }: { actions: ReturnType<typeof useFlowActions> }) {
         }
         onPress={actions.save}
       />
-      <Action
-        kind="share"
-        active={false}
-        label={`Share ${flow.title}`}
-        onPress={() =>
-          void Share.share({
-            message: `${flow.title} by ${flow.author.name} on Qram: ${flow.cards.map(card => card.title).join(' → ')}`,
-          }).catch(() => undefined)
-        }
-      />
     </View>
   );
 }
@@ -303,7 +313,7 @@ function Avatar({ id, name, size = 44 }: { id: string; name: string; size?: numb
       style={{
         width: size,
         height: size,
-        borderRadius: size / 2,
+        borderRadius: radius.pill,
         backgroundColor: avatarColors[hue],
         alignItems: 'center',
         justifyContent: 'center',
@@ -333,12 +343,12 @@ function Media({ cards, total }: { cards: HabitFlow[]; total: number }) {
           left: 0,
           right: 0,
           bottom: 0,
-          paddingHorizontal: 8,
-          paddingVertical: 6,
+          paddingHorizontal: space.sm,
+          paddingVertical: space.sm,
           backgroundColor: 'rgba(0,0,0,0.55)',
         }}
       >
-        <Text numberOfLines={1} style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '600' }}>
+        <Text numberOfLines={1} variant="caption" style={{ color: '#FFFFFF', fontWeight: '600' }}>
           {index + 1}. {card.title}
         </Text>
       </View>
@@ -352,18 +362,18 @@ function Media({ cards, total }: { cards: HabitFlow[]; total: number }) {
             justifyContent: 'center',
           }}
         >
-          <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '600' }}>+{total - 4}</Text>
+          <Text variant="heading" style={{ color: '#FFFFFF' }}>+{total - 4}</Text>
         </View>
       )}
     </View>
   );
   const frame = {
     flexDirection: 'row' as const,
-    gap: 2,
+    gap: space.xxs,
     height: shown.length === 1 ? 200 : 220,
-    borderRadius: 16,
+    borderRadius: radius.control,
     overflow: 'hidden' as const,
-    borderWidth: 1,
+    borderWidth: stroke.line,
     borderColor: C.line,
   };
   if (shown.length === 1) return <View style={frame}>{tile(shown[0], 0, { flex: 1 })}</View>;
@@ -373,7 +383,7 @@ function Media({ cards, total }: { cards: HabitFlow[]; total: number }) {
     return (
       <View style={frame}>
         {tile(shown[0], 0, { flex: 1 })}
-        <View style={{ flex: 1, gap: 2 }}>
+        <View style={{ flex: 1, gap: space.xxs }}>
           {tile(shown[1], 1, { flex: 1 })}
           {tile(shown[2], 2, { flex: 1 })}
         </View>
@@ -383,7 +393,7 @@ function Media({ cards, total }: { cards: HabitFlow[]; total: number }) {
   return (
     <View style={[frame, { flexDirection: 'column' }]}>
       {[0, 2].map(row => (
-        <View key={row} style={{ flex: 1, flexDirection: 'row', gap: 2 }}>
+        <View key={row} style={{ flex: 1, flexDirection: 'row', gap: space.xxs }}>
           {tile(shown[row], row, { flex: 1 })}
           {tile(shown[row + 1], row + 1, { flex: 1 })}
         </View>
@@ -412,39 +422,42 @@ function FlowPost({
   const { colors: C } = useTheme();
   const { flow } = item;
   const cards = resolveCards(flow, library).cards;
+  const placeLabel = useCommunityPlaceLabel(flow.cards);
   const actions = useFlowActions(flow, copy, onSaved);
   const name = flow.viewer.own ? 'You' : flow.author.name;
   return (
-    <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderColor: C.line, gap: 4 }}>
+    <View style={{ paddingVertical: space.ms, borderBottomWidth: stroke.line, borderColor: C.line, gap: space.xs }}>
       {item.repostedBy && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 26 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingLeft: 26 }}>
           <Icon kind="repost" active={false} />
           <Text
             onPress={() => onMember(item.repostedBy!.id)}
-            style={{ color: C.muted, fontSize: 13, fontWeight: '600' }}
+            variant="footnote"
+            style={{ color: C.muted, fontWeight: '600' }}
           >
             {item.repostedBy.name} reposted
           </Text>
         </View>
       )}
-      <View style={{ flexDirection: 'row', gap: 12 }}>
+      <View style={{ flexDirection: 'row', gap: space.ms }}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Open ${flow.author.name}'s profile`}
           onPress={() => onMember(flow.author.id)}
           hitSlop={4}
-          style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+          style={({ pressed }) => ({ opacity: pressed ? opacity.pressed : 1 })}
         >
           <Avatar id={flow.author.id} name={flow.author.name} />
         </Pressable>
-        <View style={{ flex: 1, minWidth: 0, gap: 6 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <View style={{ flex: 1, minWidth: 0, gap: space.sm }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
             <Text
               onPress={() => onMember(flow.author.id)}
               numberOfLines={1}
-              style={{ flexShrink: 1, color: C.muted, fontSize: 15 }}
+              variant="subhead"
+              style={{ flexShrink: 1, color: C.muted }}
             >
-              <Text style={{ color: C.text, fontWeight: '700' }}>{name}</Text> @{flow.author.handle}{' '}
+              <Text style={{ color: C.text, fontWeight: '600' }}>{name}</Text> @{flow.author.handle}{' '}
               · {relativeTime(flow.editedAt ?? flow.publishedAt)}
             </Text>
             <View style={{ flex: 1 }} />
@@ -455,19 +468,19 @@ function FlowPost({
                 onPress={actions.follow}
                 hitSlop={8}
                 style={{
-                  paddingHorizontal: 12,
-                  paddingVertical: 4,
-                  borderRadius: 14,
-                  borderWidth: 1,
+                  paddingHorizontal: space.ms,
+                  paddingVertical: space.xs,
+                  borderRadius: radius.control,
+                  borderWidth: stroke.line,
                   borderColor: actions.flow.viewer.followsAuthor ? C.line : C.text,
                   backgroundColor: actions.flow.viewer.followsAuthor ? 'transparent' : C.text,
                 }}
               >
                 <Text
+                  variant="footnote"
                   style={{
                     color: actions.flow.viewer.followsAuthor ? C.text : C.bg,
-                    fontSize: 13,
-                    fontWeight: '700',
+                    fontWeight: '600',
                   }}
                 >
                   {actions.flow.viewer.followsAuthor ? 'Following' : 'Follow'}
@@ -476,24 +489,25 @@ function FlowPost({
             )}
           </View>
           {!!reason && (
-            <View style={{ flexDirection: 'row', gap: 6, alignItems: 'flex-start' }}>
+            <View style={{ flexDirection: 'row', gap: space.sm, alignItems: 'flex-start' }}>
               <Sparkle size={14} />
-              <Text style={{ flex: 1, color: C.lime, fontSize: 13, lineHeight: 18 }}>{reason}</Text>
+              <Text variant="footnote" style={{ flex: 1, color: C.lime }}>{reason}</Text>
             </View>
           )}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Open ${flow.title} by ${flow.author.name}, ${flow.cards.length} cards`}
             onPress={onOpen}
-            style={({ pressed }) => ({ gap: 10, opacity: pressed ? 0.75 : 1 })}
+            style={({ pressed }) => ({ gap: space.ms, opacity: pressed ? opacity.pressed : 1 })}
           >
-            <Text style={{ color: C.text, fontSize: 16, lineHeight: 22 }}>
-              <Text style={{ fontWeight: '700' }}>{flow.title}</Text>
+            <Text variant="callout" style={{ color: C.text }}>
+              <Text style={{ fontWeight: '600' }}>{flow.title}</Text>
               {flow.description ? `\n${flow.description}` : ''}
             </Text>
             <Media cards={cards} total={cards.length} />
-            <Text style={{ color: C.muted, fontSize: 13 }}>
+            <Text variant="footnote" style={{ color: C.muted }}>
               {flow.cards.length} card sequence{flow.editedAt ? ' · Edited' : ''}
+              {placeLabel ? ` · ${placeLabel}` : ''}
             </Text>
           </Pressable>
           <Actions actions={actions} />
@@ -522,19 +536,17 @@ function Curated({
   // Live feed state, so upvotes and reposts on curated posts update in place.
   const { feed } = useCommunityFeed('for-you');
   const header = (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
       <Sparkle size={16} />
-      <Text numberOfLines={1} style={{ flex: 1, color: C.text, fontSize: 16, fontWeight: '600' }}>
+      <Text numberOfLines={1} variant="callout" style={{ flex: 1, color: C.text, fontWeight: '600' }}>
         Curated for “{prompt}”
       </Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="Clear curation" onPress={onClear} hitSlop={12}>
-        <Text style={{ color: C.lime, fontSize: 15 }}>Clear</Text>
-      </Pressable>
+      <Button variant="text" size="regular" title="Clear" accessibilityLabel="Clear curation" onPress={onClear} />
     </View>
   );
   if (!value || value.prompt !== prompt.slice(0, curationLimits.prompt))
     return (
-      <View style={{ gap: 12 }}>
+      <View style={{ gap: space.ms }}>
         {header}
         {loading || !error ? (
           <View style={{ alignItems: 'center', paddingVertical: 40 }}>
@@ -552,9 +564,9 @@ function Curated({
   const latest = new Map(feed?.items.map(item => [item.flow.id, item.flow]));
   const copies = new Map(value.copies.map(copy => [copy.publishedId, copy]));
   return (
-    <View style={{ gap: 12 }}>
+    <View style={{ gap: space.ms }}>
       {header}
-      <Text style={{ color: C.muted, fontSize: 14, lineHeight: 20 }}>
+      <Text variant="subhead" style={{ color: C.muted }}>
         {value.summary}
         {value.engine === 'keywords' ? ' Matched by keywords.' : ''}
       </Text>
@@ -615,12 +627,12 @@ function PeopleSearch({
             height: 36,
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 6,
-            borderWidth: 1,
+            gap: space.sm,
+            borderWidth: stroke.line,
             borderColor: C.line,
             backgroundColor: C.card,
-            borderRadius: 18,
-            paddingHorizontal: 10,
+            borderRadius: radius.card,
+            paddingHorizontal: space.ms,
           }}
         >
           <Svg width={14} height={14} viewBox="0 0 24 24" accessible={false}>
@@ -635,7 +647,7 @@ function PeopleSearch({
             placeholderTextColor={C.muted}
             autoCapitalize="none"
             autoCorrect={false}
-            style={{ flex: 1, height: 36, paddingVertical: 0, color: C.text, fontSize: 14 }}
+            style={{ flex: 1, height: 36, paddingVertical: 0, color: C.text, fontSize: textRoles.subhead.fontSize }}
           />
           {query ? (
             <Pressable
@@ -644,21 +656,21 @@ function PeopleSearch({
               onPress={() => setQuery('')}
               hitSlop={8}
             >
-              <Text style={{ color: C.muted, fontSize: 14 }}>✕</Text>
+              <Text variant="subhead" style={{ color: C.muted }}>✕</Text>
             </Pressable>
           ) : null}
         </View>
       </View>
       {showResults ? (
-        <View style={{ paddingBottom: 8 }}>
+        <View style={{ paddingBottom: space.sm }}>
           {!active || (loading && people.length === 0) ? (
-            <Text style={{ color: C.muted, fontSize: 14, paddingVertical: 8 }}>Searching…</Text>
+            <Text variant="subhead" style={{ color: C.muted, paddingVertical: space.sm }}>Searching…</Text>
           ) : error ? (
-            <Text style={{ color: C.muted, fontSize: 14, paddingVertical: 8 }}>
+            <Text variant="subhead" style={{ color: C.muted, paddingVertical: space.sm }}>
               Couldn't search. Try again.
             </Text>
           ) : people.length === 0 ? (
-            <Text style={{ color: C.muted, fontSize: 14, paddingVertical: 8 }}>No one found.</Text>
+            <Text variant="subhead" style={{ color: C.muted, paddingVertical: space.sm }}>No one found.</Text>
           ) : (
             people.map(person => (
               <Pressable
@@ -669,15 +681,15 @@ function PeopleSearch({
                 style={({ pressed }) => ({
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 10,
-                  minHeight: 44,
-                  opacity: pressed ? 0.6 : 1,
+                  gap: space.ms,
+                  minHeight: hit,
+                  opacity: pressed ? opacity.pressed : 1,
                 })}
               >
                 <ProfilePhoto name={person.name} uri={avatarUri(person.avatarUrl)} size={32} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: C.text, fontSize: 15 }}>{person.name}</Text>
-                  <Text style={{ color: C.muted, fontSize: 13 }}>@{person.handle}</Text>
+                  <Text variant="subhead" style={{ color: C.text }}>{person.name}</Text>
+                  <Text variant="footnote" style={{ color: C.muted }}>@{person.handle}</Text>
                 </View>
               </Pressable>
             ))
@@ -690,63 +702,94 @@ function PeopleSearch({
   );
 }
 
-function FeedList({ tab, data, onOpen, onSaved, onMember }: FeedProps) {
+/**
+ * For you: people you follow (and you) together with suggestions from everyone else,
+ * newest first. Posts from people you don't follow sit on a shaded band.
+ */
+function FeedList({ data, onOpen, onSaved, onMember }: FeedProps) {
   const { colors: C } = useTheme();
-  const { feed, error, loading, reload } = useCommunityFeed(tab);
+  const suggested = useCommunityFeed('for-you');
+  const followed = useCommunityFeed('following');
+  const shares = useShareFeed();
+  const [openShare, setOpenShare] = useState<string | null>(null);
+  const loading = suggested.loading || followed.loading;
+  const ready = suggested.feed && followed.feed;
   let body: React.ReactNode;
-  if (!feed && loading)
+  if (!ready && loading)
     body = (
       <View style={{ alignItems: 'center', paddingVertical: 48 }}>
         <LogoLoader size={44} label="Loading flows" />
       </View>
     );
-  else if (!feed)
+  else if (!ready)
     body = (
       <EmptyState
         title="Could not load flows"
-        description={error || 'Check your connection and try again.'}
-        action={{ label: 'Retry', onPress: () => void reload() }}
+        description={suggested.error || followed.error || 'Check your connection and try again.'}
+        action={{
+          label: 'Retry',
+          onPress: () => {
+            void suggested.reload();
+            void followed.reload();
+          },
+        }}
       />
     );
   else {
     // Published flows and posts about the old library stay out of sight until flows go live.
-    const items = flowCreationEnabled ? feed.items : [];
-    const activities = feed.activities.filter(activity => liveFlowIds.has(activity.personalFlowId));
-    if (!items.length && !activities.length)
-      body =
-        tab === 'for-you' ? (
-          <EmptyState
-            title="Nothing here yet"
-            description="We're curating the first flows. Have a look in Flows and request the ones you want."
-          />
-        ) : (
-          <EmptyState
-            title="Nothing here yet"
-            description="When you or people you follow finish a flow and post it, it shows up here."
-          />
-        );
+    const mine = flowCreationEnabled ? followed.feed!.items : [];
+    const seen = new Set(mine.map(item => item.flow.id));
+    const others = flowCreationEnabled
+      ? suggested.feed!.items.filter(item => !seen.has(item.flow.id))
+      : [];
+    const activities = followed.feed!.activities.filter(activity =>
+      liveFlowIds.has(activity.personalFlowId),
+    );
+    const sharePosts = shares.value?.posts ?? [];
+    const isFollowed = (row: FeedRow) =>
+      row.kind === 'post'
+        ? Boolean(row.item.repostedBy) || row.item.flow.viewer.followsAuthor || row.item.flow.viewer.own
+        : row.kind === 'attachment'
+          ? row.post.viewer.own || row.post.viewer.followsAuthor
+          : true;
+    if (!mine.length && !others.length && !activities.length && !sharePosts.length)
+      body = (
+        <EmptyState
+          title="Nothing here yet"
+          description="When people you follow finish a flow and post it, it shows up here, along with suggestions from everyone else."
+        />
+      );
     else {
-      const copies = new Map(feed.copies.map(copy => [copy.publishedId, copy]));
+      const copies = new Map(
+        [...suggested.feed!.copies, ...followed.feed!.copies].map(copy => [copy.publishedId, copy]),
+      );
+      const rows: FeedRow[] = [
+        ...mergeTimeline([...mine, ...others], []),
+        ...mergeShareFeed(activities, sharePosts),
+      ].sort((a, b) => b.at.localeCompare(a.at));
       body = (
         <View>
           <Timeline
-            entries={mergeTimeline(items, activities)}
+            entries={rows}
+            followed={isFollowed}
             library={data.flows}
             copies={copies}
             onOpen={onOpen}
             onSaved={onSaved}
             onMember={onMember}
+            onOpenShare={setOpenShare}
+            focusId={data.profile.focusId}
           />
-          <Text style={{ color: C.muted, fontSize: 12, textAlign: 'center', paddingVertical: 8 }}>
-            {tab === 'for-you'
-              ? 'Curated from what you build, upvote and repost, plus what is fresh.'
-              : 'Newest first from you and people you follow.'}
+          {openShare ? (
+            <ShareDetail id={openShare} focusId={data.profile.focusId} viewerId={data.user?.id ?? ''} onClose={() => setOpenShare(null)} />
+          ) : null}
+          <Text variant="caption" style={{ color: C.muted, textAlign: 'center', paddingVertical: space.sm }}>
+            Newest first. Shaded posts are from people you don't follow yet.
           </Text>
         </View>
       );
     }
   }
-  if (tab !== 'following') return body;
   return <PeopleSearch onMember={onMember}>{body}</PeopleSearch>;
 }
 
@@ -765,7 +808,7 @@ function History({
   return (
     <Sheet title="Edit history" navigation="back" presentation="modal" onClose={onClose}>
       {versions.map(version => (
-        <View key={version.version} style={{ gap: 4, paddingVertical: 10 }}>
+        <View key={version.version} style={{ gap: space.xs, paddingVertical: space.ms }}>
           <Text style={{ color: C.text, fontWeight: '600' }}>
             Version {version.version} · {shortDate(version.createdAt)}
           </Text>
@@ -807,36 +850,16 @@ export function CommunityFlowSheet({
   const { colors: C } = useTheme();
   const { value, error, loading } = useCommunityFlow(id);
   const [history, setHistory] = useState(false);
+  const [routine, setRoutine] = useState(false);
+  const [trying, setTrying] = useState(false);
   const flow = value?.flow;
+  const placeLabel = useCommunityPlaceLabel(flow?.cards ?? []);
   const copy = copies.find(item => item.publishedId === id);
   const resolved = flow ? resolveCards(flow, data.flows) : null;
-  const share = flow
-    ? () =>
-        void Share.share({
-          message: `${flow.title} by ${flow.author.name} on Qram: ${flow.cards.map(card => card.title).join(' → ')}`,
-        }).catch(() => undefined)
-    : undefined;
   return (
     <DetailSurface onClose={onClose} fullScreen presentation="inline">
       <ScreenBackground />
-      <PageBar
-        title={flow?.title ?? 'Flow'}
-        onBack={onClose}
-        right={
-          share && (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Share"
-              onPress={share}
-              hitSlop={8}
-            >
-              <Text style={{ color: C.text, fontSize: 20, fontWeight: '700', letterSpacing: 1 }}>
-                ···
-              </Text>
-            </Pressable>
-          )
-        }
-      />
+      <PageBar title={flow?.title ?? 'Flow'} onBack={onClose} />
       {!flow ? (
         loading ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
@@ -847,7 +870,7 @@ export function CommunityFlowSheet({
         )
       ) : (
         // The flow itself is the page; who posted it sits compactly above, as on X.
-        <View style={{ flex: 1, paddingHorizontal: 20, gap: 12 }}>
+        <View style={{ flex: 1, paddingHorizontal: space.lg, gap: space.ms }}>
           <FlowByline
             flow={flow}
             copy={copy}
@@ -855,8 +878,48 @@ export function CommunityFlowSheet({
             onMember={onMember}
             onHistory={() => setHistory(true)}
           />
+          {placeLabel ? <Text variant="footnote" style={{ color: C.muted }}>{placeLabel}</Text> : null}
+          <Button
+            variant="text"
+            title="Add to Daily flow"
+            accessibilityLabel="Add to Daily flow"
+            onPress={() => setRoutine(true)}
+          />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Try ${flow.title}`}
+            onPress={() => setTrying(true)}
+            style={{ minHeight: hit, justifyContent: 'center' }}
+          >
+            <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>Try this flow</Text>
+          </Pressable>
+          {trying ? (
+            <FollowSheet
+              theirFlow={{
+                title: flow.title,
+                fromName: flow.author.handle || flow.author.name,
+                kind: 'custom',
+                source: { kind: 'community-flow', id: flow.id, version: flow.version },
+                items: setsFromCards(flow.cards),
+              }}
+              focusId={data.profile.focusId}
+              onClose={() => setTrying(false)}
+            />
+          ) : null}
+          {routine ? (
+            <SeriesSheet
+              mode="create"
+              title={flow.title}
+              itemKind="community"
+              itemId={flow.id}
+              version={flow.version}
+              exercises={setsFromCards(flow.cards)}
+              start={localDate(new Date())}
+              onClose={() => setRoutine(false)}
+            />
+          ) : null}
           {resolved && resolved.missing.length > 0 && (
-            <Text style={{ color: C.muted, fontSize: 12 }}>
+            <Text variant="caption" style={{ color: C.muted }}>
               {resolved.missing.length} card{resolved.missing.length === 1 ? ' is' : 's are'} no
               longer in the catalogue.
             </Text>
@@ -900,8 +963,8 @@ export function CommunityFlowSheet({
 function Stat({ value, label }: { value: number; label: string }) {
   const { colors: C } = useTheme();
   return (
-    <Text style={{ color: C.muted, fontSize: 15 }}>
-      <Text style={{ color: C.text, fontWeight: '700' }}>{value}</Text> {label}
+    <Text variant="subhead" style={{ color: C.muted }}>
+      <Text style={{ color: C.text, fontWeight: '600' }}>{value}</Text> {label}
     </Text>
   );
 }
@@ -966,7 +1029,7 @@ export function CommunityMemberSheet({
           />
         )
       ) : (
-        <View style={{ gap: 12 }}>
+        <View style={{ gap: space.ms }}>
           <View
             style={{
               flexDirection: 'row',
@@ -982,20 +1045,20 @@ export function CommunityMemberSheet({
                 onPress={() => void follow()}
                 disabled={busy}
                 style={({ pressed }) => ({
-                  paddingHorizontal: 18,
-                  paddingVertical: 8,
-                  borderRadius: 18,
-                  borderWidth: 1,
+                  paddingHorizontal: space.md,
+                  paddingVertical: space.sm,
+                  borderRadius: radius.card,
+                  borderWidth: stroke.line,
                   borderColor: member.followedByViewer ? C.line : C.text,
                   backgroundColor: member.followedByViewer ? 'transparent' : C.text,
-                  opacity: busy ? 0.5 : pressed ? 0.7 : 1,
+                  opacity: busy ? 0.5 : pressed ? opacity.pressed : 1,
                 })}
               >
                 <Text
+                  variant="subhead"
                   style={{
                     color: member.followedByViewer ? C.text : C.bg,
-                    fontSize: 15,
-                    fontWeight: '700',
+                    fontWeight: '600',
                   }}
                 >
                   {member.followedByViewer ? 'Following' : 'Follow'}
@@ -1003,13 +1066,13 @@ export function CommunityMemberSheet({
               </Pressable>
             )}
           </View>
-          <View style={{ gap: 2 }}>
-            <Text style={{ color: C.text, fontSize: 22, fontWeight: '700' }}>
+          <View style={{ gap: space.xxs }}>
+            <Text variant="heading" style={{ color: C.text }}>
               {member.own ? `${member.name} (you)` : member.name}
             </Text>
-            <Text style={{ color: C.muted, fontSize: 15 }}>@{member.handle}</Text>
+            <Text variant="subhead" style={{ color: C.muted }}>@{member.handle}</Text>
           </View>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 16, rowGap: 4 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: space.md, rowGap: space.xs }}>
             <Stat value={member.following} label="Following" />
             <Stat
               value={member.followers}
@@ -1025,8 +1088,8 @@ export function CommunityMemberSheet({
               </>
             )}
           </View>
-          <View style={{ borderBottomWidth: 1, borderColor: C.line, paddingTop: 4 }}>
-            <Text style={{ color: C.text, fontSize: 16, fontWeight: '700', paddingBottom: 10 }}>
+          <View style={{ borderBottomWidth: stroke.line, borderColor: C.line, paddingTop: space.xs }}>
+            <Text variant="callout" style={{ color: C.text, fontWeight: '600', paddingBottom: space.ms }}>
               Posts
             </Text>
             <View style={{ height: 4, width: 44, borderRadius: 2, backgroundColor: C.lime }} />
@@ -1052,24 +1115,44 @@ export function CommunityMemberSheet({
   );
 }
 
+type FeedRow = TimelineEntry | { kind: 'attachment'; at: string; post: SharePost };
+
+function rowKey(row: FeedRow) {
+  return row.kind === 'post'
+    ? `${row.item.flow.id}:${row.item.repostedBy?.id ?? ''}`
+    : row.kind === 'attachment'
+      ? row.post.id
+      : row.activity.id;
+}
+
 function Timeline({
   entries,
+  followed,
   library,
   copies,
   onOpen,
   onSaved,
   onMember,
+  onOpenShare,
+  focusId,
 }: {
-  entries: TimelineEntry[];
+  entries: FeedRow[];
+  /** When given, rows it returns false for get a shaded, edge-to-edge band. */
+  followed?: (row: FeedRow) => boolean;
   library: HabitFlow[];
   copies: Map<string, Copy>;
   onOpen: (flowId: string) => void;
   onSaved: () => void;
   onMember: (id: string) => void;
+  onOpenShare?: (id: string) => void;
+  focusId?: string | null;
 }) {
+  const { colors: C } = useTheme();
+  const [following, setFollowing] = useState<SharePost | null>(null);
   return (
     <View>
-      {entries.map(entry =>
+      {entries.map(entry => {
+        const row =
         entry.kind === 'post' ? (
           <FlowPost
             key={`${entry.item.flow.id}:${entry.item.repostedBy?.id ?? ''}`}
@@ -1080,6 +1163,17 @@ function Timeline({
             onSaved={onSaved}
             onMember={onMember}
           />
+        ) : entry.kind === 'attachment' ? (
+          <View key={entry.post.id} style={{ paddingVertical: space.ms }}>
+            <AttachmentCard
+              attachment={entry.post.attachment}
+              text={entry.post.text}
+              following={entry.post.following}
+              finished={entry.post.finished}
+              onOpen={onOpenShare ? () => onOpenShare(entry.post.id) : undefined}
+              onFollow={entry.post.viewer.own ? undefined : () => setFollowing(entry.post)}
+            />
+          </View>
         ) : (
           <ActivityPost
             key={entry.activity.id}
@@ -1088,8 +1182,25 @@ function Timeline({
             onOpen={onOpen}
             onMember={onMember}
           />
-        ),
-      )}
+        );
+        if (!followed || followed(entry)) return row;
+        return (
+          <View
+            key={rowKey(entry)}
+            style={{ marginHorizontal: -space.md, paddingHorizontal: space.md, backgroundColor: C.card }}
+          >
+            {row}
+          </View>
+        );
+      })}
+      {following ? (
+        <FollowSheet
+          theirFlow={attachmentToTheirFlow(following.attachment)}
+          focusId={focusId}
+          postId={following.id}
+          onClose={() => setFollowing(null)}
+        />
+      ) : null}
     </View>
   );
 }
@@ -1108,8 +1219,8 @@ function Check({ on, size = 22 }: { on: boolean; size?: number }) {
       style={{
         width: size,
         height: size,
-        borderRadius: size / 2,
-        borderWidth: 2,
+        borderRadius: radius.pill,
+        borderWidth: stroke.active,
         borderColor: on ? C.lime : C.line,
         backgroundColor: on ? C.lime : 'transparent',
         alignItems: 'center',
@@ -1162,13 +1273,13 @@ function ActivityPost({
   return (
     <View
       style={{
-        paddingVertical: 12,
-        borderBottomWidth: 1,
+        paddingVertical: space.ms,
+        borderBottomWidth: stroke.line,
         borderColor: C.line,
         opacity: removing ? 0.5 : 1,
       }}
     >
-      <View style={{ flexDirection: 'row', gap: 12 }}>
+      <View style={{ flexDirection: 'row', gap: space.ms }}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Open ${activity.user.name}'s profile`}
@@ -1177,12 +1288,12 @@ function ActivityPost({
         >
           <Avatar id={activity.user.id} name={activity.user.name} />
         </Pressable>
-        <View style={{ flex: 1, minWidth: 0, gap: 8 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text numberOfLines={1} style={{ flexShrink: 1, color: C.muted, fontSize: 15 }}>
+        <View style={{ flex: 1, minWidth: 0, gap: space.sm }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+            <Text numberOfLines={1} variant="subhead" style={{ flexShrink: 1, color: C.muted }}>
               <Text
                 onPress={() => onMember(activity.user.id)}
-                style={{ color: C.text, fontWeight: '700' }}
+                style={{ color: C.text, fontWeight: '600' }}
               >
                 {activity.viewer.own ? 'You' : activity.user.name}
               </Text>{' '}
@@ -1197,27 +1308,28 @@ function ActivityPost({
                 disabled={removing}
                 hitSlop={8}
               >
-                <Text style={{ color: C.muted, fontSize: 13 }}>Remove</Text>
+                <Text variant="footnote" style={{ color: C.muted }}>Remove</Text>
               </Pressable>
             )}
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
             <Check on size={20} />
             <Text
               onPress={() => setOpen(true)}
-              style={{ flex: 1, color: C.text, fontSize: 16, lineHeight: 22 }}
+              variant="callout"
+              style={{ flex: 1, color: C.text }}
             >
-              Completed <Text style={{ fontWeight: '700' }}>{activity.title}</Text>
+              Completed <Text style={{ fontWeight: '600' }}>{activity.title}</Text>
             </Text>
           </View>
           {!!activity.note && (
-            <Text style={{ color: C.text, fontSize: 16, lineHeight: 22 }}>{activity.note}</Text>
+            <Text variant="callout" style={{ color: C.text }}>{activity.note}</Text>
           )}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Open the completion for ${activity.title}`}
             onPress={() => setOpen(true)}
-            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            style={({ pressed }) => ({ opacity: pressed ? opacity.pressed : 1 })}
           >
             <Media cards={cards} total={cards.length} />
           </Pressable>
@@ -1254,13 +1366,13 @@ export function ActivityDetailSheet({
   const at = new Date(activity.at);
   return (
     <Sheet title={`Completed ${activity.title}`} presentation="modal" fullScreen onClose={onClose}>
-      <Text style={{ color: C.muted, fontSize: 15 }}>
+      <Text variant="subhead" style={{ color: C.muted }}>
         {activity.viewer.own ? 'You' : activity.user.name} ·{' '}
         {at.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })},{' '}
         {at.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
       </Text>
       {!!activity.note && (
-        <Text style={{ color: C.text, fontSize: 17, lineHeight: 24 }}>{activity.note}</Text>
+        <Text variant="body" style={{ color: C.text }}>{activity.note}</Text>
       )}
       <View>
         {activity.cards.map((card, index) => {
@@ -1271,9 +1383,9 @@ export function ActivityDetailSheet({
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 12,
-                paddingVertical: 8,
-                borderBottomWidth: 0.5,
+                gap: space.ms,
+                paddingVertical: space.sm,
+                borderBottomWidth: StyleSheet.hairlineWidth,
                 borderColor: C.line,
               }}
             >
@@ -1281,14 +1393,14 @@ export function ActivityDetailSheet({
                 style={{
                   width: 56,
                   height: 56,
-                  borderRadius: 12,
+                  borderRadius: radius.small,
                   overflow: 'hidden',
                   backgroundColor: C.card,
                 }}
               >
                 {found && <FlowIllustration flow={found} cover />}
               </View>
-              <Text style={{ flex: 1, color: C.text, fontSize: 16 }}>
+              <Text variant="callout" style={{ flex: 1, color: C.text }}>
                 {index + 1}. {card.title}
               </Text>
               <Check on size={20} />
@@ -1320,8 +1432,8 @@ function FlowByline({
   const { colors: C } = useTheme();
   const actions = useFlowActions(flow, copy, onSaved);
   return (
-    <View style={{ gap: 8 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+    <View style={{ gap: space.sm }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.ms }}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Open ${flow.author.name}'s profile`}
@@ -1331,13 +1443,13 @@ function FlowByline({
             minWidth: 0,
             flexDirection: 'row',
             alignItems: 'center',
-            gap: 10,
-            opacity: pressed ? 0.7 : 1,
+            gap: space.ms,
+            opacity: pressed ? opacity.pressed : 1,
           })}
         >
           <Avatar id={flow.author.id} name={flow.author.name} size={36} />
-          <Text numberOfLines={1} style={{ flex: 1, color: C.muted, fontSize: 15 }}>
-            <Text style={{ color: C.text, fontWeight: '700' }}>
+          <Text numberOfLines={1} variant="subhead" style={{ flex: 1, color: C.muted }}>
+            <Text style={{ color: C.text, fontWeight: '600' }}>
               {flow.viewer.own ? 'You' : flow.author.name}
             </Text>{' '}
             @{flow.author.handle} · {relativeTime(flow.editedAt ?? flow.publishedAt)}
@@ -1350,19 +1462,19 @@ function FlowByline({
             onPress={actions.follow}
             hitSlop={8}
             style={{
-              paddingHorizontal: 12,
-              paddingVertical: 4,
-              borderRadius: 14,
-              borderWidth: 1,
+              paddingHorizontal: space.ms,
+              paddingVertical: space.xs,
+              borderRadius: radius.control,
+              borderWidth: stroke.line,
               borderColor: actions.flow.viewer.followsAuthor ? C.line : C.text,
               backgroundColor: actions.flow.viewer.followsAuthor ? 'transparent' : C.text,
             }}
           >
             <Text
+              variant="footnote"
               style={{
                 color: actions.flow.viewer.followsAuthor ? C.text : C.bg,
-                fontSize: 13,
-                fontWeight: '700',
+                fontWeight: '600',
               }}
             >
               {actions.flow.viewer.followsAuthor ? 'Following' : 'Follow'}
@@ -1371,7 +1483,7 @@ function FlowByline({
         )}
       </View>
       {!!flow.description && (
-        <Text numberOfLines={2} style={{ color: C.text, fontSize: 15, lineHeight: 21 }}>
+        <Text numberOfLines={2} variant="subhead" style={{ color: C.text }}>
           {flow.description}
         </Text>
       )}
@@ -1379,12 +1491,13 @@ function FlowByline({
         <Text
           accessibilityRole="button"
           onPress={onHistory}
-          style={{ color: C.lime, fontSize: 13, fontWeight: '600' }}
+          variant="footnote"
+          style={{ color: C.lime, fontWeight: '600' }}
         >
           Edited {shortDate(flow.editedAt)} · See what changed
         </Text>
       )}
-      <View style={{ borderTopWidth: 0.5, borderBottomWidth: 0.5, borderColor: C.line }}>
+      <View style={{ borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: C.line }}>
         <Actions actions={actions} />
       </View>
     </View>

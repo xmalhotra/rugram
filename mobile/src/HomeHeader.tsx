@@ -7,19 +7,21 @@ import {
   StyleSheet,
   TextInput,
   View,
-  type LayoutChangeEvent,
+  type LayoutChangeEvent
 } from 'react-native';
 import { BlurView } from 'expo-blur';
 import Svg, { Path } from 'react-native-svg';
+import { Glyph } from './design/Glyph';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { useTheme, space, radius, hit, opacity, size, textRoles } from './design/theme';
 import { Avatar } from './design/components';
 import { BrandMark } from './design/BrandMark';
 import { Sparkle } from './CommunityFeed';
 import { useAnimations, useMotionAllowed } from './motion';
 import { curationLimits } from '../../shared/community-flows';
 
-export type HomeTab = 'for-you' | 'following' | 'yours';
+/** Yours comes first. For you holds people you follow and suggestions from everyone else. */
+export type HomeTab = 'yours' | 'for-you';
 // X's underline: its label's width plus a little on each side, 3pt tall, fully rounded.
 // It is drawn at `indicatorBase` wide and scaled, so width and position both animate natively.
 const indicatorBase = 100;
@@ -28,9 +30,9 @@ const indicatorHeight = 3;
 /** A tab in the top bar. `menu` marks Home's For you: sparkle, chevron and the prompt menu. */
 export type BarTab = { id: string; label: string; menu?: boolean };
 export const homeTabs: BarTab[] = [
-  { id: 'for-you', label: 'For you', menu: flowCreationEnabled },
-  { id: 'following', label: 'Following' },
   { id: 'yours', label: 'Yours' },
+  // The shared side of Home: the community feed. "For you" read as a second Yours.
+  { id: 'for-you', label: 'Community', menu: flowCreationEnabled },
 ];
 
 const suggestions = [
@@ -57,37 +59,37 @@ function CurateMenu({ prompt, onAsk }: { prompt: string; onAsk: (prompt: string)
       style={({ pressed }) => ({
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
-        minHeight: 48,
-        paddingHorizontal: 16,
-        borderTopWidth: 0.5,
+        gap: space.ms,
+        minHeight: hit,
+        paddingHorizontal: space.md,
+        borderTopWidth: StyleSheet.hairlineWidth,
         borderColor: C.line,
-        backgroundColor: pressed ? C.card : 'transparent',
+        backgroundColor: pressed ? C.card : 'transparent'
       })}
     >
       <Sparkle size={16} color={accent ? C.lime : C.muted} />
-      <Text style={{ flex: 1, color: accent ? C.lime : C.text, fontSize: 16 }}>{label}</Text>
-      <Text style={{ color: C.muted, fontSize: 18 }}>›</Text>
+      <Text variant="callout" style={{ flex: 1, color: accent ? C.lime : C.text }}>{label}</Text>
+      <Glyph name={{ ios: 'chevron.right', android: 'chevron_right' }} fallback="›" color={C.muted} size={18} />
     </Pressable>
   );
   return (
-    <View style={{ paddingTop: 12, borderTopWidth: 0.5, borderColor: C.line }}>
-      <Text style={{ color: C.muted, fontSize: 13, paddingHorizontal: 16, paddingBottom: 8 }}>
+    <View style={{ paddingTop: space.ms, borderTopWidth: StyleSheet.hairlineWidth, borderColor: C.line }}>
+      <Text variant="footnote" style={{ color: C.muted, paddingHorizontal: space.md, paddingBottom: space.sm }}>
         Curate For you with a prompt
       </Text>
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 10,
-          marginHorizontal: 16,
-          marginBottom: 12,
-          minHeight: 44,
-          paddingHorizontal: 12,
-          borderRadius: 22,
+          gap: space.ms,
+          marginHorizontal: space.md,
+          marginBottom: space.ms,
+          minHeight: hit,
+          paddingHorizontal: space.ms,
+          borderRadius: radius.pill,
           backgroundColor: C.card,
           borderWidth: 1,
-          borderColor: C.line,
+          borderColor: C.line
         }}
       >
         <Sparkle size={16} />
@@ -101,17 +103,16 @@ function CurateMenu({ prompt, onAsk }: { prompt: string; onAsk: (prompt: string)
           placeholderTextColor={C.muted}
           returnKeyType="search"
           maxLength={curationLimits.prompt}
-          style={{ flex: 1, minWidth: 0, color: C.text, fontSize: 16, paddingVertical: 10 }}
+          style={{ flex: 1, minWidth: 0, color: C.text, fontSize: textRoles.callout.fontSize, paddingVertical: space.ms }}
         />
       </View>
       {prompt ? row('Show all of For you', () => onAsk(''), true) : null}
-      <Text
+      <Text variant="footnote"
         style={{
           color: C.muted,
-          fontSize: 13,
-          paddingHorizontal: 16,
-          paddingTop: 8,
-          paddingBottom: 6,
+          paddingHorizontal: space.md,
+          paddingTop: space.sm,
+          paddingBottom: space.sm
         }}
       >
         Try
@@ -161,7 +162,7 @@ export function HomeHeader({
   statusBar,
   baseHeight,
   tabs,
-  progress,
+  progress
 }: {
   name: string;
   avatarUrl: string | null;
@@ -218,12 +219,12 @@ export function HomeHeader({
         outputRange: tabs.map(item => {
           const slot = slots[item.id]!;
           return slot.x + slot.width / 2 - indicatorBase / 2;
-        }),
+        })
       }),
       scale: progress.interpolate({
         inputRange,
-        outputRange: tabs.map(item => (labels[item.id]! + indicatorPadding) / indicatorBase),
-      }),
+        outputRange: tabs.map(item => (labels[item.id]! + indicatorPadding) / indicatorBase)
+      })
     };
     // `measureKey` already folds in tab order and every measured slot and label.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -284,14 +285,7 @@ export function HomeHeader({
   // One glass layer from the screen top, so the status bar and header never show a seam.
   // It shrinks to the status bar while the header content slides up inside it.
   // Only transform and opacity animate, so scrolling stays on the native thread.
-  // The glass slides with the header; once it has gone, a tinted strip keeps the status bar readable.
-  const strip = baseHeight
-    ? translateY.interpolate({
-        inputRange: [-baseHeight, 0],
-        outputRange: [1, 0],
-        extrapolate: 'clamp',
-      })
-    : 0;
+  // A solid strip always covers the status bar, so the header never ghosts behind the clock.
   return (
     <>
       <Animated.View
@@ -302,9 +296,9 @@ export function HomeHeader({
           right: 0,
           zIndex: 10,
           overflow: 'hidden',
-          borderBottomWidth: 0.5,
+          borderBottomWidth: StyleSheet.hairlineWidth,
           borderColor: C.line,
-          transform: [{ translateY }],
+          transform: [{ translateY }]
         }}
       >
         {glass(menuOpen ? 0.8 : 0.15)}
@@ -315,9 +309,9 @@ export function HomeHeader({
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                paddingHorizontal: 16,
-                minHeight: 52,
-                paddingBottom: tabs ? 0 : 6,
+                paddingHorizontal: space.md,
+                minHeight: size.button,
+                paddingBottom: tabs ? 0 : space.sm
               }}
             >
               <Pressable
@@ -344,7 +338,7 @@ export function HomeHeader({
                     accessibilityLabel={item.label}
                     accessibilityState={{
                       selected: active,
-                      expanded: forYou ? menuOpen : undefined,
+                      expanded: forYou ? menuOpen : undefined
                     }}
                     accessibilityHint={forYou && active ? 'Opens search by prompt' : undefined}
                     onPress={() => (forYou && active ? onMenu(!menuOpen) : choose(item.id))}
@@ -360,8 +354,8 @@ export function HomeHeader({
                       flex: 1,
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      paddingTop: 14,
-                      opacity: pressed ? 0.6 : 1,
+                      paddingTop: space.md,
+                      opacity: pressed ? opacity.pressed : 1
                     })}
                   >
                     <View
@@ -374,17 +368,16 @@ export function HomeHeader({
                       style={{
                         flexDirection: 'row',
                         alignItems: 'center',
-                        gap: 6,
-                        paddingBottom: 14,
+                        gap: space.sm,
+                        paddingBottom: space.md
                       }}
                     >
                       {forYou && <Sparkle size={13} color={active ? C.lime : C.muted} />}
-                      <Text
+                      <Text variant="callout"
                         style={{
                           color: active ? C.text : C.muted,
-                          fontSize: 16,
                           // One weight for every tab: a width change mid-slide would restart it and make it jump.
-                          fontWeight: '600',
+                          fontWeight: '600'
                         }}
                       >
                         {item.label}
@@ -410,7 +403,7 @@ export function HomeHeader({
                   ],
                   borderRadius: indicatorHeight / 2,
                   backgroundColor: C.lime,
-                  opacity: 0.75,
+                  opacity: 0.75
                 }}
               />
             </View>
@@ -429,7 +422,8 @@ export function HomeHeader({
           height: statusBar,
           zIndex: 11,
           backgroundColor: C.bg,
-          opacity: Animated.multiply(strip, 0.9),
+          // Solid, so header text sliding up never shows behind the clock.
+          opacity: 1
         }}
       />
     </>
@@ -439,7 +433,7 @@ export function HomeHeader({
 /** Slides a tab's content in from the side of the tab that was tapped. */
 export function TabSlide({
   direction,
-  children,
+  children
 }: {
   direction: number;
   children: React.ReactNode;
@@ -457,10 +451,10 @@ export function TabSlide({
           {
             translateX: progress.interpolate({
               inputRange: [0, 1],
-              outputRange: [Math.sign(direction) * 48, 0],
-            }),
+              outputRange: [Math.sign(direction) * 48, 0]
+            })
           },
-        ],
+        ]
       }}
     >
       {children}

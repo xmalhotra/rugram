@@ -2,7 +2,7 @@ import React from 'react';
 import { Image, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { catalogTile } from '../../shared/flow-catalog';
-import { useTheme } from './design/theme';
+import { radius, useTheme } from './design/theme';
 import { exerciseIcons } from './exercise-icons';
 import { catalogFlowIcons } from '../../shared/catalog-flow-icons';
 
@@ -15,8 +15,10 @@ const iconForTile: Record<string, string> = {
   'gym-shoulders': 'seated-dumbbell-shoulder-press',
   'gym-legs': 'leg-press',
   'gym-core': 'cable-crunch',
+  'gym-arms': 'hammer-curl',
   'gym-supersets': 'mid-width-lat-pulldown',
   'gym-full': 'barbell-back-squat',
+  'gym-splits': 'hack-squat',
   'cal-upper': 'push-up',
   'cal-pull': 'pull-up',
   'cal-push': 'push-up',
@@ -108,7 +110,7 @@ export function CatalogCover({
       style={{
         width: '100%',
         aspectRatio,
-        borderRadius: square ? 0 : 14,
+        borderRadius: square ? 0 : radius.control,
         overflow: 'hidden',
         backgroundColor: C.card,
         alignItems: 'center',
@@ -138,7 +140,7 @@ export function CatalogSectionCover({ sectionId }: { sectionId: string }) {
       style={{
         width: '100%',
         aspectRatio: 1,
-        borderRadius: 14,
+        borderRadius: radius.control,
         overflow: 'hidden',
         backgroundColor: C.card,
         alignItems: 'center',

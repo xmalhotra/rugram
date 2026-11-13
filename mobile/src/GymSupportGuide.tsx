@@ -5,8 +5,8 @@ import { Text } from './design/Text';
 import type { MobilePayload, Product } from '../../shared/mobile';
 import { gymSupports, supportSources, type SupportKind } from '../../shared/gym-supports';
 import { picksForHabit } from '../../shared/flow-connections';
-import { Badge, Button, Card, Field, HabitToggle } from './design/components';
-import { useTheme } from './design/theme';
+import { Badge, Button, Card, Field, HabitToggle, SectionHeader } from './design/components';
+import { space, useTheme } from './design/theme';
 import { EquipmentThumbnail } from './EquipmentThumbnail';
 import { HealthNote } from './OutboundLink';
 
@@ -38,17 +38,15 @@ export function GymSupportGuide({
   ];
   const limit = budget.trim() === '' ? Infinity : Number(budget);
   const matches = item && limit >= 0 ? picksForHabit(products, item.id, limit) : [];
-  const text = { color: C.muted, fontSize: 16, lineHeight: 24 } as const;
-  const heading = { color: C.text, fontSize: 22, fontWeight: '600', lineHeight: 29 } as const;
+  const text = { color: C.muted } as const;
+  const heading = { color: C.text } as const;
   return (
-    <View style={{ gap: 16 }}>
+    <View style={{ gap: space.md }}>
       <HealthNote />
       {!item ? (
         <>
-          <Text accessibilityRole="header" style={heading}>
-            Choose the tool. Understand the job.
-          </Text>
-          <Text style={text}>
+          <SectionHeader title="Choose the tool. Understand the job." />
+          <Text variant="callout" style={text}>
             Equipment has no gender. Using it—or choosing not to—is not a measure of toughness.
             Start with what the session calls for.
           </Text>
@@ -63,11 +61,11 @@ export function GymSupportGuide({
               }}
             >
               <Card>
-                <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
+                <View style={{ flexDirection: 'row', gap: space.md, alignItems: 'center' }}>
                   <EquipmentThumbnail kind={support.id} />
                   <View style={{ flex: 1 }}>
-                    <Text style={heading}>{support.title}</Text>
-                    <Text style={text}>
+                    <Text variant="heading" style={heading}>{support.title}</Text>
+                    <Text variant="callout" style={text}>
                       {guide?.sections
                         .find(section => section.id === support.id)
                         ?.body.split('\n')[0] ??
@@ -80,7 +78,7 @@ export function GymSupportGuide({
                     ? 'YOU HAVE ACCESS'
                     : 'OPTIONAL · NOT A REQUIRED KIT'}
                 </Badge>
-                <Text style={{ color: C.lime, fontSize: 16 }}>Understand & compare →</Text>
+                <Text variant="callout" style={{ color: C.lime }}>Understand & compare →</Text>
               </Card>
             </Pressable>
           ))}
@@ -95,18 +93,18 @@ export function GymSupportGuide({
               else setKind(null);
             }}
           />
-          <View style={{ flexDirection: 'row', gap: 14, alignItems: 'center' }}>
+          <View style={{ flexDirection: 'row', gap: space.md, alignItems: 'center' }}>
             <EquipmentThumbnail kind={item.id} />
-            <Text style={[heading, { flex: 1 }]}>{item.title}</Text>
+            <Text variant="heading" style={[heading, { flex: 1 }]}>{item.title}</Text>
           </View>
           {view === 'learn' ? (
             <>
               {guide?.sections.find(section => section.id === item.id) && (
                 <Card>
-                  <Text style={heading}>
+                  <Text variant="heading" style={heading}>
                     {guide.sections.find(section => section.id === item.id)!.title}
                   </Text>
-                  <Text style={text}>
+                  <Text variant="callout" style={text}>
                     {guide.sections.find(section => section.id === item.id)!.body}
                   </Text>
                   <Button
@@ -122,9 +120,9 @@ export function GymSupportGuide({
                 <>
                   <Card>
                     <Badge>WHAT IT DOES</Badge>
-                    <Text style={text}>{item.purpose}</Text>
-                    <Text style={text}>{item.context}</Text>
-                    <Text style={text}>{item.notFor}</Text>
+                    <Text variant="callout" style={text}>{item.purpose}</Text>
+                    <Text variant="callout" style={text}>{item.context}</Text>
+                    <Text variant="callout" style={text}>{item.notFor}</Text>
                   </Card>
                 </>
               )}
@@ -141,20 +139,22 @@ export function GymSupportGuide({
               )}
               {!data.library && (
                 <>
-                  <Text accessibilityRole="header" style={heading}>
-                    {item.id === 'lifting-belt'
-                      ? '10 mm or 13 mm? More than a number.'
-                      : 'What should I compare?'}
-                  </Text>
+                  <SectionHeader
+                    title={
+                      item.id === 'lifting-belt'
+                        ? '10 mm or 13 mm? More than a number.'
+                        : 'What should I compare?'
+                    }
+                  />
                   {item.id === 'lifting-belt' && (
                     <Card>
-                      <View style={{ flexDirection: 'row', gap: 18 }}>
+                      <View style={{ flexDirection: 'row', gap: space.md }}>
                         {[10, 13].map(thickness => (
                           <View
                             key={thickness}
-                            style={{ flex: 1, gap: 12, justifyContent: 'flex-end' }}
+                            style={{ flex: 1, gap: space.ms, justifyContent: 'flex-end' }}
                           >
-                            <Text style={heading}>{thickness} mm</Text>
+                            <Text variant="heading" style={heading}>{thickness} mm</Text>
                             <View
                               style={{
                                 height: thickness * 2,
@@ -174,7 +174,7 @@ export function GymSupportGuide({
                   {item.compare.map((point, index) => (
                     <Card key={point}>
                       <Badge>COMPARE {index + 1}</Badge>
-                      <Text style={text}>{point}</Text>
+                      <Text variant="callout" style={text}>{point}</Text>
                     </Card>
                   ))}
                   {item.sourceIds.map(id => (
@@ -198,7 +198,7 @@ export function GymSupportGuide({
             </>
           ) : (
             <>
-              <Text style={text}>
+              <Text variant="callout" style={text}>
                 These are the same central Picks records, filtered to this equipment type. Seller
                 prices are snapshots, not a live stock feed or delivered-cost quote.
               </Text>
@@ -213,8 +213,8 @@ export function GymSupportGuide({
                   <Badge>
                     {product.tier} · {product.packLabel}
                   </Badge>
-                  <Text style={heading}>{product.title}</Text>
-                  <Text style={text}>{product.summary}</Text>
+                  <Text variant="heading" style={heading}>{product.title}</Text>
+                  <Text variant="callout" style={text}>{product.summary}</Text>
                   <Badge>
                     Seller snapshot · {formatDate(new Date(product.checkedAt))} · shipping /
                     checkout extras may apply
@@ -224,7 +224,7 @@ export function GymSupportGuide({
               ))}
               {matches.length === 0 && (
                 <Card>
-                  <Text style={text}>
+                  <Text variant="callout" style={text}>
                     No published matching products within this limit. Clear or change the budget;
                     you can still use the guide without buying anything.
                   </Text>
@@ -238,7 +238,7 @@ export function GymSupportGuide({
           )}
         </>
       )}
-      <Text style={text}>
+      <Text variant="callout" style={text}>
         A lifting belt is not a medical back brace; sleeves are not medical knee braces. Do not use
         equipment to push through pain. Get qualified advice for injuries or health concerns,
         including blood-pressure or cardiovascular conditions before belt use.

@@ -5,8 +5,8 @@ import type { Product } from '../../shared/mobile';
 import type { SupplementGoal, SupplementTopic } from '../../shared/supplement-discovery';
 import { journeyPage, supplementJourney } from '../../shared/supplement-journey';
 import { FocusIllustration } from './FocusIllustration';
-import { Button } from './design/components';
-import { useTheme } from './design/theme';
+import { Button, IconButton } from './design/components';
+import { hit, radius, space, useTheme } from './design/theme';
 
 export function SupplementJourney({
   topic,
@@ -36,9 +36,9 @@ export function SupplementJourney({
     scroll.current?.scrollTo({ x: target * width, animated: true });
   }
   return (
-    <View style={{ gap: 16 }}>
+    <View style={{ gap: space.md }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text accessibilityLiveRegion="polite" style={{ color: C.muted, fontSize: 14 }}>
+        <Text accessibilityLiveRegion="polite" variant="subhead" style={{ color: C.muted }}>
           Your guide · {page + 1} of {cards.length}
         </Text>
         {!last && (
@@ -46,9 +46,9 @@ export function SupplementJourney({
             accessibilityRole="button"
             accessibilityLabel="Skip supplement guide"
             onPress={onFinish}
-            style={{ minHeight: 48, justifyContent: 'center', paddingHorizontal: 8 }}
+            style={{ minHeight: hit, justifyContent: 'center', paddingHorizontal: space.sm }}
           >
-            <Text style={{ color: C.muted, fontSize: 14 }}>Skip guide</Text>
+            <Text variant="subhead" style={{ color: C.muted }}>Skip guide</Text>
           </Pressable>
         )}
       </View>
@@ -61,7 +61,7 @@ export function SupplementJourney({
           now: page + 1,
           text: `Card ${page + 1} of ${cards.length}`,
         }}
-        style={{ flexDirection: 'row', gap: 5 }}
+        style={{ flexDirection: 'row', gap: space.xs }}
       >
         {cards.map((card, index) => (
           <View
@@ -77,7 +77,7 @@ export function SupplementJourney({
       </View>
       <View
         onLayout={event => setWidth(event.nativeEvent.layout.width)}
-        style={{ borderRadius: 24, overflow: 'hidden', backgroundColor: C.card }}
+        style={{ borderRadius: radius.card, overflow: 'hidden', backgroundColor: C.card }}
       >
         {width > 0 && (
           <ScrollView
@@ -98,18 +98,18 @@ export function SupplementJourney({
                 key={card.id}
                 accessibilityElementsHidden={index !== page}
                 importantForAccessibility={index === page ? 'auto' : 'no-hide-descendants'}
-                style={{ width, padding: 22, gap: 18 }}
+                style={{ width, padding: space.xl, gap: space.md }}
               >
                 <View style={{ height: 152, alignItems: 'center', justifyContent: 'center' }}>
                   {card.showProducts ? (
-                    <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 10 }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'center', gap: space.ms }}>
                       {products.slice(0, 3).map(product => (
                         <View
                           key={product.id}
                           style={{
                             width: Math.min(78, (width - 64) / 3),
                             height: 112,
-                            borderRadius: 16,
+                            borderRadius: radius.control,
                             backgroundColor: C.photoMat,
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -134,25 +134,24 @@ export function SupplementJourney({
                     </View>
                   )}
                 </View>
-                <Text style={{ color: C.text, fontSize: 25, lineHeight: 32, fontWeight: '600' }}>
+                <Text variant="title" style={{ color: C.text }}>
                   {card.title}
                 </Text>
-                <Text style={{ color: C.muted, fontSize: 17, lineHeight: 26 }}>{card.body}</Text>
+                <Text variant="body" style={{ color: C.muted }}>{card.body}</Text>
               </View>
             ))}
           </ScrollView>
         )}
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.ms }}>
         {page > 0 && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Previous guide card"
+          <IconButton
+            label="Previous guide card"
             onPress={() => move(page - 1)}
-            style={{ minHeight: 48, minWidth: 48, justifyContent: 'center', alignItems: 'center' }}
-          >
-            <Text style={{ color: C.text, fontSize: 24 }}>←</Text>
-          </Pressable>
+            symbol="chevron.left"
+            android="arrow_back"
+            fallback="←"
+          />
         )}
         <View style={{ flex: 1 }}>
           <Button
@@ -168,7 +167,7 @@ export function SupplementJourney({
         </View>
       </View>
       {!last && (
-        <Text style={{ color: C.muted, fontSize: 12, textAlign: 'center' }}>
+        <Text variant="caption" style={{ color: C.muted, textAlign: 'center' }}>
           Swipe to explore · at your pace
         </Text>
       )}

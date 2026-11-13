@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { Pressable, TextInput, View } from 'react-native';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { radius, space, stroke, useTheme } from './design/theme';
 import { otpDigits } from '../../shared/otp-input';
 
 /** One native input keeps paste, SMS autofill and screen-reader editing atomic. */
@@ -25,7 +25,7 @@ export function OtpCodeInput({
         accessible={false}
         disabled={disabled}
         onPress={() => input.current?.focus()}
-        style={{ flexDirection: 'row', gap: 6 }}
+        style={{ flexDirection: 'row', gap: space.sm }}
       >
         {Array.from({ length }, (_, index) => (
           <View
@@ -37,14 +37,14 @@ export function OtpCodeInput({
               minHeight: 60,
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: 10,
-              borderWidth: focused && index === Math.min(value.length, length - 1) ? 2 : 1,
+              borderRadius: radius.small,
+              borderWidth: focused && index === Math.min(value.length, length - 1) ? stroke.active : 1,
               borderColor:
                 focused && index === Math.min(value.length, length - 1) ? C.lime : C.line,
               backgroundColor: C.card,
             }}
           >
-            <Text style={{ color: C.text, fontSize: 26 }}>{value[index] ?? ''}</Text>
+            <Text variant="title" style={{ color: C.text }}>{value[index] ?? ''}</Text>
           </View>
         ))}
       </Pressable>

@@ -112,7 +112,7 @@ test('history returns only the owner, a restart stays listed, and an abandoned r
     {
       action: 'log',
       runId: first.run.id,
-      exerciseId: 'single-arm-lat-pulldown',
+      exerciseId: 'barbell-bent-over-row',
       sets: [
         { setIndex: 1, weightKg: 40, reps: 12 },
         { setIndex: 2, weightKg: 45, reps: 11 },
@@ -141,7 +141,7 @@ test('history returns only the owner, a restart stays listed, and an abandoned r
     {
       action: 'log',
       runId: second.run.id,
-      exerciseId: 'rope-hammer-curl',
+      exerciseId: 'cable-curl',
       sets: [
         { setIndex: 1, weightKg: 15, reps: 10 },
         { setIndex: 2, weightKg: 15, reps: 9 },
@@ -156,7 +156,7 @@ test('history returns only the owner, a restart stays listed, and an abandoned r
     {
       action: 'log',
       runId: stranger.run.id,
-      exerciseId: 'single-arm-lat-pulldown',
+      exerciseId: 'barbell-bent-over-row',
       sets: [{ setIndex: 1, weightKg: 99, reps: 1 }],
     },
     logs,
@@ -170,10 +170,10 @@ test('history returns only the owner, a restart stays listed, and an abandoned r
   assert.equal(history.runs[0]?.id, second.run.id);
   assert.equal(history.runs[1]?.id, first.run.id);
   assert.equal(history.runs[1]?.status === 'running', false);
-  const abandonedPull = history.runs[1]?.cards.find(card => card.exerciseId === 'single-arm-lat-pulldown');
-  const abandonedCurl = history.runs[1]?.cards.find(card => card.exerciseId === 'rope-hammer-curl');
-  const currentCurl = history.runs[0]?.cards.find(card => card.exerciseId === 'rope-hammer-curl');
-  const currentPull = history.runs[0]?.cards.find(card => card.exerciseId === 'single-arm-lat-pulldown');
+  const abandonedPull = history.runs[1]?.cards.find(card => card.exerciseId === 'barbell-bent-over-row');
+  const abandonedCurl = history.runs[1]?.cards.find(card => card.exerciseId === 'cable-curl');
+  const currentCurl = history.runs[0]?.cards.find(card => card.exerciseId === 'cable-curl');
+  const currentPull = history.runs[0]?.cards.find(card => card.exerciseId === 'barbell-bent-over-row');
   assert.deepEqual(
     abandonedPull?.sets.map(set => [set.weightKg, set.reps]),
     [
@@ -232,7 +232,7 @@ test('history query is strict, and the start screen sends Resume to History', ()
   assert.ok(start.includes('function FlowStartScreen'));
   assert.match(start, /History, one flow in progress/);
   assert.match(start, /'History'/);
-  assert.match(start, />Start</);
+  assert.match(start, /title="Start"/);
   assert.doesNotMatch(start, /Resume|Start over|You're/);
   assert.match(flow, /Start again\?/);
   assert.match(flow, /Your unfinished run stays in History\./);

@@ -93,6 +93,14 @@ export function estimateStart(move: GymExercise, item: Pick<GymFlowItem, 'repsMi
   return startWeight(move.id, reps, current.profile);
 }
 
+/** The note under a first-time weighted exercise we couldn't estimate. Says how to get estimates when nothing is known. */
+export function noEstimateLine() {
+  const known = Boolean(current?.profile.patterns.length);
+  return known
+    ? "First time on this one. Add your weight and we'll remember it."
+    : "First time on this one. Add your weight and we'll remember it. Add your body weight under Personalise and we'll suggest a start for every exercise.";
+}
+
 /** The note under a first-time exercise when we filled the weight in. */
 export function estimateLine(estimate: StartEstimate) {
   return `First time on this one. We started you at ${formatKg(estimate.weightKg)} kg. ${sourceLine(estimate.pattern)}. Change it if it feels off.`;

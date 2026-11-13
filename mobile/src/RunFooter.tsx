@@ -1,40 +1,38 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { View, type LayoutChangeEvent } from 'react-native';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { Button, GlassSurface, ProgressSteps, TimerBar } from './design/parts';
+import { layout, space, useTheme } from './design/theme';
 
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
 /** A glass bar floating at the screen's bottom edge, over whatever scrolls behind it. */
 export function GlassBar({ bottom, children }: { bottom: number; children: React.ReactNode }) {
-  const { colors: C, scheme } = useTheme();
   return (
-    <View
+    <GlassSurface
+      edge="top"
       style={{
         position: 'absolute',
         left: 0,
         right: 0,
         bottom: 0,
-        overflow: 'hidden',
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
-        paddingTop: 12,
-        paddingHorizontal: 16,
+        gap: space.sm,
+        paddingTop: space.ms,
+        paddingHorizontal: layout.margin,
         paddingBottom: bottom,
-        borderTopWidth: 0.5,
-        borderColor: C.line,
       }}
     >
-      <BlurView intensity={30} tint={scheme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: C.bg, opacity: 0.15 }]} />
       {children}
-    </View>
+    </GlassSurface>
   );
 }
 
-/** The bar that stays at the bottom during a workout: where you are, rest, and what's next. */
+/**
+ * The bar that stays at the bottom during a workout. One clock with its word (Rest, Hold or
+ * Elapsed), the step bar, and the buttons. Rules: docs/design-consistency.md, section 2.7.
+ */
 export function RunFooter({
   noun,
   index,
@@ -44,7 +42,10 @@ export function RunFooter({
   hold,
   restLeft,
   onSkipRest,
+  onHarder,
+  onEasier,
   ready,
+  emphasis = 'primary',
   hint,
   onNext,
   skipLabel,
@@ -52,6 +53,7 @@ export function RunFooter({
   pauseLabel,
   onPause,
   bottom,
+  onHeight,
 }: {
   noun: string;
   index: number;
@@ -62,8 +64,17 @@ export function RunFooter({
   /** A hold being timed right now, and what it's aiming for. */
   hold?: { seconds: number; target: number } | null;
   restLeft: number;
-  onSkipRest: () => void;
+  onSkipRest?: () => void;
+  /** Rest 30 seconds longer. Shown beside the clock while resting. */
+  onHarder?: () => void;
+  /** Rest 30 seconds less. */
+  onEasier?: () => void;
   ready: boolean;
+  /**
+   * Whether Next is the screen's one filled button. While sets remain, the set's tick is the
+   * filled one and Next is outlined.
+   */
+  emphasis?: 'primary' | 'secondary';
   /** Shown for a moment when Next is tapped before every set is dealt with. */
   hint: string;
   onNext: () => void;
@@ -73,8 +84,10 @@ export function RunFooter({
   pauseLabel?: string;
   onPause?: () => void;
   bottom: number;
+  /** The bar's height, so the screen above can leave room for it. */
+  onHeight?: (height: number) => void;
 }) {
-  const { colors: C, scheme } = useTheme();
+  const { colors: C } = useTheme();
   const last = index + 1 >= total;
   const nextLabel = last ? 'Finish' : `Next ${noun.toLowerCase()}`;
   // Rest has no stated length here, so the longest value seen since it began is its length.
@@ -87,16 +100,17 @@ export function RunFooter({
     : hold && hold.target > 0
       ? Math.min(1, hold.seconds / hold.target)
       : 0;
-  const timerLabel = resting
-    ? `${ready && !last ? 'Next in' : 'Rest'} ${clock(restLeft)}`
+  const timer = resting
+    ? { word: 'Rest', time: clock(restLeft), spoken: `Rest, ${clock(restLeft)} left` }
     : hold
-      ? hold.target > 0
-        ? `${clock(hold.seconds)} / ${clock(hold.target)}`
-        : clock(hold.seconds)
+      ? {
+          word: 'Hold',
+          time: hold.target > 0 ? `${clock(hold.seconds)} / ${clock(hold.target)}` : clock(hold.seconds),
+          spoken: `Hold time ${clock(hold.seconds)}`,
+        }
       : elapsed !== undefined
-        ? clock(elapsed)
+        ? { word: 'Elapsed', time: clock(elapsed), spoken: `Elapsed ${clock(elapsed)}` }
         : null;
-  const pausedLook = paused && timerLabel != null;
   const [hintOn, setHintOn] = useState(false);
   const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(
@@ -115,117 +129,81 @@ export function RunFooter({
     setHintOn(false);
     onNext();
   };
-  const quiet = (label: string, onPress: () => void) => (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        minWidth: 64,
-        minHeight: 52,
-        alignItems: 'center',
-        justifyContent: 'center',
-        opacity: pressed ? 0.6 : 1,
-      })}
-    >
-      <Text style={{ color: C.text, fontSize: 15, fontWeight: '600' }}>{label}</Text>
-    </Pressable>
-  );
+  // Skip rest takes the left slot when Skip (the exercise) is not offered.
+  const left = skipLabel
+    ? { label: skipLabel, onPress: onSkip }
+    : resting && onSkipRest
+      ? { label: 'Skip rest', onPress: onSkipRest }
+      : null;
   return (
-    <View
+    <GlassSurface
+      edge="top"
+      onLayout={(event: LayoutChangeEvent) => onHeight?.(event.nativeEvent.layout.height)}
       style={{
-        // Floats over the sets as glass, like the top bar, down to the screen's edge.
+        // Floats over the sets as glass, down to the screen's edge.
         position: 'absolute',
         left: 0,
         right: 0,
         bottom: 0,
-        overflow: 'hidden',
-        gap: 10,
-        paddingTop: 10,
-        paddingHorizontal: 16,
+        gap: space.ms,
+        paddingTop: space.ms,
+        paddingHorizontal: layout.margin,
         paddingBottom: bottom,
-        borderTopWidth: 0.5,
-        borderColor: C.line,
       }}
     >
-      <BlurView intensity={30} tint={scheme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: C.bg, opacity: 0.15 }]} />
-      {timerLabel ? (
-        <View
-          accessibilityRole="timer"
-          accessibilityLabel={resting ? `Rest, ${clock(restLeft)} left` : hold ? 'Hold time' : 'Elapsed'}
-          style={{
-            height: 48,
-            borderRadius: 14,
-            overflow: 'hidden',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: pausedLook ? 'transparent' : C.line,
-            borderWidth: pausedLook ? 2 : 0,
-            borderColor: C.warning,
-          }}
-        >
-          {/* Fills from the left as the rest or hold goes on. */}
-          <View
-            style={{
-              position: 'absolute',
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: `${Math.round(fill * 100)}%`,
-              backgroundColor: C.lime,
-              opacity: 0.45,
-            }}
-          />
-          <Text variant="numeric" style={{ color: pausedLook ? C.warning : C.text, fontSize: 24, fontWeight: '700' }}>
-            {pausedLook ? `Paused · ${timerLabel}` : timerLabel}
-          </Text>
-          {resting ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Skip rest"
-              onPress={onSkipRest}
-              hitSlop={10}
-              style={{ position: 'absolute', right: 12, top: 0, bottom: 0, justifyContent: 'center' }}
-            >
-              <Text style={{ color: C.text, fontSize: 14, fontWeight: '700' }}>Skip rest</Text>
-            </Pressable>
+      {timer ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+          {resting && onEasier ? (
+            <Button
+              variant="secondary"
+              size="regular"
+              fit
+              title="−30 s"
+              accessibilityLabel="Rest 30 seconds less"
+              onPress={onEasier}
+            />
+          ) : null}
+          <View style={{ flex: 1 }}>
+            <TimerBar
+              word={timer.word}
+              time={timer.time}
+              fill={fill}
+              paused={paused}
+              accessibilityLabel={`${paused ? 'Paused, ' : ''}${timer.spoken}`}
+            />
+          </View>
+          {resting && onHarder ? (
+            <Button
+              variant="secondary"
+              size="regular"
+              fit
+              title="+30 s"
+              accessibilityLabel="Rest 30 seconds longer"
+              onPress={onHarder}
+            />
           ) : null}
         </View>
       ) : null}
-      <Text accessibilityLiveRegion="polite" style={{ color: C.text, fontSize: 15, fontWeight: '600' }}>
-        {hintOn && hint ? hint : `${noun} ${index + 1} of ${total}`}
-      </Text>
-      <View accessible={false} style={{ flexDirection: 'row', gap: 4 }}>
-        {Array.from({ length: total }, (_, step) => (
-          <View
-            key={step}
-            style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: step <= index ? C.lime : C.line }}
+      {hintOn && hint ? (
+        <Text accessibilityLiveRegion="polite" variant="footnote" style={{ color: C.text, fontWeight: '600' }}>
+          {hint}
+        </Text>
+      ) : null}
+      <View accessible accessibilityLabel={`${noun} ${index + 1} of ${total}`}>
+        <ProgressSteps total={total} filled={index + 1} />
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.md }}>
+        {left ? <Button variant="text" title={left.label} onPress={left.onPress} /> : null}
+        <View style={{ flex: 1 }}>
+          <Button
+            variant={ready && emphasis === 'primary' ? 'primary' : 'secondary'}
+            title={nextLabel}
+            accessibilityHint={ready ? undefined : hint}
+            onPress={pressNext}
           />
-        ))}
+        </View>
+        {pauseLabel && onPause ? <Button variant="text" title={pauseLabel} onPress={onPause} /> : null}
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        {skipLabel ? quiet(skipLabel, onSkip) : null}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={nextLabel}
-          accessibilityHint={ready ? undefined : hint}
-          accessibilityState={{ disabled: !ready }}
-          onPress={pressNext}
-          style={{
-            flex: 1,
-            minHeight: 52,
-            borderRadius: 16,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: C.lime,
-            opacity: ready ? 1 : 0.4,
-          }}
-        >
-          <Text style={{ color: C.onAccent, fontSize: 17, fontWeight: '700' }}>{nextLabel}</Text>
-        </Pressable>
-        {pauseLabel && onPause ? quiet(pauseLabel, onPause) : null}
-      </View>
-    </View>
+    </GlassSurface>
   );
 }

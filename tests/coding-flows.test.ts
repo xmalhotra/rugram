@@ -1,3 +1,4 @@
+import { designMock, designTokens } from './support/design-mocks';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -124,7 +125,7 @@ test('real coding information panel is benefits-first and audio opens only on an
       if (name === 'react/jsx-runtime') return { jsx, jsxs: jsx };
       if (name === 'react') return {};
       if (name === 'react-native') return { View: 'View' };
-      if (name === './design/theme') return { useTheme: () => ({ colors: {} }) };
+      if (name === './design/theme') return { ...designTokens, useTheme: () => ({ colors: {} }) };
       if (name === './design/Text') return { Text: 'Text' };
       if (name === './design/components') return { Sheet: 'Sheet', Button: 'Button' };
       if (name === '../../shared/coding-flows') return require('../shared/coding-flows');

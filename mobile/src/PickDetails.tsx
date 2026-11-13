@@ -12,13 +12,14 @@ import {
   storeLabel,
   type PurchaseOption,
 } from '../../shared/purchases';
-import { Badge, Button, Card, Sheet } from './design/components';
+import { Badge, Button, Card, SectionHeader, Sheet } from './design/components';
 import { alternativePicks } from '../../shared/pick-comparison';
 import { browseProducts } from '../../shared/pick-catalog';
 import { decisionAlternative, decisionLine, decisionPrice } from '../../shared/pick-decision';
 import { PickDecisionComparison } from './PickDecisionComparison';
 import { EquipmentThumbnail } from './EquipmentThumbnail';
-import { useTheme } from './design/theme';
+import { Glyph } from './design/Glyph';
+import { hit, opacity, radius, space, useTheme } from './design/theme';
 import { Disclosure } from './Disclosure';
 import { FlowHeartAction } from './FlowHeartAction';
 import { ReportIssue } from './ReportIssue';
@@ -51,20 +52,19 @@ export function PickDetails(
   const best = sellers.find(option => option.availability !== 'out-of-stock');
   const published = product.status === 'published';
   const saved = data.profile.savedProductIds.includes(product.id);
-  const sectionTitle = { color: C.text, fontSize: 18, fontWeight: '700' } as const;
-  const muted = { color: C.muted, fontSize: 15, lineHeight: 22 } as const;
+  const muted = { color: C.muted } as const;
   return (
     <View style={{ flex: 1, minHeight: 0 }}>
       <ScrollView
         style={{ flex: 1 }}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ gap: 28, paddingBottom: 28 }}
+        contentContainerStyle={{ gap: space.xl, paddingBottom: space.xl }}
       >
         <View
           style={{
             width: '100%',
             aspectRatio: 4 / 3,
-            borderRadius: 20,
+            borderRadius: radius.card,
             overflow: 'hidden',
             backgroundColor: C.photoMat,
           }}
@@ -78,12 +78,12 @@ export function PickDetails(
             />
           ) : null}
         </View>
-        <View style={{ gap: 10 }}>
+        <View style={{ gap: space.ms }}>
           {eyebrow ? (
             <Text
+              variant="caption"
               style={{
                 color: C.lime,
-                fontSize: 11,
                 fontWeight: '600',
                 letterSpacing: 2,
               }}
@@ -91,23 +91,20 @@ export function PickDetails(
               {eyebrow.toUpperCase()}
             </Text>
           ) : null}
-          <Text
-            accessibilityRole="header"
-            style={{ color: C.text, fontSize: 24, fontWeight: '700', lineHeight: 30 }}
-          >
+          <Text accessibilityRole="header" variant="heading" style={{ color: C.text }}>
             {product.title}
           </Text>
-          {fit ? <Text style={muted}>{fit}</Text> : null}
+          {fit ? <Text variant="subhead" style={muted}>{fit}</Text> : null}
         </View>
-        <View style={{ gap: 10 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+        <View style={{ gap: space.ms }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.ms }}>
+            <View style={{ flex: 1, minWidth: 0, gap: space.xxs }}>
               {best ? (
                 <>
-                  <Text style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>
+                  <Text variant="headline" style={{ color: C.text }}>
                     {formatInr(best.price)}
                   </Text>
-                  <Text style={{ color: C.muted, fontSize: 14 }}>{storeLabel(best.url)}</Text>
+                  <Text variant="subhead" style={{ color: C.muted }}>{storeLabel(best.url)}</Text>
                 </>
               ) : null}
             </View>
@@ -127,32 +124,28 @@ export function PickDetails(
           ) : null}
         </View>
         {why ? (
-          <View style={{ gap: 10 }}>
-            <Text accessibilityRole="header" style={sectionTitle}>
-              Why we recommend it
-            </Text>
-            <Text style={muted}>{why}</Text>
+          <View style={{ gap: space.ms }}>
+            <SectionHeader title="Why we recommend it" />
+            <Text variant="subhead" style={muted}>{why}</Text>
           </View>
         ) : null}
         {specs.length > 0 ? (
-          <View style={{ gap: 10 }}>
-            <Text accessibilityRole="header" style={sectionTitle}>
-              Key specs
-            </Text>
+          <View style={{ gap: space.ms }}>
+            <SectionHeader title="Key specs" />
             <View>
               {specs.map(spec => (
                 <View
                   key={spec.label}
                   style={{
                     flexDirection: 'row',
-                    gap: 12,
-                    paddingVertical: 10,
+                    gap: space.ms,
+                    paddingVertical: space.ms,
                     borderBottomWidth: StyleSheet.hairlineWidth,
                     borderBottomColor: C.line,
                   }}
                 >
-                  <Text style={{ flex: 1, color: C.muted, fontSize: 15 }}>{spec.label}</Text>
-                  <Text style={{ flex: 1, color: C.text, fontSize: 15, textAlign: 'right' }}>
+                  <Text variant="subhead" style={{ flex: 1, color: C.muted }}>{spec.label}</Text>
+                  <Text variant="subhead" style={{ flex: 1, color: C.text, textAlign: 'right' }}>
                     {spec.value}
                   </Text>
                 </View>
@@ -161,22 +154,18 @@ export function PickDetails(
           </View>
         ) : null}
         {caveats.length > 0 ? (
-          <View style={{ gap: 10 }}>
-            <Text accessibilityRole="header" style={sectionTitle}>
-              Before you buy
-            </Text>
+          <View style={{ gap: space.ms }}>
+            <SectionHeader title="Before you buy" />
             {caveats.map((line, index) => (
-              <Text key={`${index}:${line}`} style={muted}>
+              <Text key={`${index}:${line}`} variant="subhead" style={muted}>
                 • {line}
               </Text>
             ))}
           </View>
         ) : null}
         {comparison || alternatives.length > 0 ? (
-          <View style={{ gap: 10 }}>
-            <Text accessibilityRole="header" style={sectionTitle}>
-              Compare
-            </Text>
+          <View style={{ gap: space.ms }}>
+            <SectionHeader title="Compare" />
             {comparison ? (
               <PickDecisionComparison
                 product={product}
@@ -194,16 +183,16 @@ export function PickDetails(
                   style={({ pressed }) => ({
                     flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 12,
-                    minHeight: 48,
-                    opacity: pressed ? 0.65 : 1,
+                    gap: space.ms,
+                    minHeight: hit,
+                    opacity: pressed ? opacity.pressed : 1,
                   })}
                 >
                   <View
                     style={{
                       width: 48,
                       height: 48,
-                      borderRadius: 8,
+                      borderRadius: radius.small,
                       overflow: 'hidden',
                       backgroundColor: C.photoMat,
                     }}
@@ -217,56 +206,52 @@ export function PickDetails(
                       />
                     ) : null}
                   </View>
-                  <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                    <Text numberOfLines={2} style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>
+                  <View style={{ flex: 1, minWidth: 0, gap: space.xxs }}>
+                    <Text numberOfLines={2} variant="callout" style={{ color: C.text, fontWeight: '600' }}>
                       {other.title}
                     </Text>
-                    <Text style={{ color: C.muted, fontSize: 13 }}>{formatInr(decisionPrice(other))}</Text>
+                    <Text variant="footnote" style={{ color: C.muted }}>{formatInr(decisionPrice(other))}</Text>
                   </View>
-                  <Text style={{ color: C.muted, fontSize: 18 }}>›</Text>
+                  <Glyph name={{ ios: 'chevron.right', android: 'chevron_right' }} fallback="›" color={C.muted} size={space.md} />
                 </Pressable>
               ))
             )}
           </View>
         ) : null}
         {published && !product.demo && sellers.length > 1 ? (
-          <View style={{ gap: 10 }}>
-            <Text accessibilityRole="header" style={sectionTitle}>
-              Where to buy
-            </Text>
+          <View style={{ gap: space.ms }}>
+            <SectionHeader title="Where to buy" />
             <SellerLinks product={product} onLink={onLink} />
           </View>
         ) : null}
         {product.safetyNote ? (
-          <View style={{ gap: 10 }}>
-            <Text accessibilityRole="header" style={sectionTitle}>
-              Notes
-            </Text>
-            <View style={{ backgroundColor: C.card, borderRadius: 16, padding: 16 }}>
-              <Text style={muted}>{product.safetyNote}</Text>
+          <View style={{ gap: space.ms }}>
+            <SectionHeader title="Notes" />
+            <View style={{ backgroundColor: C.card, borderRadius: radius.control, padding: space.md }}>
+              <Text variant="subhead" style={muted}>{product.safetyNote}</Text>
             </View>
           </View>
         ) : null}
         {props.canReturn ? (
           <Button title="← Back to your flow" secondary onPress={props.onReturn} />
         ) : null}
-        <View style={{ alignItems: 'center', gap: 10 }}>
+        <View style={{ alignItems: 'center', gap: space.ms }}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`All details for ${product.title}`}
             onPress={() => setDetails(true)}
-            style={{ minHeight: 44, justifyContent: 'center' }}
+            style={{ minHeight: hit, justifyContent: 'center' }}
           >
-            <Text style={{ color: C.muted, fontSize: 14, textAlign: 'center' }}>All details</Text>
+            <Text variant="subhead" style={{ color: C.muted, textAlign: 'center' }}>All details</Text>
           </Pressable>
           {published && props.onShare ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Share"
               onPress={props.onShare}
-              style={{ minHeight: 44, justifyContent: 'center' }}
+              style={{ minHeight: hit, justifyContent: 'center' }}
             >
-              <Text style={{ color: C.muted, fontSize: 14, textAlign: 'center' }}>Share</Text>
+              <Text variant="subhead" style={{ color: C.muted, textAlign: 'center' }}>Share</Text>
             </Pressable>
           ) : null}
           {published ? (
@@ -306,8 +291,8 @@ function PickReferenceDetails({
   onSave: () => void;
 }) {
   const { colors: C } = useTheme();
-  const text = { color: C.muted, fontSize: 16, lineHeight: 24 } as const;
-  const heading = { color: C.text, fontSize: 22, fontWeight: '600', lineHeight: 29 } as const;
+  const text = { color: C.muted } as const;
+  const heading = { color: C.text } as const;
   const options = sortedPurchaseOptions(
     (product.purchaseOptions ?? []).filter(option => purchaseHost(option.url)),
   );
@@ -324,7 +309,7 @@ function PickReferenceDetails({
         </Badge>
         {!amazon && (
           <Disclosure title="Delivery & offer details">
-            <Text style={text}>
+            <Text variant="callout" style={text}>
               {option.shippingFee === null
                 ? 'Delivery charge unknown'
                 : option.shippingFee === 0
@@ -337,7 +322,7 @@ function PickReferenceDetails({
                 fees may apply
               </Badge>
             )}
-            <Text style={text}>{option.deliveryNote}</Text>
+            <Text variant="callout" style={text}>{option.deliveryNote}</Text>
             {option.offer ? (
               <>
                 <Badge>
@@ -347,8 +332,8 @@ function PickReferenceDetails({
                       ? 'OFFER EXPIRY UNKNOWN · CHECK WITH SELLER'
                       : 'LISTED OFFER · CHECK ELIGIBILITY'}
                 </Badge>
-                <Text style={text}>{option.offer.label}</Text>
-                <Text style={text}>{option.offer.terms}</Text>
+                <Text variant="callout" style={text}>{option.offer.label}</Text>
+                <Text variant="callout" style={text}>{option.offer.terms}</Text>
                 {option.offer.code && status !== 'expired' && (
                   <Badge>Code: {option.offer.code}</Badge>
                 )}
@@ -379,7 +364,7 @@ function PickReferenceDetails({
         onAlternative={onAlternative}
         onLink={onLink}
       />
-      <Text style={heading}>Where to get it</Text>
+      <Text variant="heading" style={heading}>Where to get it</Text>
       {options.length > 0 ? (
         options.map(listing)
       ) : (
@@ -394,13 +379,13 @@ function PickReferenceDetails({
           )}
         </Card>
       )}
-      {product.safetyNote && <Text style={text}>{product.safetyNote}</Text>}
+      {product.safetyNote && <Text variant="callout" style={text}>{product.safetyNote}</Text>}
       {product.endorsements.length > 0 && (
         <Disclosure title={`Creator sources · ${product.endorsements.length}`}>
           {product.endorsements.map(endorsement => (
             <Card key={endorsement.creatorId}>
-              <Text style={heading}>{endorsement.creatorName}</Text>
-              <Text style={text}>{endorsement.disclosure}</Text>
+              <Text variant="heading" style={heading}>{endorsement.creatorName}</Text>
+              <Text variant="callout" style={text}>{endorsement.disclosure}</Text>
               <Button
                 title="See original source ↗"
                 secondary

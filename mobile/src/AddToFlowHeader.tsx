@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Pressable } from 'react-native';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { opacity, radius, space, stroke, useTheme } from './design/theme';
 import { flowCreationEnabled } from '../../shared/flow-catalog';
 
 type Offer = { title: string; busy: boolean; onPress: () => void };
@@ -56,15 +56,15 @@ export function AddToFlowHeaderButton() {
       style={({ pressed }) => ({
         minHeight: 36,
         justifyContent: 'center',
-        paddingHorizontal: 10,
-        borderRadius: 12,
-        borderWidth: 1,
+        paddingHorizontal: space.ms,
+        borderRadius: radius.small,
+        borderWidth: stroke.line,
         borderColor: C.line,
         backgroundColor: C.card,
-        opacity: offer.busy ? 0.4 : pressed ? 0.7 : 1,
+        opacity: offer.busy ? 0.4 : pressed ? opacity.pressed : 1,
       })}
     >
-      <Text style={{ color: C.text, fontWeight: '600', fontSize: 13 }}>＋ Add to Flow</Text>
+      <Text variant="footnote" style={{ color: C.text, fontWeight: '600' }}>＋ Add to Flow</Text>
     </Pressable>
   );
 }

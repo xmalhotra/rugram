@@ -52,6 +52,8 @@ test('push-up is used in the beginner home flow, and usage stays sorted', () => 
     pull.map(row => [row.kind, row.id]),
     [
       ['flow', 'gym-back-biceps'],
+      ['flow', 'gym-supersets-back-biceps-beginner'],
+      ['flow', 'gym-splits-upper-a'],
       ['session', 'upper-body-a'],
     ],
   );

@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   AccessibilityInfo,
-  ActivityIndicator,
   Image,
   Pressable,
   ScrollView,
@@ -12,42 +11,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { Text } from './Text';
-import { useTheme, statusTone } from './theme';
+import { useTheme, statusTone, hit, layout, opacity, radius, space, stroke, textRoles } from './theme';
+import { Button, ProgressSteps } from './parts';
 import { LoadingPulse } from '../motion';
+export { IconButton } from './parts';
 
-export function IconButton({
-  label,
-  onPress,
-  children,
-  disabled = false,
-  loading = false,
-}: {
-  label: string;
-  onPress: () => void;
-  children: React.ReactNode;
-  disabled?: boolean;
-  loading?: boolean;
-}) {
-  const { colors: C } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled: disabled || loading, busy: loading }}
-      disabled={disabled || loading}
-      onPress={onPress}
-      style={({ pressed }) => ({
-        minWidth: 48,
-        minHeight: 48,
-        alignItems: 'center',
-        justifyContent: 'center',
-        opacity: disabled ? 0.45 : pressed ? 0.65 : 1,
-      })}
-    >
-      {loading ? <ActivityIndicator color={C.lime} /> : children}
-    </Pressable>
-  );
-}
 export function Skeleton({
   shape = 'line',
   width = '100%',
@@ -63,10 +31,11 @@ export function Skeleton({
         accessibilityLabel="Loading"
         style={{
           width,
-          height: shape === 'line' ? 16 : shape === 'block' ? 80 : 160,
-          borderRadius: shape === 'line' ? 8 : 20,
+          // Heights are the shapes themselves, not spacing.
+          height: shape === 'line' ? space.md : shape === 'block' ? 80 : 160,
+          borderRadius: shape === 'line' ? radius.pill : radius.card,
           backgroundColor: C.line,
-          marginVertical: 8,
+          marginVertical: space.sm,
         }}
       />
     </LoadingPulse>
@@ -85,26 +54,20 @@ export function EmptyState({
 }) {
   const { colors: C } = useTheme();
   return (
-    <View style={{ padding: 24, gap: 12, alignItems: 'center' }}>
+    <View style={{ padding: space.xl, gap: space.ms, alignItems: 'center' }}>
       {illustration}
-      <Text
-        accessibilityRole="header"
-        style={{ fontSize: 22, fontWeight: '600', color: C.text, textAlign: 'center' }}
-      >
+      <Text accessibilityRole="header" variant="heading" style={{ color: C.text, textAlign: 'center' }}>
         {title}
       </Text>
       {description && (
-        <Text style={{ color: C.muted, textAlign: 'center', fontSize: 17 }}>{description}</Text>
+        <Text variant="body" style={{ color: C.muted, textAlign: 'center' }}>
+          {description}
+        </Text>
       )}
       {action && (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={action.label}
-          onPress={action.onPress}
-          style={{ minHeight: 48, justifyContent: 'center', paddingHorizontal: 20 }}
-        >
-          <Text style={{ color: C.lime, fontWeight: '600' }}>{action.label}</Text>
-        </Pressable>
+        <View style={{ alignItems: 'center' }}>
+          <Button variant="text" title={action.label} onPress={action.onPress} />
+        </View>
       )}
     </View>
   );
@@ -125,24 +88,30 @@ export function Banner({
     <View
       accessibilityRole={kind === 'error' ? 'alert' : undefined}
       style={{
-        borderWidth: 1,
+        borderWidth: stroke.line,
         borderColor: kind === 'error' ? C.danger : C.line,
-        borderRadius: 14,
+        borderRadius: radius.control,
         backgroundColor: C.card,
-        padding: 12,
-        gap: 8,
+        padding: space.ms,
+        gap: space.sm,
       }}
     >
-      <Text style={{ color: kind === 'error' ? C.danger : C.muted, fontSize: 15 }}>{message}</Text>
-      {action && (
-        <IconButton label={action.label} onPress={action.onPress}>
-          <Text style={{ color: C.lime }}>{action.label}</Text>
-        </IconButton>
-      )}
-      {onDismiss && (
-        <IconButton label="Dismiss message" onPress={onDismiss}>
-          <Text style={{ color: C.muted }}>Dismiss</Text>
-        </IconButton>
+      <Text variant="subhead" style={{ color: kind === 'error' ? C.danger : C.muted }}>
+        {message}
+      </Text>
+      {(action || onDismiss) && (
+        <View style={{ flexDirection: 'row', gap: space.md }}>
+          {action && <Button variant="text" size="regular" title={action.label} onPress={action.onPress} />}
+          {onDismiss && (
+            <Button
+              variant="text"
+              size="regular"
+              title="Dismiss"
+              accessibilityLabel="Dismiss message"
+              onPress={onDismiss}
+            />
+          )}
+        </View>
       )}
     </View>
   );
@@ -172,29 +141,37 @@ export function Toast({ item, onDismiss }: { item: ToastMessage; onDismiss: () =
       accessibilityLiveRegion="polite"
       style={{
         backgroundColor: C.card,
-        borderRadius: 20,
-        borderWidth: 1,
+        borderRadius: radius.card,
+        borderWidth: stroke.line,
         borderColor:
           item.kind === 'error' ? C.danger : item.kind === 'success' ? C.success : C.info,
-        padding: 16,
-        gap: 8,
+        padding: layout.inset,
+        gap: space.sm,
       }}
     >
-      <Text style={{ color: C.text, fontSize: 16 }}>{item.message}</Text>
-      {item.undo && (
-        <IconButton
-          label="Undo"
-          onPress={() => {
-            item.undo?.();
-            onDismiss();
-          }}
-        >
-          <Text style={{ color: C.lime }}>Undo</Text>
-        </IconButton>
-      )}
-      <IconButton label="Dismiss notification" onPress={onDismiss}>
-        <Text style={{ color: C.muted }}>Dismiss</Text>
-      </IconButton>
+      <Text variant="callout" style={{ color: C.text }}>
+        {item.message}
+      </Text>
+      <View style={{ flexDirection: 'row', gap: space.md }}>
+        {item.undo && (
+          <Button
+            variant="text"
+            size="regular"
+            title="Undo"
+            onPress={() => {
+              item.undo?.();
+              onDismiss();
+            }}
+          />
+        )}
+        <Button
+          variant="text"
+          size="regular"
+          title="Dismiss"
+          accessibilityLabel="Dismiss notification"
+          onPress={onDismiss}
+        />
+      </View>
     </View>
   );
 }
@@ -215,9 +192,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           pointerEvents="box-none"
           style={{
             position: 'absolute',
+            // Clears the tab bar. P3 replaces this with the shared floating insets.
             bottom: insets.bottom + 88,
-            left: 16,
-            right: 16,
+            left: layout.margin,
+            right: layout.margin,
             zIndex: 100,
           }}
         >
@@ -244,7 +222,7 @@ export function SearchBar({
 }) {
   const { colors: C } = useTheme();
   return (
-    <View style={{ gap: 6 }}>
+    <View style={{ gap: space.sm }}>
       <TextInput
         accessibilityLabel={label}
         value={value}
@@ -254,18 +232,18 @@ export function SearchBar({
         autoFocus={autoFocus}
         returnKeyType="search"
         style={{
-          minHeight: 48,
+          minHeight: hit,
           backgroundColor: C.card,
-          borderRadius: 14,
-          borderWidth: 1,
+          borderRadius: radius.control,
+          borderWidth: stroke.line,
           borderColor: error ? C.danger : C.line,
-          padding: 12,
+          padding: space.ms,
           color: C.text,
-          fontSize: 17,
+          fontSize: textRoles.body.fontSize,
         }}
       />
       {error && (
-        <Text accessibilityRole="alert" style={{ color: C.danger }}>
+        <Text accessibilityRole="alert" variant="footnote" style={{ color: C.danger }}>
           {error}
         </Text>
       )}
@@ -291,7 +269,7 @@ export function FilterChips({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ gap: 8 }}
+      contentContainerStyle={{ gap: space.sm }}
     >
       {options.map(option => {
         const active = selected.includes(option.id);
@@ -312,17 +290,19 @@ export function FilterChips({
               )
             }
             style={({ pressed }) => ({
-              borderRadius: 14,
-              paddingHorizontal: 16,
-              minHeight: 48,
+              borderRadius: radius.control,
+              paddingHorizontal: space.md,
+              minHeight: hit,
               justifyContent: 'center',
               backgroundColor: active ? C.lime : C.card,
-              borderWidth: 1,
+              borderWidth: stroke.line,
               borderColor: active ? C.lime : C.line,
-              opacity: disabled ? 0.45 : pressed ? 0.65 : 1,
+              opacity: disabled ? opacity.disabled : pressed ? opacity.pressed : 1,
             })}
           >
-            <Text style={{ color: active ? C.onAccent : C.text }}>{option.label}</Text>
+            <Text variant="callout" style={{ color: active ? C.onAccent : C.text }}>
+              {option.label}
+            </Text>
           </Pressable>
         );
       })}
@@ -363,42 +343,19 @@ export function StickyActionBar({
   return (
     <View
       style={{
-        padding: 16,
-        paddingBottom: Math.max(16, insets.bottom),
+        padding: layout.margin,
+        paddingBottom: Math.max(layout.margin, insets.bottom),
         backgroundColor: C.bg,
-        borderTopWidth: 1,
+        borderTopWidth: stroke.line,
         borderColor: C.line,
-        gap: 4,
+        gap: space.xs,
       }}
     >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={primary.label}
-        accessibilityState={{ disabled: busy || primary.disabled, busy }}
-        disabled={busy || primary.disabled}
-        onPress={primary.onPress}
-        style={({ pressed }) => ({
-          backgroundColor: C.lime,
-          borderRadius: 14,
-          minHeight: 52,
-          padding: 14,
-          alignItems: 'center',
-          justifyContent: 'center',
-          opacity: busy || primary.disabled ? 0.45 : pressed ? 0.65 : 1,
-        })}
-      >
-        {busy ? (
-          <ActivityIndicator color={C.onAccent} />
-        ) : (
-          <Text style={{ color: C.onAccent, fontWeight: '600', fontSize: 17 }}>
-            {primary.label}
-          </Text>
-        )}
-      </Pressable>
+      <Button title={primary.label} onPress={primary.onPress} disabled={primary.disabled} busy={busy} />
       {secondary && (
-        <IconButton label={secondary.label} disabled={busy} onPress={secondary.onPress}>
-          <Text style={{ color: C.lime }}>{secondary.label}</Text>
-        </IconButton>
+        <View style={{ alignItems: 'center' }}>
+          <Button variant="text" title={secondary.label} disabled={busy} onPress={secondary.onPress} />
+        </View>
       )}
     </View>
   );
@@ -412,14 +369,16 @@ export function StatusPill({ status }: { status: keyof typeof statusTone }) {
       accessibilityLabel={`Status: ${status}`}
       style={{
         alignSelf: 'flex-start',
-        borderRadius: 12,
-        borderWidth: 1,
+        borderRadius: radius.pill,
+        borderWidth: stroke.line,
         borderColor: color,
-        paddingHorizontal: 10,
-        paddingVertical: 5,
+        paddingHorizontal: space.ms,
+        paddingVertical: space.xs,
       }}
     >
-      <Text style={{ color, fontSize: 13, fontWeight: '600' }}>{status}</Text>
+      <Text variant="footnote" style={{ color, fontWeight: '600' }}>
+        {status}
+      </Text>
     </View>
   );
 }
@@ -437,7 +396,7 @@ export function WeekStrip({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ gap: 8 }}
+      contentContainerStyle={{ gap: space.sm }}
     >
       {days.map(day => (
         <Pressable
@@ -446,19 +405,22 @@ export function WeekStrip({
           accessibilityLabel={`${day.label}, ${day.done} done`}
           accessibilityState={{ selected: selected === day.id }}
           onPress={() => onSelect(day.id)}
-          style={{
-            minWidth: 48,
-            minHeight: 64,
-            borderRadius: 14,
-            padding: 8,
+          style={({ pressed }) => ({
+            minWidth: hit,
+            minHeight: hit + space.md,
+            borderRadius: radius.control,
+            padding: space.sm,
             backgroundColor: selected === day.id ? C.lime : C.card,
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 6,
-          }}
+            gap: space.xs,
+            opacity: pressed ? opacity.pressed : 1,
+          })}
         >
-          <Text style={{ color: selected === day.id ? C.onAccent : C.text }}>{day.label}</Text>
-          <Text variant="numeric" style={{ color: selected === day.id ? C.onAccent : C.muted }}>
+          <Text variant="subhead" style={{ color: selected === day.id ? C.onAccent : C.text }}>
+            {day.label}
+          </Text>
+          <Text variant="subhead" numeric style={{ color: selected === day.id ? C.onAccent : C.muted }}>
             {day.done || '·'}
           </Text>
         </Pressable>
@@ -479,8 +441,9 @@ export function ProgressRing({
 }) {
   const { colors: C } = useTheme();
   const ratio = total > 0 ? Math.max(0, Math.min(1, value / total)) : 0;
-  const radius = (size - 8) / 2;
-  const length = 2 * Math.PI * radius;
+  const ring = space.xs;
+  const r = (size - 2 * ring) / 2;
+  const length = 2 * Math.PI * r;
   return (
     <View
       accessible
@@ -488,20 +451,13 @@ export function ProgressRing({
       style={{ width: size, height: size }}
     >
       <Svg width={size} height={size} accessible={false}>
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke={C.line} strokeWidth={ring} fill="none" />
         <Circle
           cx={size / 2}
           cy={size / 2}
-          r={radius}
-          stroke={C.line}
-          strokeWidth={4}
-          fill="none"
-        />
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
+          r={r}
           stroke={C.lime}
-          strokeWidth={4}
+          strokeWidth={ring}
           fill="none"
           strokeDasharray={`${length} ${length}`}
           strokeDashoffset={length * (1 - ratio)}
@@ -531,7 +487,7 @@ export function Avatar({
       style={{
         width: size,
         height: size,
-        borderRadius: size / 2,
+        borderRadius: radius.pill,
         backgroundColor: C.card,
         alignItems: 'center',
         justifyContent: 'center',
@@ -546,6 +502,7 @@ export function Avatar({
           style={{ width: size, height: size }}
         />
       ) : (
+        // The initial scales with the avatar, so its size is worked out rather than a role.
         <Text style={{ color: C.lime, fontSize: Math.round(size * 0.4), fontWeight: '600' }}>
           {name.trim().slice(0, 1).toUpperCase()}
         </Text>
@@ -556,27 +513,19 @@ export function Avatar({
 export function Stepper({ step, total, label }: { step: number; total: number; label: string }) {
   const { colors: C } = useTheme();
   return (
-    <View accessible accessibilityLabel={`Step ${step} of ${total}, ${label}`} style={{ gap: 8 }}>
-      <Text style={{ color: C.muted }}>
+    <View accessible accessibilityLabel={`Step ${step} of ${total}, ${label}`} style={{ gap: space.sm }}>
+      <Text variant="subhead" style={{ color: C.muted }}>
         {label} · {step}/{total}
       </Text>
-      <View style={{ flexDirection: 'row', gap: 4 }}>
-        {Array.from({ length: Math.max(0, Math.min(total, 12)) }, (_, index) => (
-          <View
-            key={index}
-            style={{
-              height: 4,
-              flex: 1,
-              borderRadius: 2,
-              backgroundColor: index < step ? C.lime : C.line,
-            }}
-          />
-        ))}
-      </View>
+      <ProgressSteps total={total} filled={step} />
     </View>
   );
 }
 export function ReasonLine({ children }: { children: React.ReactNode }) {
   const { colors: C } = useTheme();
-  return <Text style={{ color: C.muted, fontSize: 13, lineHeight: 19 }}>{children}</Text>;
+  return (
+    <Text variant="footnote" style={{ color: C.muted }}>
+      {children}
+    </Text>
+  );
 }

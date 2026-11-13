@@ -18,12 +18,12 @@ import {
 } from '../../shared/event-registration';
 import { questionCatalog } from '../../shared/event-questions';
 import { api } from './api';
-import { DateTimeField } from './design/components';
+import { Button, DateTimeField } from './design/components';
 import { DetailSurface } from './design/DetailSurface';
 import { ScreenBackground } from './design/ScreenBackground';
 import { PageBar } from './design/PageBar';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { hit, radius, space, stroke, textRoles, useTheme } from './design/theme';
 
 type PlaceSuggestion = { placeId: string; name: string; address: string };
 type QuestionDraft = {
@@ -351,21 +351,21 @@ export function EventComposer(
 
   const card = {
     backgroundColor: C.card,
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: radius.control,
+    borderWidth: stroke.line,
     borderColor: C.line,
-    padding: 16,
-    gap: 10,
+    padding: space.md,
+    gap: space.ms,
   };
-  const heading = { color: C.text, fontSize: 16, fontWeight: '700' as const };
-  const muted = { color: C.muted, fontSize: 13 };
+  const heading = { color: C.text, fontWeight: '600' as const };
+  const muted = { color: C.muted };
   const field = {
     color: C.text,
-    fontSize: 16,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
+    fontSize: textRoles.callout.fontSize,
+    paddingHorizontal: space.ms,
+    paddingVertical: space.ms,
+    borderRadius: radius.small,
+    borderWidth: stroke.line,
     borderColor: C.line,
   };
 
@@ -381,7 +381,7 @@ export function EventComposer(
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
           style={{ flex: 1 }}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 160, gap: 14 }}
+          contentContainerStyle={{ paddingHorizontal: space.lg, paddingBottom: 160, gap: space.md }}
         >
           <TextInput
             accessibilityLabel="Event name"
@@ -392,43 +392,46 @@ export function EventComposer(
             maxLength={120}
             style={{
               color: C.text,
-              fontSize: 26,
-              fontWeight: '700',
-              paddingVertical: 8,
+              fontSize: textRoles.title.fontSize,
+              fontWeight: textRoles.title.fontWeight,
+              paddingVertical: space.sm,
             }}
           />
 
           <View style={card}>
-            <Text style={heading}>When</Text>
+            <Text variant="callout" style={heading}>When</Text>
             <DateTimeField label="Start" value={startIso} onChange={setStartIso} />
             <DateTimeField label="End" value={endIso} onChange={setEndIso} />
             {endIso ? (
-              <Pressable accessibilityRole="button" accessibilityLabel="Clear end time" onPress={() => setEndIso('')}>
-                <Text style={{ color: C.lime, fontSize: 15, fontWeight: '600' }}>Clear end</Text>
-              </Pressable>
+              <Button
+                variant="text"
+                title="Clear end"
+                accessibilityLabel="Clear end time"
+                onPress={() => setEndIso('')}
+              />
             ) : (
-              <Text style={muted}>End is optional.</Text>
+              <Text variant="footnote" style={muted}>End is optional.</Text>
             )}
           </View>
 
           <View style={card}>
-            <Text style={heading}>Where</Text>
+            <Text variant="callout" style={heading}>Where</Text>
             {picked ? (
               <View
                 style={{
                   flexDirection: 'row',
                   alignItems: 'center',
-                  gap: 8,
-                  borderRadius: 12,
-                  borderWidth: 1,
+                  gap: space.sm,
+                  borderRadius: radius.small,
+                  borderWidth: stroke.line,
                   borderColor: C.line,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
+                  paddingHorizontal: space.ms,
+                  paddingVertical: space.ms,
                 }}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: C.text, fontWeight: '700' }}>{picked.name}</Text>
-                  <Text style={muted}>{picked.address}</Text>
+                  <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>{picked.name}</Text>
+                  <Text variant="footnote" style={muted}>{picked.address}</Text>
                 </View>
                 <Pressable
                   accessibilityRole="button"
@@ -436,12 +439,12 @@ export function EventComposer(
                   hitSlop={8}
                   onPress={() => setPicked(null)}
                 >
-                  <Text style={{ color: C.text, fontSize: 18 }}>✕</Text>
+                  <Text variant="body" style={{ color: C.text }}>✕</Text>
                 </Pressable>
               </View>
             ) : manual ? (
-              <View style={{ gap: 10 }}>
-                {searchError ? <Text style={muted}>{searchError}</Text> : null}
+              <View style={{ gap: space.ms }}>
+                {searchError ? <Text variant="footnote" style={muted}>{searchError}</Text> : null}
                 <TextInput
                   accessibilityLabel="Venue name"
                   value={venueName}
@@ -473,23 +476,23 @@ export function EventComposer(
                   accessibilityLabel="Find on map"
                   onPress={() => void findOnMap()}
                   style={{
-                    borderRadius: 12,
-                    borderWidth: 1,
+                    borderRadius: radius.small,
+                    borderWidth: stroke.line,
                     borderColor: C.line,
-                    minHeight: 44,
+                    minHeight: hit,
                     alignItems: 'center',
                     justifyContent: 'center',
-                    paddingHorizontal: 12,
+                    paddingHorizontal: space.ms,
                   }}
                 >
-                  <Text style={{ color: C.text, fontSize: 15, fontWeight: '600' }}>
+                  <Text variant="subhead" style={{ color: C.text, fontWeight: '600' }}>
                     Find on map
                   </Text>
                 </Pressable>
-                {mapNote ? <Text style={muted}>{mapNote}</Text> : null}
+                {mapNote ? <Text variant="footnote" style={muted}>{mapNote}</Text> : null}
               </View>
             ) : (
-              <View style={{ gap: 8 }}>
+              <View style={{ gap: space.sm }}>
                 <TextInput
                   accessibilityLabel="Search venues"
                   value={query}
@@ -505,10 +508,10 @@ export function EventComposer(
                     accessibilityRole="button"
                     accessibilityLabel={`Choose ${place.name}`}
                     onPress={() => void selectPlace(place.placeId)}
-                    style={{ paddingVertical: 6 }}
+                    style={{ paddingVertical: space.sm }}
                   >
-                    <Text style={{ color: C.text, fontWeight: '700' }}>{place.name}</Text>
-                    <Text style={muted}>{place.address}</Text>
+                    <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>{place.name}</Text>
+                    <Text variant="footnote" style={muted}>{place.address}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -519,7 +522,7 @@ export function EventComposer(
                 pointerEvents="none"
                 scrollEnabled={false}
                 zoomEnabled={false}
-                style={{ height: 160, borderRadius: 14, overflow: 'hidden' }}
+                style={{ height: 160, borderRadius: radius.control, overflow: 'hidden' }}
                 initialRegion={{
                   latitude: mapPoint.lat,
                   longitude: mapPoint.lng,
@@ -530,8 +533,8 @@ export function EventComposer(
                 <Marker coordinate={{ latitude: mapPoint.lat, longitude: mapPoint.lng }} />
               </MapView>
             ) : null}
-            <Text style={muted}>City</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <Text variant="footnote" style={muted}>City</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
               {cityOptions.map(option => (
                 <Pill
                   key={option}
@@ -544,8 +547,8 @@ export function EventComposer(
           </View>
 
           <View style={card}>
-            <Text style={heading}>Category</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <Text variant="callout" style={heading}>Category</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
               {categories.map(category => (
                 <Pill
                   key={category.id}
@@ -577,7 +580,7 @@ export function EventComposer(
           </View>
 
           <View style={card}>
-            <Text style={heading}>About this event</Text>
+            <Text variant="callout" style={heading}>About this event</Text>
             <TextInput
               accessibilityLabel="Description"
               value={description}
@@ -592,8 +595,8 @@ export function EventComposer(
           </View>
 
           <View style={card}>
-            <Text style={heading}>Tickets & seats</Text>
-            <Text style={muted}>Capacity</Text>
+            <Text variant="callout" style={heading}>Tickets & seats</Text>
+            <Text variant="footnote" style={muted}>Capacity</Text>
             <TextInput
               accessibilityLabel="Capacity"
               value={capacity}
@@ -613,8 +616,8 @@ export function EventComposer(
           </View>
 
           <View style={card}>
-            <Text style={heading}>Signup questions</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            <Text variant="callout" style={heading}>Signup questions</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
               {questionCatalog.map(preset => {
                 const added = questions.some(question => question.id === preset.id);
                 return (
@@ -631,11 +634,11 @@ export function EventComposer(
             {questions.map(question => (
               <View
                 key={question.id}
-                style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: C.text, fontWeight: '700' }}>{question.label}</Text>
-                  <Text style={muted}>
+                  <Text variant="callout" style={{ color: C.text, fontWeight: '600' }}>{question.label}</Text>
+                  <Text variant="footnote" style={muted}>
                     {question.kind === 'choice'
                       ? `Choice · ${question.options?.length ?? 0} options`
                       : 'Text'}
@@ -650,12 +653,12 @@ export function EventComposer(
                     setQuestions(current => current.filter(item => item.id !== question.id))
                   }
                 >
-                  <Text style={{ color: C.text, fontSize: 18 }}>✕</Text>
+                  <Text variant="body" style={{ color: C.text }}>✕</Text>
                 </Pressable>
               </View>
             ))}
             {editorOpen ? (
-              <View style={{ gap: 10 }}>
+              <View style={{ gap: space.ms }}>
                 <TextInput
                   accessibilityLabel="Question"
                   value={draft.label}
@@ -665,7 +668,7 @@ export function EventComposer(
                   maxLength={questionLimits.label}
                   style={field}
                 />
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
                   <Pill
                     label="Choice"
                     selected={draft.kind === 'choice'}
@@ -684,11 +687,11 @@ export function EventComposer(
                   />
                 </View>
                 {draft.kind === 'choice' ? (
-                  <View style={{ gap: 8 }}>
+                  <View style={{ gap: space.sm }}>
                     {draft.options.map((option, index) => (
                       <View
                         key={index}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}
                       >
                         <TextInput
                           accessibilityLabel={`Option ${index + 1}`}
@@ -720,23 +723,20 @@ export function EventComposer(
                               }))
                             }
                           >
-                            <Text style={{ color: C.text, fontSize: 18 }}>✕</Text>
+                            <Text variant="body" style={{ color: C.text }}>✕</Text>
                           </Pressable>
                         ) : null}
                       </View>
                     ))}
                     {draft.options.length < questionLimits.options ? (
-                      <Pressable
-                        accessibilityRole="button"
+                      <Button
+                        variant="text"
+                        title="Add option"
                         accessibilityLabel="Add option"
                         onPress={() =>
                           setDraft(current => ({ ...current, options: [...current.options, ''] }))
                         }
-                      >
-                        <Text style={{ color: C.lime, fontSize: 15, fontWeight: '600' }}>
-                          Add option
-                        </Text>
-                      </Pressable>
+                      />
                     ) : null}
                   </View>
                 ) : null}
@@ -745,61 +745,42 @@ export function EventComposer(
                   value={draft.required}
                   onValueChange={required => setDraft(current => ({ ...current, required }))}
                 />
-                <View style={{ flexDirection: 'row', gap: 16 }}>
-                  <Pressable
-                    accessibilityRole="button"
+                <View style={{ flexDirection: 'row', gap: space.md, alignItems: 'center' }}>
+                  <Button
+                    variant="text"
+                    size="regular"
+                    title="Add"
                     accessibilityLabel="Add question"
                     disabled={!draftReady}
                     onPress={saveQuestion}
-                  >
-                    <Text
-                      style={{
-                        color: draftReady ? C.lime : C.muted,
-                        fontSize: 16,
-                        fontWeight: '700',
-                      }}
-                    >
-                      Add
-                    </Text>
-                  </Pressable>
+                  />
                   <Pressable accessibilityRole="button" accessibilityLabel="Cancel" onPress={() => setEditorOpen(false)}>
-                    <Text style={{ color: C.muted, fontSize: 16 }}>Cancel</Text>
+                    <Text variant="callout" style={{ color: C.muted }}>Cancel</Text>
                   </Pressable>
                 </View>
               </View>
             ) : !questionLimitReached ? (
-              <Pressable accessibilityRole="button" accessibilityLabel="Write your own question" onPress={openEditor}>
-                <Text style={{ color: C.lime, fontSize: 16, fontWeight: '700' }}>
-                  Write your own
-                </Text>
-              </Pressable>
+              <Button
+                variant="text"
+                title="Write your own"
+                accessibilityLabel="Write your own question"
+                onPress={openEditor}
+              />
             ) : (
-              <Text style={muted}>You can add up to {questionLimits.questions} questions.</Text>
+              <Text variant="footnote" style={muted}>You can add up to {questionLimits.questions} questions.</Text>
             )}
           </View>
 
-          <Pressable
-            accessibilityRole="button"
+          <Button
+            title="Create event"
             accessibilityLabel="Create event"
-            accessibilityState={{ disabled: !ready }}
             disabled={!ready}
             onPress={submit}
-            style={({ pressed }) => ({
-              backgroundColor: C.lime,
-              opacity: !ready ? 0.4 : pressed ? 0.85 : 1,
-              borderRadius: 16,
-              minHeight: 52,
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '100%',
-            })}
-          >
-            <Text style={{ color: C.onAccent, fontSize: 17, fontWeight: '700' }}>Create event</Text>
-          </Pressable>
+          />
           {missing.length > 0 ? (
-            <View style={{ gap: 4 }}>
+            <View style={{ gap: space.xs }}>
               {missing.map(item => (
-                <Text key={item} style={muted}>
+                <Text key={item} variant="footnote" style={muted}>
                   {item}
                 </Text>
               ))}
@@ -831,16 +812,16 @@ function Pill({
       disabled={disabled}
       onPress={onPress}
       style={{
-        borderRadius: 999,
-        borderWidth: 1,
+        borderRadius: radius.pill,
+        borderWidth: stroke.line,
         borderColor: selected ? C.lime : C.line,
         backgroundColor: selected ? C.lime : 'transparent',
-        paddingHorizontal: 14,
-        paddingVertical: 8,
+        paddingHorizontal: space.md,
+        paddingVertical: space.sm,
         opacity: disabled ? 0.4 : 1,
       }}
     >
-      <Text style={{ color: selected ? C.onAccent : C.text, fontSize: 15, fontWeight: '600' }}>
+      <Text variant="subhead" style={{ color: selected ? C.onAccent : C.text, fontWeight: '600' }}>
         {label}
       </Text>
     </Pressable>
@@ -860,16 +841,16 @@ function ToggleRow({
 }) {
   const { colors: C } = useTheme();
   return (
-    <View style={{ gap: 4 }}>
+    <View style={{ gap: space.xs }}>
       <View
         style={{
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: 12,
+          gap: space.ms,
         }}
       >
-        <Text style={{ color: C.text, fontSize: 16, flex: 1 }}>{label}</Text>
+        <Text variant="callout" style={{ color: C.text, flex: 1 }}>{label}</Text>
         <Switch
           accessibilityLabel={label}
           value={value}
@@ -878,7 +859,7 @@ function ToggleRow({
           thumbColor={C.onAccent}
         />
       </View>
-      {hint ? <Text style={{ color: C.muted, fontSize: 13 }}>{hint}</Text> : null}
+      {hint ? <Text variant="footnote" style={{ color: C.muted }}>{hint}</Text> : null}
     </View>
   );
 }

@@ -22,7 +22,7 @@ test('Flows, Picks and Events use swipeable compact shelves without losing detai
 });
 test('secondary navigation uses compact text chips instead of a second illustrated row',()=>{
  const rail=readFileSync('mobile/src/CategoryRail.tsx','utf8');
- containsCode(rail,'minHeight:compact?48:80');containsCode(rail,'!compact&&(item.imageUrl');
+ containsCode(rail,'minHeight:compact?hit:80');containsCode(rail,'!compact&&(item.imageUrl');
  // Category tabs open a Spotify-style home (shelves, then the catalog) rather than section chips.
  const flows=readFileSync('mobile/src/FlowCatalogHome.tsx','utf8');assert.doesNotMatch(flows,/<CategoryRail/);
  assert.match(readFileSync('mobile/src/FlowSections.tsx','utf8'),/<CategoryRail\s+compact/);

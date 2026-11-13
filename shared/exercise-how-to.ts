@@ -601,6 +601,69 @@ const seed: ExerciseHowTo[] = [
   },
 ];
 
+/** How-to text for the gym catalogue. No video is attached; the page can search. */
+const catalogueHowTos: ExerciseHowTo[] = [
+  guide('incline-dumbbell-curl', ['Sit on an incline bench with your arms hanging.', 'Curl the dumbbells up without swinging.', 'Lower until your arms are straight again.'], 'Front of your upper arms, in the stretched position.', 'Swinging your shoulders to lift the weight.'),
+  guide('close-grip-seated-row', ['Sit at the row machine and take a narrow grip.', 'Pull the handle to your stomach, then reach forward.', 'Keep your chest on the pad if the machine has one.'], 'Middle of your back.', 'Shrugging the weight up instead of pulling it in.'),
+  guide('face-pull', ['Set a rope at about face height.', 'Pull the rope toward your face and separate the ends.', 'Pause, then let your arms reach forward.'], 'Rear of your shoulders.', 'Pulling the rope down to your chest.'),
+  guide('wide-grip-lat-pulldown', ['Sit with your thighs under the pads and take a wide grip.', 'Pull the bar to your upper chest.', 'Let the bar rise until your arms are straight.'], 'Sides of your back.', 'Leaning back to heave the bar down.'),
+  guide('machine-seated-row', ['Sit tall, chest toward the pad, and take the handles.', 'Pull the handles to your ribs.', 'Reach forward until your arms are straight.'], 'Middle of your back.', 'Rounding your back to reach farther.'),
+  guide('straight-arm-cable-pulldown', ['Stand facing a high cable with straight arms.', 'Pull the bar down to your thighs without bending your elbows.', 'Let it rise back to about shoulder height.'], 'Sides of your back.', 'Bending your elbows and turning it into a row.'),
+  guide('pull-up', ['Hang from a bar with your hands just outside your shoulders.', 'Pull until your chin is over the bar.', 'Lower until your arms are straight.'], 'Sides of your back and your arms.', 'Kipping or half-lowering the reps.'),
+  guide('chest-supported-t-bar-row', ['Lie chest-down on the pad and take the handles.', 'Pull the weight toward your ribs.', 'Lower until your arms are straight.'], 'Middle of your back.', 'Lifting your chest off the pad.'),
+  guide('weighted-pull-up', ['Hang from a bar with a belt or dumbbell held between your feet.', 'Pull until your chin is over the bar.', 'Lower until your arms are straight.'], 'Sides of your back.', 'Cutting the lower half of the rep short.'),
+  guide('pendlay-row', ['Set the bar on the floor and hinge until your back is about flat.', 'Pull the bar to your lower ribs, then set it down.', 'Reset your position before the next rep.'], 'Middle of your back.', 'Jerking the bar up with your hips.'),
+  guide('machine-biceps-curl', ['Sit at the curl machine with your upper arms on the pad.', 'Curl the handles up.', 'Lower until your arms are nearly straight.'], 'Front of your upper arms.', 'Lifting your elbows off the pad.'),
+  guide('hammer-curl', ['Stand with dumbbells at your sides, thumbs forward.', 'Curl without twisting your wrists.', 'Lower until your arms are straight.'], 'Front of your upper arms and forearms.', 'Swinging the dumbbells up.'),
+  guide('ez-bar-curl', ['Hold the EZ bar with your hands on the angled grips.', 'Curl the bar up, keeping your elbows still.', 'Lower until your arms are straight.'], 'Front of your upper arms.', 'Leaning back to start the curl.'),
+  guide('cable-preacher-curl', ['Set the cable low and rest your upper arms on the preacher pad.', 'Curl the handle up.', 'Lower until your arm is straight.'], 'Front of your upper arms.', 'Letting your elbow lift off the pad.'),
+  guide('chin-up', ['Hang from a bar with your palms facing you.', 'Pull until your chin is over the bar.', 'Lower until your arms are straight.'], 'Sides of your back and the front of your arms.', 'Swinging your knees to get over the bar.'),
+  guide('barbell-curl', ['Stand and hold the bar in front of your thighs.', 'Curl the bar up, elbows still.', 'Lower until your arms are straight.'], 'Front of your upper arms.', 'Swinging your hips to start the bar.'),
+  guide('preacher-curl', ['Rest your upper arms on the preacher pad.', 'Curl the bar up.', 'Lower until your arms are nearly straight.'], 'Front of your upper arms.', 'Bouncing the bar out of the bottom.'),
+  guide('machine-chest-press', ['Sit with the handles at chest height.', 'Press until your arms are straight.', 'Bring the handles back to your chest.'], 'Chest.', 'Letting your shoulders shrug up toward your ears.'),
+  guide('incline-machine-chest-press', ['Sit on the incline press with the handles at your upper chest.', 'Press until your arms are straight.', 'Lower the handles with control.'], 'Upper chest.', 'Flaring your elbows straight out to the sides.'),
+  guide('pec-deck', ['Sit with your forearms on the pads, elbows about shoulder height.', 'Bring the pads together in front of your chest.', 'Open your arms until you feel a stretch.'], 'Chest.', 'Pushing the pads with your hands instead of your forearms.'),
+  guide('incline-cable-fly', ['Set the cables low and stand or sit on an incline.', 'Bring your hands together above your chest with a soft elbow.', 'Open your arms back to a stretch.'], 'Upper chest.', 'Bending your elbows and turning it into a press.'),
+  guide('incline-barbell-press', ['Lie on an incline bench and take a grip just outside your shoulders.', 'Lower the bar to your upper chest.', 'Press it up until your arms are straight.'], 'Upper chest.', 'Bouncing the bar off your chest.'),
+  guide('dumbbell-fly', ['Lie on a bench with dumbbells above your chest, elbows soft.', 'Open your arms out to the sides.', 'Bring the dumbbells back together.'], 'Chest.', 'Dropping the dumbbells below the bench with straight elbows.'),
+  guide('incline-dumbbell-fly', ['Lie on an incline bench with dumbbells above your chest.', 'Open your arms out and slightly down.', 'Bring the dumbbells back together.'], 'Upper chest.', 'Using a straight elbow and straining the shoulder.'),
+  guide('overhead-cable-extension', ['Face away from a low cable and hold the rope behind your head.', 'Straighten your elbows overhead.', 'Bend them until you feel a stretch.'], 'Back of your upper arms.', 'Flaring your elbows wide.'),
+  guide('dumbbell-kickback', ['Hinge forward and pin your upper arm to your side.', 'Straighten your elbow until your arm is in line with your body.', 'Bend the elbow back to about a right angle.'], 'Back of your upper arm.', 'Swinging the upper arm instead of bending the elbow.'),
+  guide('close-grip-bench-press', ['Lie on a bench and take a grip about shoulder width.', 'Lower the bar to your lower chest.', 'Press it up until your arms are straight.'], 'Back of your upper arms.', 'Taking such a narrow grip that your wrists bend.'),
+  guide('triceps-dip', ['Support yourself on parallel bars with your torso upright.', 'Bend your elbows until your upper arms are about level.', 'Press back up until your arms are straight.'], 'Back of your upper arms.', 'Swinging your legs to get out of the bottom.'),
+  guide('machine-shoulder-press', ['Sit with the handles at shoulder height.', 'Press overhead until your arms are straight.', 'Lower the handles to about ear height.'], 'Shoulders.', 'Arching your lower back to finish the press.'),
+  guide('cable-lateral-raise', ['Stand side-on to a low cable.', 'Raise your arm out to the side until it is about level.', 'Lower it with control.'], 'Side of your shoulder.', 'Shrugging the shoulder up as the arm rises.'),
+  guide('dumbbell-romanian-deadlift', ['Hold dumbbells in front of your thighs.', 'Hinge your hips back until you feel your hamstrings.', 'Stand tall and squeeze your glutes.'], 'Hamstrings and glutes.', 'Rounding your back to reach the floor.'),
+  guide('hip-thrust-machine', ['Sit into the machine with the pad across your hips.', 'Drive your hips up until your body is straight.', 'Lower the pad with control.'], 'Glutes.', 'Arching your lower back at the top.'),
+  guide('leg-extension', ['Sit with the pad on your lower shins.', 'Straighten your knees.', 'Lower until your knees are bent again.'], 'Front of your thighs.', 'Swinging the weight up with your hips.'),
+  guide('walking-lunge', ['Hold dumbbells at your sides.', 'Step forward and lower your back knee.', 'Push through the front foot and step through.'], 'Front of your thighs and glutes.', 'Letting the front knee cave in.'),
+  guide('conventional-deadlift', ['Stand with the bar over your mid-foot and hinge to grip it.', 'Push the floor away and stand tall.', 'Hinge the bar back down along your legs.'], 'Glutes, hamstrings and your back.', 'Rounding your back as the bar leaves the floor.'),
+  guide('dead-bug', ['Lie on your back with your arms up and your knees bent.', 'Reach one arm and the opposite leg away.', 'Bring them back and switch sides.'], 'The front of your trunk.', 'Arching your lower back off the floor.'),
+  guide('bird-dog', ['Start on your hands and knees.', 'Reach one arm and the opposite leg out.', 'Bring them back and switch sides.'], 'Glutes and the back of your trunk.', 'Twisting your hips as the leg lifts.'),
+  guide('pallof-press', ['Stand side-on to a cable at chest height.', 'Hold the handle at your chest, then press it straight out.', 'Bring it back to your chest without turning.'], 'The sides of your trunk.', 'Letting the cable rotate you toward the stack.'),
+  guide('ab-wheel-rollout', ['Kneel and hold the wheel under your shoulders.', 'Roll forward as far as you can keep your back flat.', 'Pull the wheel back to your knees.'], 'The front of your trunk.', 'Letting your hips sag as you roll out.'),
+  guide('cable-woodchop', ['Set a cable high and stand side-on to it.', 'Pull the handle down and across your body.', 'Return it with control and switch sides.'], 'The sides of your trunk.', 'Twisting only your arms and not your trunk.'),
+  guide('cable-crunch', ['Kneel facing a high cable and hold the rope by your head.', 'Curl your ribs toward your hips.', 'Return until your trunk is tall again.'], 'The front of your trunk.', 'Pulling the rope with your arms.'),
+  guide('hanging-leg-raise', ['Hang from a bar with straight arms.', 'Raise your legs in front of you without swinging.', 'Lower them with control.'], 'The lower front of your trunk.', 'Using a swing to get the legs up.'),
+  guide('side-plank', ['Lie on your side with your elbow under your shoulder.', 'Lift your hips so your body is a straight line.', 'Hold, then switch sides.'], 'The side of your trunk.', 'Letting your hips drop toward the floor.'),
+  guide('seated-dumbbell-curl', ['Sit tall with dumbbells at your sides.', 'Curl them up without swinging.', 'Lower until your arms are straight.'], 'Front of your upper arms.', 'Rocking your torso to help the curl.'),
+  guide('cross-body-hammer-curl', ['Stand with dumbbells at your sides, thumbs forward.', 'Curl one dumbbell across your body toward the opposite shoulder.', 'Lower it and switch sides.'], 'Front of your upper arms.', 'Turning the dumbbell into a regular curl.'),
+  guide('single-arm-pushdown', ['Stand at a high cable and hold one handle.', 'Pin your elbow to your side and straighten your arm.', 'Let the handle rise to about chest height.'], 'Back of your upper arm.', 'Letting the elbow drift forward.'),
+  guide('hanging-knee-raise', ['Hang from a bar with straight arms.', 'Draw your knees up in front of you.', 'Lower them without swinging.'], 'The lower front of your trunk.', 'Kipping your hips to lift the knees.'),
+  guide('dumbbell-goblet-squat', ['Hold one dumbbell at your chest.', 'Sit your hips down between your heels.', 'Stand back up.'], 'Front of your thighs and glutes.', 'Letting your heels lift.'),
+  guide('dumbbell-bench-press', ['Lie on a bench with dumbbells at your chest.', 'Press them up until your arms are straight.', 'Lower them to the sides of your chest.'], 'Chest.', 'Bouncing the dumbbells off your chest.'),
+  guide('single-arm-dumbbell-row', ['Support one hand on a bench and hold a dumbbell in the other.', 'Pull the dumbbell to your hip.', 'Lower it until your arm is straight.'], 'Side of your back.', 'Twisting your torso to heave the dumbbell.'),
+  guide('close-grip-lat-pulldown', ['Sit at the pulldown and take a narrow grip.', 'Pull the bar to your upper chest.', 'Let it rise until your arms are straight.'], 'Sides of your back.', 'Leaning far back to finish the pull.'),
+  guide('front-squat', ['Rest the bar on the front of your shoulders and lift your elbows.', 'Sit down until your thighs are about level.', 'Stand back up, keeping your elbows high.'], 'Front of your thighs.', 'Letting your elbows drop so the bar rolls.'),
+  guide('kettlebell-calf-raise', ['Hold a kettlebell in front of you and stand tall.', 'Rise onto the balls of your feet.', 'Lower your heels under control.'], 'Calves.', 'Bouncing at the bottom.'),
+  guide('hack-squat', ['Set your shoulders under the pads and your feet on the platform.', 'Lower until your thighs are about level.', 'Press the platform away to stand.'], 'Front of your thighs.', 'Letting your knees cave in.'),
+  guide('stationary-bike', ['Set the seat so your knee is slightly bent at the bottom.', 'Pedal at the pace the session asks for.', 'Keep your trunk still and your hands light on the bars.'], 'Front of your thighs.', 'Bouncing in the saddle.'),
+];
+
+function guide(exerciseId: string, steps: string[], feel: string, mistake: string): ExerciseHowTo {
+  return { exerciseId, steps, feel, mistake, status: 'live' };
+}
+
 const allowedKeys = new Set(['exerciseId', 'steps', 'feel', 'mistake', 'note', 'videoUrl', 'status']);
 
 /** Only YouTube watch, short and short-link addresses over https. */
@@ -652,5 +715,5 @@ export function parseHowTo(value: unknown): ExerciseHowTo {
 }
 
 export function seededHowTos(): ExerciseHowTo[] {
-  return seed.map(row => parseHowTo(row));
+  return [...seed, ...catalogueHowTos].map(row => parseHowTo(row));
 }

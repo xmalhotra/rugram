@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import {
   formatCardDetail,
   formatEffort,
@@ -8,7 +8,9 @@ import {
   formatRunWhen,
 } from '../../shared/flow-history';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { Button, SectionHeader, Skeleton } from './design/components';
+import { Glyph } from './design/Glyph';
+import { hit, opacity, radius, space, useTheme } from './design/theme';
 import { recentRuns } from './flow-runs';
 
 type RecentRun = Awaited<ReturnType<typeof recentRuns>>['runs'][number];
@@ -44,30 +46,23 @@ export function ProfileWorkouts({
   const shown = all ? (runs ?? []) : (runs ?? []).slice(0, 5);
   const now = new Date();
   return (
-    <View style={{ gap: 10 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-        <Text accessibilityRole="header" style={{ color: C.text, fontSize: 18, fontWeight: '700' }}>
-          Your workouts
-        </Text>
-        <Text style={{ color: C.muted, fontSize: 13 }}>Only you can see this</Text>
-      </View>
+    <View style={{ gap: space.ms }}>
+      <SectionHeader title="Your workouts" detail="Only you can see this" />
       {error ? (
-        <Pressable
-          accessibilityRole="button"
+        <Button
+          title="Couldn't load. Try again"
+          variant="text"
           accessibilityLabel="Try loading your workouts again"
           onPress={() => setReloadKey(value => value + 1)}
-          style={{ minHeight: 44, justifyContent: 'center' }}
-        >
-          <Text style={{ color: C.lime, fontSize: 15, fontWeight: '600' }}>Couldn't load. Try again</Text>
-        </Pressable>
+        />
       ) : runs === null ? (
-        <Text style={{ color: C.muted, fontSize: 15 }}>Loading…</Text>
+        <Skeleton shape="line" />
       ) : runs.length === 0 ? (
-        <Text style={{ color: C.muted, fontSize: 15, lineHeight: 21 }}>
+        <Text variant="subhead" style={{ color: C.muted }}>
           Start a flow and every workout shows up here, with what you logged.
         </Text>
       ) : (
-        <View style={{ borderRadius: 16, borderWidth: 1, borderColor: C.line, backgroundColor: C.card }}>
+        <View style={{ borderRadius: radius.control, borderWidth: 1, borderColor: C.line, backgroundColor: C.card }}>
           {shown.map((run, runIndex) => {
             const done = run.cards.filter(card => card.status === 'done').length;
             const open = openId === run.id;
@@ -81,7 +76,7 @@ export function ProfileWorkouts({
               .filter(Boolean)
               .join(' · ');
             return (
-              <View key={run.id} style={{ borderTopWidth: runIndex ? 0.5 : 0, borderColor: C.line }}>
+              <View key={run.id} style={{ borderTopWidth: runIndex ? StyleSheet.hairlineWidth : 0, borderColor: C.line }}>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel={`${run.title}, ${formatRunWhen(run.startedAt, now)}. ${summary}`}
@@ -92,20 +87,20 @@ export function ProfileWorkouts({
                     minHeight: 64,
                     flexDirection: 'row',
                     alignItems: 'center',
-                    gap: 10,
-                    paddingHorizontal: 14,
-                    paddingVertical: 10,
-                    opacity: pressed ? 0.7 : 1,
+                    gap: space.ms,
+                    paddingHorizontal: space.md,
+                    paddingVertical: space.ms,
+                    opacity: pressed ? opacity.pressed : 1,
                   })}
                 >
-                  <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-                    <Text numberOfLines={1} style={{ color: C.text, fontSize: 16, fontWeight: '600' }}>
+                  <View style={{ flex: 1, minWidth: 0, gap: space.xxs }}>
+                    <Text numberOfLines={1} variant="callout" style={{ color: C.text, fontWeight: '600' }}>
                       {run.title}
                     </Text>
-                    <Text numberOfLines={1} style={{ color: C.muted, fontSize: 13 }}>
+                    <Text numberOfLines={1} variant="footnote" style={{ color: C.muted }}>
                       {formatRunWhen(run.startedAt, now)}
                     </Text>
-                    <Text numberOfLines={2} style={{ color: run.status === 'running' ? C.lime : C.muted, fontSize: 13 }}>
+                    <Text numberOfLines={2} variant="footnote" style={{ color: run.status === 'running' ? C.lime : C.muted }}>
                       {summary}
                     </Text>
                   </View>
@@ -114,31 +109,33 @@ export function ProfileWorkouts({
                       pointerEvents="none"
                       style={{
                         minHeight: 40,
-                        paddingHorizontal: 16,
-                        borderRadius: 20,
+                        paddingHorizontal: space.md,
+                        borderRadius: radius.pill,
                         alignItems: 'center',
                         justifyContent: 'center',
                         backgroundColor: C.lime,
                       }}
                     >
-                      <Text style={{ color: C.onAccent, fontSize: 14, fontWeight: '700' }}>In progress ›</Text>
+                      <Text variant="subhead" style={{ color: C.onAccent, fontWeight: '600' }}>In progress ›</Text>
                     </View>
                   ) : (
-                    <Text style={{ color: C.muted, fontSize: 18 }}>{open ? '⌃' : '⌄'}</Text>
+                    <Text variant="body" style={{ color: C.muted }}>{open ? '⌃' : '⌄'}</Text>
                   )}
                 </Pressable>
                 {open ? (
-                  <View style={{ paddingHorizontal: 14, paddingBottom: 12, gap: 8 }}>
+                  <View style={{ paddingHorizontal: space.md, paddingBottom: space.ms, gap: space.sm }}>
                     {run.cards.map(card => {
                       const detail = formatCardDetail(card, card.sets) ?? (card.status === 'pending' ? 'Not reached' : '');
                       return (
-                        <View key={card.cardId} style={{ flexDirection: 'row', gap: 10 }}>
-                          <Text style={{ width: 16, color: card.status === 'done' ? C.lime : C.muted, fontSize: 14 }}>
-                            {card.status === 'done' ? '✓' : '·'}
-                          </Text>
+                        <View key={card.cardId} style={{ flexDirection: 'row', gap: space.ms }}>
+                          {card.status === 'done' ? (
+                            <Glyph name={{ ios: 'checkmark', android: 'check' }} fallback="✓" color={C.lime} size={space.md} />
+                          ) : (
+                            <Text variant="subhead" style={{ width: 16, color: C.muted }}>·</Text>
+                          )}
                           <View style={{ flex: 1, minWidth: 0 }}>
-                            <Text style={{ color: C.text, fontSize: 14 }}>{card.title}</Text>
-                            {detail ? <Text style={{ color: C.muted, fontSize: 13 }}>{detail}</Text> : null}
+                            <Text variant="subhead" style={{ color: C.text }}>{card.title}</Text>
+                            {detail ? <Text variant="footnote" style={{ color: C.muted }}>{detail}</Text> : null}
                           </View>
                         </View>
                       );
@@ -149,14 +146,14 @@ export function ProfileWorkouts({
             );
           })}
           {runs.length > 5 ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={all ? 'Show fewer workouts' : 'Show all workouts'}
-              onPress={() => setAll(value => !value)}
-              style={{ minHeight: 48, alignItems: 'center', justifyContent: 'center', borderTopWidth: 0.5, borderColor: C.line }}
-            >
-              <Text style={{ color: C.lime, fontSize: 15, fontWeight: '600' }}>{all ? 'Show fewer' : `Show all ${runs.length}`}</Text>
-            </Pressable>
+            <View style={{ alignItems: 'center', borderTopWidth: StyleSheet.hairlineWidth, borderColor: C.line }}>
+              <Button
+                title={all ? 'Show fewer' : `Show all ${runs.length}`}
+                variant="text"
+                accessibilityLabel={all ? 'Show fewer workouts' : 'Show all workouts'}
+                onPress={() => setAll(value => !value)}
+              />
+            </View>
           ) : null}
         </View>
       )}

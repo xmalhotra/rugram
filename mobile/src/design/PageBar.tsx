@@ -2,7 +2,7 @@ import React from 'react';
 import { Pressable, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { Text } from './Text';
-import { useTheme } from './theme';
+import { hit, opacity, space, useTheme } from './theme';
 
 /** X-style top bar for a pushed page: back chevron, centred title, optional action. */
 export function PageBar({
@@ -20,8 +20,8 @@ export function PageBar({
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        minHeight: 48,
-        paddingHorizontal: 8,
+        minHeight: hit,
+        paddingHorizontal: space.sm,
       }}
     >
       <Pressable
@@ -29,7 +29,7 @@ export function PageBar({
         accessibilityLabel="Go back"
         onPress={onBack}
         hitSlop={8}
-        style={{ width: 48, height: 48, alignItems: 'center', justifyContent: 'center' }}
+        style={({ pressed }) => ({ width: hit, height: hit, alignItems: 'center', justifyContent: 'center', opacity: pressed ? opacity.pressed : 1 })}
       >
         <Svg width={24} height={24} viewBox="0 0 24 24" accessible={false}>
           <Path
@@ -45,11 +45,12 @@ export function PageBar({
       <Text
         accessibilityRole="header"
         numberOfLines={1}
-        style={{ flex: 1, textAlign: 'center', color: C.text, fontSize: 17, fontWeight: '700' }}
+        variant="headline"
+        style={{ flex: 1, textAlign: 'center', color: C.text }}
       >
         {title}
       </Text>
-      <View style={{ width: 48, alignItems: 'center' }}>{right}</View>
+      <View style={{ minWidth: hit, alignItems: 'center' }}>{right}</View>
     </View>
   );
 }

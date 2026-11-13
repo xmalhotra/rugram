@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { todaySteps } from '../shared/today';
+import { chooseToday, todaySteps, type TodayEntry, type TodayFacts } from '../shared/today';
 import { profileAction, reverseProfileAction } from '../shared/profile-action';
 import type { MobilePayload } from '../shared/mobile';
 const flow = {
@@ -42,6 +42,72 @@ test('completion is idempotent, reversible and cannot be entered without joining
   const unjoined = { ...data, profile: { ...data.profile, flowIds: [] } };
   assert.equal(profileAction(unjoined, action, now), unjoined);
 });
+const flowEntry = (over: Partial<TodayEntry> = {}): TodayEntry => ({
+  id: 'push',
+  kind: 'flow',
+  title: 'Push',
+  detail: 'Push day',
+  done: false,
+  ...over,
+});
+
+function facts(over: Partial<TodayFacts> = {}): TodayFacts {
+  return {
+    workout: null,
+    question: null,
+    today: null,
+    tomorrow: null,
+    missed: null,
+    starter: { id: 'starter', title: 'First flow', reason: 'A first flow for this focus' },
+    doneSummary: 'Today is done',
+    ...over,
+  };
+}
+
+test('Today uses the first matching rule, in order', () => {
+  const workout = { title: 'Push', exercise: 2, exerciseCount: 5, timer: '12:04' };
+  const question = { id: 'focus', title: 'What are you here for?', reason: 'Qram starts from what you want.' };
+  const missed = { id: 'legs', title: 'Leg day', reason: 'Legs are missed this week' };
+  const pending = [flowEntry(), flowEntry({ id: 'creatine', kind: 'item', title: 'Creatine', detail: '5 g', done: false })];
+  const full = facts({
+    workout,
+    question,
+    today: pending,
+    missed,
+    tomorrow: flowEntry({ id: 'pull', title: 'Pull', detail: 'Pull day' }),
+  });
+  assert.equal(chooseToday(full).rule, 'continue');
+  assert.deepEqual(chooseToday({ ...full, workout: null }).rule, 'question');
+  const started = chooseToday({ ...full, workout: null, question: null });
+  assert.equal(started.rule, 'start');
+  if (started.rule === 'start') assert.equal(started.entry.id, 'push');
+  const itemOnly = chooseToday(facts({ today: [flowEntry({ id: 'creatine', kind: 'item', title: 'Creatine', detail: '5 g' })] }));
+  assert.equal(itemOnly.rule, 'start');
+  if (itemOnly.rule === 'start') assert.equal(itemOnly.entry.kind, 'item');
+  const gap = chooseToday(facts({ today: [], missed }));
+  assert.equal(gap.rule, 'suggest');
+  const noPlan = chooseToday(facts({ today: null, missed }));
+  assert.equal(noPlan.rule, 'suggest');
+  const starter = chooseToday(facts());
+  assert.equal(starter.rule, 'starter');
+  if (starter.rule === 'starter') assert.equal(starter.starter?.title, 'First flow');
+  const rest = chooseToday(facts({ today: [] }));
+  assert.equal(rest.rule, 'done');
+  const done = chooseToday(
+    facts({
+      today: [flowEntry({ done: true })],
+      missed,
+      tomorrow: flowEntry({ id: 'pull', title: 'Pull', detail: 'Pull day' }),
+      doneSummary: 'Push is done',
+    }),
+  );
+  assert.equal(done.rule, 'done');
+  if (done.rule === 'done') {
+    assert.equal(done.summary, 'Push is done');
+    assert.equal(done.tomorrow?.title, 'Pull');
+  }
+});
+
 test('save and flow actions use explicit desired state, and rollback preserves unrelated data', () => {
   const action = { action: 'save', id: 'product', enabled: true };
   const updated = profileAction(data, action, now);

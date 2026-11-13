@@ -93,7 +93,7 @@ export function useCuration(prompt: string) {
   );
 }
 
-/** Debounced people search for the Following tab. Empty until the query has 2 characters. */
+/** Debounced people search at the top of For you. Empty until the query has 2 characters. */
 export function usePeopleSearch(query: string) {
   const [debounced, setDebounced] = useState(query);
   useEffect(() => {

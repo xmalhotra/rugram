@@ -1,10 +1,11 @@
-import { Image, Pressable, ScrollView, View, type ViewStyle } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, View, type ViewStyle } from 'react-native';
 import { supplementIcons } from './picks-icons';
 import { Text } from './design/Text';
+import { Button, SectionHeader } from './design/components';
 import type { HabitFlow, MobilePayload, Product } from '../../shared/mobile';
 import { defaultSupplementDiscovery, topicProducts } from '../../shared/supplement-discovery';
 import { supplementPickCategories } from '../../shared/supplement-picks';
-import { useTheme } from './design/theme';
+import { opacity, radius, space, useTheme } from './design/theme';
 import { browseProducts } from '../../shared/pick-catalog';
 import { rankProducts } from '../../shared/pick-ranking';
 import { comparisonRows } from '../../shared/pick-comparison';
@@ -46,8 +47,7 @@ export function SupplementDiscovery({
         editorialOrder: topic.productIds,
       }).map(entry => entry.product)
     : [];
-  const copy = { color: C.muted, fontSize: 15, lineHeight: 22 } as const;
-  const heading = { color: C.text, fontSize: 22, fontWeight: '700' } as const;
+  const copy = { color: C.muted } as const;
   const select = (id: string) => {
     setTopic(id);
   };
@@ -58,25 +58,21 @@ export function SupplementDiscovery({
   const tradeoffs = pick?.assessment?.tradeoffs.filter(item => item.trim()) ?? [];
   const foodFirst = topic?.foodFirst.trim() ?? '';
   return (
-    <View style={{ gap: 18 }}>
+    <View style={{ gap: space.md }}>
       {/* No goal heading or info button: the goal tiles speak for themselves. */}
       {(topic || onBack) && (
-        <Pressable
-          accessibilityRole="button"
+        <Button
+          variant="text"
+          title={`← ${topic ? topic.title : 'All categories'}`}
           accessibilityLabel={`Back to ${topic ? 'Supplement categories' : 'All categories'}`}
           onPress={() => {
             if (topic) setTopic(null);
             else onBack?.();
           }}
-          style={{ minHeight: 48, justifyContent: 'center' }}
-        >
-          <Text style={{ color: C.lime, fontSize: 17 }}>
-            ← {topic ? topic.title : 'All categories'}
-          </Text>
-        </Pressable>
+        />
       )}
       {!topic ? (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.ms }}>
           {categories.map(item => {
             const icon = supplementIcons[item.id];
             return (
@@ -85,13 +81,13 @@ export function SupplementDiscovery({
                 accessibilityRole="button"
                 accessibilityLabel={item.title}
                 onPress={() => select(item.id)}
-                style={({ pressed }) => ({ width: '31.5%', gap: 6, opacity: pressed ? 0.7 : 1 })}
+                style={({ pressed }) => ({ width: '31.5%', gap: space.sm, opacity: pressed ? opacity.pressed : 1 })}
               >
                 <View
                   style={{
                     width: '100%',
                     aspectRatio: 1,
-                    borderRadius: 14,
+                    borderRadius: radius.control,
                     overflow: 'hidden',
                     backgroundColor: C.card,
                   }}
@@ -107,7 +103,8 @@ export function SupplementDiscovery({
                 </View>
                 <Text
                   numberOfLines={2}
-                  style={{ color: C.text, fontSize: 13, fontWeight: '500', lineHeight: 17, textAlign: 'center' }}
+                  variant="footnote"
+                  style={{ color: C.text, textAlign: 'center' }}
                 >
                   {item.title}
                 </Text>
@@ -119,19 +116,19 @@ export function SupplementDiscovery({
         <>
           {/* Inside a goal, no category row: the back link names where you are. */}
           {pick ? (
-            <View style={{ gap: 10 }}>
+            <View style={{ gap: space.ms }}>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`Top pick, ${pick.title}`}
                 onPress={() => onPick(pick)}
                 style={({ pressed }) => ({
-                  borderRadius: 20,
+                  borderRadius: radius.card,
                   borderWidth: 1,
                   borderColor: C.line,
                   backgroundColor: C.card,
-                  padding: 16,
-                  gap: 10,
-                  opacity: pressed ? 0.7 : 1,
+                  padding: space.md,
+                  gap: space.ms,
+                  opacity: pressed ? opacity.pressed : 1,
                 })}
               >
                 {pick.imageUrl ? (
@@ -139,20 +136,20 @@ export function SupplementDiscovery({
                     source={{ uri: pick.imageUrl }}
                     resizeMode="contain"
                     accessibilityIgnoresInvertColors
-                    style={{ height: 88, width: 88, borderRadius: 12, backgroundColor: C.photoMat }}
+                    style={{ height: 88, width: 88, borderRadius: radius.small, backgroundColor: C.photoMat }}
                   />
                 ) : null}
-                <Text style={{ color: C.text, fontSize: 18, fontWeight: '600' }}>{pick.title}</Text>
+                <Text variant="headline" style={{ color: C.text }}>{pick.title}</Text>
                 {pick.assessment?.whyChosen ? (
-                  <View style={{ gap: 4 }}>
-                    <Text style={{ color: C.text, fontSize: 15, fontWeight: '700' }}>
+                  <View style={{ gap: space.xs }}>
+                    <Text variant="subhead" style={{ color: C.text, fontWeight: '600' }}>
                       Why we recommend it
                     </Text>
-                    <Text style={copy}>{pick.assessment.whyChosen}</Text>
+                    <Text variant="subhead" style={copy}>{pick.assessment.whyChosen}</Text>
                   </View>
                 ) : null}
                 {pick.assessment?.bestFor && pick.assessment.bestFor !== pick.assessment.whyChosen ? (
-                  <Text style={copy}>{pick.assessment.bestFor}</Text>
+                  <Text variant="subhead" style={copy}>{pick.assessment.bestFor}</Text>
                 ) : null}
               </Pressable>
             </View>
@@ -160,33 +157,27 @@ export function SupplementDiscovery({
           <ValueForMoney products={products} pickId={pick?.id} onPick={onPick} />
           <SupplementComparison products={products} onPick={onPick} />
           {tradeoffs.length || foodFirst ? (
-            <View style={{ gap: 8 }}>
-              <Text accessibilityRole="header" style={heading}>
-                Before you buy
-              </Text>
+            <View style={{ gap: space.sm }}>
+              <SectionHeader title="Before you buy" />
               {tradeoffs.map(item => (
-                <Text key={item} style={copy}>
+                <Text key={item} variant="subhead" style={copy}>
                   • {item}
                 </Text>
               ))}
-              {foodFirst ? <Text style={copy}>{foodFirst}</Text> : null}
+              {foodFirst ? <Text variant="subhead" style={copy}>{foodFirst}</Text> : null}
             </View>
           ) : null}
           {onFlow && related.length ? (
-            <View style={{ gap: 8 }}>
-              <Text accessibilityRole="header" style={heading}>
-                From your flow
-              </Text>
+            <View style={{ gap: space.sm }}>
+              <SectionHeader title="From your flow" />
               {related.map(flow => (
-                <Pressable
+                <Button
                   key={flow.id}
-                  accessibilityRole="button"
+                  variant="text"
+                  title={`Read the ${flow.title} flow →`}
                   accessibilityLabel={`Read the ${flow.title} flow`}
                   onPress={() => onFlow(flow)}
-                  style={{ minHeight: 48, justifyContent: 'center' }}
-                >
-                  <Text style={{ color: C.lime, fontSize: 17 }}>Read the {flow.title} flow →</Text>
-                </Pressable>
+                />
               ))}
             </View>
           ) : null}
@@ -199,9 +190,9 @@ export function SupplementDiscovery({
             />
           ) : (
             <View
-              style={{ minHeight: 180, alignItems: 'center', justifyContent: 'center', gap: 12 }}
+              style={{ minHeight: 180, alignItems: 'center', justifyContent: 'center', gap: space.ms }}
             >
-              <Text style={copy}>No products listed yet</Text>
+              <Text variant="subhead" style={copy}>No products listed yet</Text>
             </View>
           )}
         </>
@@ -235,13 +226,8 @@ function ValueForMoney({
   if (!entries.length) return null;
   const highest = entries[entries.length - 1].per100g;
   return (
-    <View style={{ gap: 10 }}>
-      <View style={{ gap: 2 }}>
-        <Text accessibilityRole="header" style={{ color: C.text, fontSize: 22, fontWeight: '700' }}>
-          Value for money
-        </Text>
-        <Text style={{ color: C.muted, fontSize: 14 }}>Listed price per 100 g, cheapest first</Text>
-      </View>
+    <View style={{ gap: space.ms }}>
+      <SectionHeader title="Value for money" detail="Listed price per 100 g, cheapest first" />
       {entries.map(entry => {
         const product = products.find(item => item.id === entry.id)!;
         const top = entry.id === pickId;
@@ -251,16 +237,17 @@ function ValueForMoney({
             accessibilityRole="button"
             accessibilityLabel={`${entry.title}, ₹${Math.round(entry.per100g)} per 100 grams, ${againstTypicalLabel(entry.againstTypical)}`}
             onPress={() => onPick(product)}
-            style={({ pressed }) => ({ gap: 5, opacity: pressed ? 0.7 : 1 })}
+            style={({ pressed }) => ({ gap: space.xs, opacity: pressed ? opacity.pressed : 1 })}
           >
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: space.sm }}>
               <Text
                 numberOfLines={1}
-                style={{ flex: 1, color: top ? C.lime : C.text, fontSize: 15, fontWeight: top ? '700' : '500' }}
+                variant="subhead"
+                style={{ flex: 1, color: top ? C.lime : C.text, fontWeight: top ? '600' : '400' }}
               >
                 {entry.title}
               </Text>
-              <Text style={{ color: C.text, fontSize: 15, fontWeight: '700' }}>
+              <Text variant="subhead" style={{ color: C.text, fontWeight: '600' }}>
                 ₹{Math.round(entry.per100g)}
               </Text>
             </View>
@@ -274,7 +261,7 @@ function ValueForMoney({
                 }}
               />
             </View>
-            <Text style={{ color: C.muted, fontSize: 12 }}>{againstTypicalLabel(entry.againstTypical)}</Text>
+            <Text variant="caption" style={{ color: C.muted }}>{againstTypicalLabel(entry.againstTypical)}</Text>
           </Pressable>
         );
       })}
@@ -311,24 +298,22 @@ function SupplementComparison({
   if (!rows.length) return null;
   const rowStyle = (height: number): ViewStyle => ({
     height,
-    padding: 8,
+    padding: space.sm,
     justifyContent: 'center',
-    borderBottomWidth: 0.5,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: C.line,
   });
   return (
-    <View style={{ gap: 14 }}>
-      <Text accessibilityRole="header" style={{ color: C.text, fontSize: 22, fontWeight: '700' }}>
-        Compare
-      </Text>
+    <View style={{ gap: space.md }}>
+      <SectionHeader title="Compare" />
       <View style={{ flexDirection: 'row' }}>
         <View style={{ width: 128 }}>
           <View style={rowStyle(headerHeight)}>
-            <Text style={{ color: C.text, fontSize: 13, fontWeight: '700' }}>Product</Text>
+            <Text variant="footnote" style={{ color: C.text, fontWeight: '600' }}>Product</Text>
           </View>
           {rows.map(row => (
             <View key={row.label} style={rowStyle(rowHeight)}>
-              <Text style={{ color: C.text, fontSize: 13 }} numberOfLines={2}>
+              <Text variant="footnote" style={{ color: C.text }} numberOfLines={2}>
                 {row.label}
               </Text>
             </View>
@@ -341,7 +326,7 @@ function SupplementComparison({
                 key={product.id}
                 style={{
                   width: 112,
-                  borderLeftWidth: index === 0 ? 0 : 0.5,
+                  borderLeftWidth: index === 0 ? 0 : StyleSheet.hairlineWidth,
                   borderLeftColor: C.line,
                 }}
               >
@@ -352,7 +337,8 @@ function SupplementComparison({
                   style={rowStyle(headerHeight)}
                 >
                   <Text
-                    style={{ color: C.text, fontSize: 13, fontWeight: '700' }}
+                    variant="footnote"
+                    style={{ color: C.text, fontWeight: '600' }}
                     numberOfLines={3}
                   >
                     {product.title}
@@ -360,7 +346,7 @@ function SupplementComparison({
                 </Pressable>
                 {rows.map(row => (
                   <View key={row.label} style={rowStyle(rowHeight)}>
-                    <Text style={{ color: C.text, fontSize: 13 }} numberOfLines={3}>
+                    <Text variant="footnote" style={{ color: C.text }} numberOfLines={3}>
                       {row.values[index]}
                     </Text>
                   </View>

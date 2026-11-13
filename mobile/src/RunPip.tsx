@@ -1,18 +1,22 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, View } from 'react-native';
 import { elapsedSeconds } from '../../shared/flow-run';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { Glyph } from './design/Glyph';
+import { GlassSurface } from './design/parts';
+import { layout, opacity, radius, space, useTheme } from './design/theme';
 import { seedActiveRun, useActiveRun } from './active-run';
+import { RUN_BAR_HEIGHT, useFloatingInsets } from './floating-insets';
 
 const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
-/** A small square in the bottom right, above the tab bar, while a workout is in progress elsewhere. Tap to go back to it. */
+/**
+ * The run bar: docked full width just above the tab bar while a workout is open elsewhere.
+ * Tap to go back to it. Pages leave room for it through `useFloatingInsets`.
+ */
 export function RunPip({ onPress }: { onPress: () => void }) {
-  const { colors: C, scheme } = useTheme();
-  const bottom = useSafeAreaInsets().bottom;
+  const { colors: C } = useTheme();
+  const { runBarBottom } = useFloatingInsets();
   const { run, screenOpen } = useActiveRun();
   const [now, setNow] = useState(() => Date.now());
   const visible = Boolean(run) && !screenOpen;
@@ -28,49 +32,49 @@ export function RunPip({ onPress }: { onPress: () => void }) {
   const { state } = run;
   const paused = state.pausedAt != null;
   const resting = state.phase === 'rest';
+  const word = paused ? 'Paused' : resting ? 'Resting' : 'In progress';
+  const tone = paused ? C.warning : C.lime;
   const time = clock(elapsedSeconds(state, now));
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${run.title} in progress, exercise ${state.index + 1} of ${state.cards.length}${paused ? ', paused' : ''}. Tap to go back.`}
+      accessibilityLabel={`${run.title} ${word.toLowerCase()}, exercise ${state.index + 1} of ${state.cards.length}, ${time}. Tap to go back.`}
       onPress={onPress}
       style={({ pressed }) => ({
         position: 'absolute',
-        // Clears the floating tab bar, which sits above the home indicator.
-        bottom: bottom + 76,
-        right: 12,
-        width: 92,
-        height: 92,
-        borderRadius: 18,
-        overflow: 'hidden',
-        borderWidth: 1.5,
-        borderColor: paused ? C.warning : C.lime,
-        opacity: pressed ? 0.8 : 1,
+        left: layout.margin,
+        right: layout.margin,
+        bottom: runBarBottom,
         zIndex: 100,
-        elevation: 12,
-        shadowColor: '#000',
-        shadowOpacity: 0.4,
-        shadowRadius: 10,
-        shadowOffset: { width: 0, height: 4 },
+        opacity: pressed ? opacity.pressed : 1,
       })}
     >
-      {/* Decoration and text never take the touch, so the whole square opens the workout. */}
-      <BlurView pointerEvents="none" intensity={40} tint={scheme === 'dark' ? 'dark' : 'light'} style={StyleSheet.absoluteFill} />
-      <View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: C.bg, opacity: 0.55 }]} />
-      <View pointerEvents="none" style={{ flex: 1, padding: 8, justifyContent: 'space-between' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-          <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: paused ? C.warning : C.lime }} />
-          <Text style={{ color: paused ? C.warning : C.lime, fontSize: 11, fontWeight: '700' }}>
-            {paused ? 'Paused' : resting ? 'Resting' : 'In progress'}
+      <GlassSurface
+        rounded
+        style={{
+          height: RUN_BAR_HEIGHT,
+          borderRadius: radius.card,
+          borderColor: tone,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: space.ms,
+          paddingHorizontal: layout.inset,
+        }}
+      >
+        <View pointerEvents="none" style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
+          <View style={{ width: space.sm, height: space.sm, borderRadius: radius.pill, backgroundColor: tone }} />
+          <Text variant="footnote" style={{ color: tone, fontWeight: '600' }}>
+            {word}
           </Text>
         </View>
-        <Text variant="numeric" style={{ color: C.text, fontSize: 22, fontWeight: '700' }}>
+        <Text pointerEvents="none" variant="headline" numeric style={{ color: C.text }}>
           {time}
         </Text>
-        <Text numberOfLines={1} style={{ color: C.muted, fontSize: 11 }}>
+        <Text pointerEvents="none" variant="footnote" numberOfLines={1} style={{ flex: 1, minWidth: 0, color: C.muted }}>
           {state.index + 1} of {state.cards.length} · {run.title}
         </Text>
-      </View>
+        <Glyph name={{ ios: 'chevron.right', android: 'chevron_right' }} fallback="›" color={C.muted} size={space.md} />
+      </GlassSurface>
     </Pressable>
   );
 }

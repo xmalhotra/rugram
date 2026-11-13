@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable } from 'react-native';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { opacity, radius, space, stroke, useTheme } from './design/theme';
 
 /** Save a flow to your flows: an outlined "Save" that fills in as "✓ Saved". */
 export function FlowHeartAction({
@@ -23,20 +23,20 @@ export function FlowHeartAction({
       accessibilityState={{ selected: added, disabled: busy, busy }}
       disabled={busy}
       onPress={onToggle}
-      hitSlop={8}
+      hitSlop={space.sm}
       style={({ pressed }) => ({
         minHeight: 34,
-        paddingHorizontal: 14,
-        borderRadius: 17,
-        borderWidth: 1,
+        paddingHorizontal: space.md,
+        borderRadius: radius.pill,
+        borderWidth: stroke.line,
         borderColor: C.lime,
         backgroundColor: added ? C.lime : 'transparent',
         alignItems: 'center',
         justifyContent: 'center',
-        opacity: busy ? 0.45 : pressed ? 0.65 : 1,
+        opacity: busy ? opacity.disabled : pressed ? opacity.pressed : 1,
       })}
     >
-      <Text style={{ color: added ? C.onAccent : C.lime, fontSize: 14, fontWeight: '700' }}>
+      <Text variant="subhead" style={{ color: added ? C.onAccent : C.lime, fontWeight: '600' }}>
         {added ? '✓ Saved' : 'Save'}
       </Text>
     </Pressable>

@@ -25,13 +25,13 @@ export function TodayChecklist({
   const done = steps.filter(step => step.done).length;
   return (
     <Card>
-      <Text accessibilityRole="header" style={{ color: C.text, fontSize: 23, fontWeight: '600' }}>
+      <Text accessibilityRole="header" variant="heading" style={{ color: C.text }}>
         Today
       </Text>
       <Text accessibilityLiveRegion="polite" style={{ color: C.muted }}>
         {done} of {steps.length} done today
       </Text>
-      <Text style={{ color: C.muted, fontSize: 13 }}>
+      <Text variant="footnote" style={{ color: C.muted }}>
         Choose what fits today. Your flow’s rhythm is a guide, not a daily target.
       </Text>
       <CompletionHistory data={data} />

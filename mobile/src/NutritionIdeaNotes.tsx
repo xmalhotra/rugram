@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { nutritionIdea, nutritionCollectionForId } from '../../shared/nutrition-ideas';
 import { Text } from './design/Text';
 import { Button } from './design/components';
-import { useTheme } from './design/theme';
+import { space, useTheme } from './design/theme';
 
 export function NutritionIdeaNotes({
   cardId,
@@ -19,18 +19,18 @@ export function NutritionIdeaNotes({
   const { colors: C } = useTheme();
   if (!item) return null;
   return (
-    <View style={{ gap: 16 }}>
-      {context && <Text style={{ color: C.muted, lineHeight: 22 }}>{context.description}</Text>}
+    <View style={{ gap: space.md }}>
+      {context && <Text variant="callout" style={{ color: C.muted }}>{context.description}</Text>}
       {[
         ['When it may fit', item.when],
         ['Check suitability', item.caution],
       ].map(([title, body]) => (
-        <View key={title} style={{ gap: 6 }}>
-          <Text style={{ color: C.text, fontWeight: '600', fontSize: 17 }}>{title}</Text>
-          <Text style={{ color: C.muted, lineHeight: 23, fontSize: 15 }}>{body}</Text>
+        <View key={title} style={{ gap: space.sm }}>
+          <Text variant="headline" style={{ color: C.text }}>{title}</Text>
+          <Text variant="subhead" style={{ color: C.muted }}>{body}</Text>
         </View>
       ))}
-      <Text style={{ color: C.muted, fontSize: 13 }}>
+      <Text variant="footnote" style={{ color: C.muted }}>
         {item.diet} · one option, not a requirement
       </Text>
       {item.sources.map(source => (

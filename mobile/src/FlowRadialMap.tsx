@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import Svg, { Line } from 'react-native-svg';
 import { Text } from './design/Text';
-import { useTheme } from './design/theme';
+import { Glyph } from './design/Glyph';
+import { opacity, radius, space, stroke, useTheme } from './design/theme';
 
 export type FlowRadialNode = {
   id: string;
@@ -20,8 +21,8 @@ export function FlowRadialMap({ branches }: { branches: readonly FlowRadialBranc
   const { colors: C } = useTheme();
   const [width, setWidth] = useState(320);
   const [selected, setSelected] = useState<string | null>(null);
-  const size = Math.min(Math.max(width, 280), 560);
-  const center = size / 2;
+  const mapSize = Math.min(Math.max(width, 280), 560);
+  const center = mapSize / 2;
   const open = branches.find(branch => branch.id === selected) ?? null;
   return (
     <View
@@ -30,23 +31,34 @@ export function FlowRadialMap({ branches }: { branches: readonly FlowRadialBranc
         const next = Math.round(event.nativeEvent.layout.width);
         setWidth(current => (current === next || next <= 0 ? current : next));
       }}
-      style={{ gap: 8 }}
+      style={{ gap: space.sm }}
     >
       {open ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="All categories"
           onPress={() => setSelected(null)}
-          style={({ pressed }) => ({ alignSelf: 'flex-start', opacity: pressed ? 0.7 : 1, minHeight: 32, justifyContent: 'center' })}
+          style={({ pressed }) => ({
+            alignSelf: 'flex-start',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: space.xs,
+            opacity: pressed ? opacity.pressed : 1,
+            minHeight: 32,
+            justifyContent: 'center',
+          })}
         >
-          <Text style={{ color: C.text, fontSize: 14, fontWeight: '600' }}>← All categories</Text>
+          <Glyph name={{ ios: 'chevron.left', android: 'arrow_back' }} fallback="←" color={C.text} size={space.md} />
+          <Text variant="subhead" style={{ color: C.text, fontWeight: '600' }}>
+            All categories
+          </Text>
         </Pressable>
       ) : null}
-      <View style={{ width: size, height: size, alignSelf: 'center' }}>
+      <View style={{ width: mapSize, height: mapSize, alignSelf: 'center' }}>
         {open ? (
-          <CategoryFlows branch={open} size={size} center={center} />
+          <CategoryFlows branch={open} size={mapSize} center={center} />
         ) : (
-          <CategoryBubbles branches={branches} size={size} center={center} onSelect={setSelected} />
+          <CategoryBubbles branches={branches} size={mapSize} center={center} onSelect={setSelected} />
         )}
       </View>
     </View>
@@ -68,8 +80,8 @@ function CategoryBubbles({
   const count = Math.max(branches.length, 1);
   const placed = branches.map((branch, index) => {
     const angle = -Math.PI / 2 + (index * 2 * Math.PI) / count;
-    const radius = bubbleRadius(branch.nodes.length);
-    return { branch, radius, ...point(center, angle, size * 0.34) };
+    const bubble = bubbleRadius(branch.nodes.length);
+    return { branch, bubble, ...point(center, angle, size * 0.34) };
   });
   return (
     <>
@@ -90,7 +102,9 @@ function CategoryBubbles({
         pointerEvents="none"
         style={{ position: 'absolute', left: center - 28, top: center - 12, width: 56, alignItems: 'center' }}
       >
-        <Text style={{ color: C.text, fontSize: 14, fontWeight: '600', textAlign: 'center' }}>You</Text>
+        <Text variant="subhead" style={{ color: C.text, fontWeight: '600', textAlign: 'center' }}>
+          You
+        </Text>
       </View>
       {placed.map(item => {
         const label = `${item.branch.title} ${item.branch.nodes.length}`;
@@ -102,21 +116,21 @@ function CategoryBubbles({
             onPress={() => onSelect(item.branch.id)}
             style={({ pressed }) => ({
               position: 'absolute',
-              left: item.x - item.radius,
-              top: item.y - item.radius,
-              width: item.radius * 2,
-              height: item.radius * 2,
-              borderRadius: item.radius,
+              left: item.x - item.bubble,
+              top: item.y - item.bubble,
+              width: item.bubble * 2,
+              height: item.bubble * 2,
+              borderRadius: radius.pill,
               backgroundColor: C.card,
-              borderWidth: 2,
+              borderWidth: stroke.active,
               borderColor: C.lime,
               alignItems: 'center',
               justifyContent: 'center',
-              padding: 4,
-              opacity: pressed ? 0.7 : 1,
+              padding: space.xs,
+              opacity: pressed ? opacity.pressed : 1,
             })}
           >
-            <Text numberOfLines={2} style={{ color: C.text, fontSize: 11, fontWeight: '600', textAlign: 'center' }}>
+            <Text numberOfLines={2} variant="caption" style={{ color: C.text, fontWeight: '600', textAlign: 'center' }}>
               {label}
             </Text>
           </Pressable>
@@ -139,8 +153,8 @@ function CategoryFlows({
   const count = Math.max(branch.nodes.length, 1);
   const placed = branch.nodes.map((node, index) => {
     const angle = -Math.PI / 2 + (index * 2 * Math.PI) / count;
-    const radius = node.weight === 'daily' ? 16 : node.weight === 'light' ? 9 : 12;
-    return { node, radius, ...point(center, angle, size * 0.36) };
+    const bubble = node.weight === 'daily' ? 16 : node.weight === 'light' ? 9 : 12;
+    return { node, bubble, ...point(center, angle, size * 0.36) };
   });
   const hub = bubbleRadius(branch.nodes.length);
   return (
@@ -166,22 +180,22 @@ function CategoryFlows({
           top: center - hub,
           width: hub * 2,
           height: hub * 2,
-          borderRadius: hub,
+          borderRadius: radius.pill,
           backgroundColor: C.card,
-          borderWidth: 2,
+          borderWidth: stroke.active,
           borderColor: C.lime,
           alignItems: 'center',
           justifyContent: 'center',
-          padding: 4,
+          padding: space.xs,
         }}
       >
-        <Text numberOfLines={2} style={{ color: C.text, fontSize: 11, fontWeight: '600', textAlign: 'center' }}>
+        <Text numberOfLines={2} variant="caption" style={{ color: C.text, fontWeight: '600', textAlign: 'center' }}>
           {branch.title} {branch.nodes.length}
         </Text>
       </View>
       {placed.map(item => {
-        const ring = item.node.streak ? 2 : 0;
-        const box = Math.max(72, item.radius * 2 + ring * 2 + (item.node.streak ? 4 : 0));
+        const ring = item.node.streak ? stroke.active : 0;
+        const box = Math.max(72, item.bubble * 2 + ring * 2 + (item.node.streak ? 4 : 0));
         return (
           <View
             key={item.node.id}
@@ -191,7 +205,7 @@ function CategoryFlows({
               top: item.y - box / 2,
               width: box,
               alignItems: 'center',
-              opacity: item.node.stale ? 0.45 : 1,
+              opacity: item.node.stale ? opacity.disabled : 1,
             }}
           >
             <Pressable
@@ -204,13 +218,13 @@ function CategoryFlows({
                     : `Open ${item.node.title}`
               }
               onPress={item.node.onPress}
-              style={({ pressed }) => ({ alignItems: 'center', opacity: pressed ? 0.7 : 1 })}
+              style={({ pressed }) => ({ alignItems: 'center', opacity: pressed ? opacity.pressed : 1 })}
             >
               <View
                 style={{
-                  width: item.radius * 2 + ring * 2,
-                  height: item.radius * 2 + ring * 2,
-                  borderRadius: item.radius + ring,
+                  width: item.bubble * 2 + ring * 2,
+                  height: item.bubble * 2 + ring * 2,
+                  borderRadius: radius.pill,
                   borderWidth: ring,
                   borderColor: C.lime,
                   alignItems: 'center',
@@ -219,18 +233,20 @@ function CategoryFlows({
               >
                 <View
                   style={{
-                    width: item.radius * 2,
-                    height: item.radius * 2,
-                    borderRadius: item.radius,
+                    width: item.bubble * 2,
+                    height: item.bubble * 2,
+                    borderRadius: radius.pill,
                     backgroundColor: C.lime,
                   }}
                 />
               </View>
-              <Text numberOfLines={2} style={{ color: C.muted, fontSize: 10, textAlign: 'center', width: 72 }}>
+              <Text numberOfLines={2} variant="caption" style={{ color: C.muted, textAlign: 'center', width: 72 }}>
                 {item.node.title}
               </Text>
               {item.node.streak ? (
-                <Text style={{ color: C.lime, fontSize: 10, textAlign: 'center' }}>3-day streak</Text>
+                <Text variant="caption" style={{ color: C.lime, textAlign: 'center' }}>
+                  3-day streak
+                </Text>
               ) : null}
             </Pressable>
             {item.node.action}
@@ -245,6 +261,6 @@ function bubbleRadius(count: number) {
   return Math.min(54, 26 + count * 4);
 }
 
-function point(center: number, angle: number, radius: number) {
-  return { x: center + Math.cos(angle) * radius, y: center + Math.sin(angle) * radius };
+function point(center: number, angle: number, distance: number) {
+  return { x: center + Math.cos(angle) * distance, y: center + Math.sin(angle) * distance };
 }

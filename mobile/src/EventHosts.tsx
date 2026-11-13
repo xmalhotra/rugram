@@ -4,7 +4,7 @@ import { useOutbound } from './OutboundLink';
 import { Text } from './design/Text';
 import type { CityEvent } from '../../shared/mobile';
 import { eventWebsite } from '../../shared/event-discovery';
-import { useTheme } from './design/theme';
+import { hit, opacity, radius, space, useTheme } from './design/theme';
 export function EventHosts({
   event,
   onLink,
@@ -21,8 +21,8 @@ export function EventHosts({
     else void openExternal(url);
   }
   return (
-    <View style={{ gap: 10 }}>
-      <Text style={{ color: C.muted, fontSize: 13 }}>HOSTED BY</Text>
+    <View style={{ gap: space.ms }}>
+      <Text variant="footnote" style={{ color: C.muted }}>HOSTED BY</Text>
       {event.organizers?.length ? (
         event.organizers.map((host, index) => (
           <Pressable
@@ -35,24 +35,24 @@ export function EventHosts({
               if (host.profileUrl) open(host.name, host.profileUrl);
             }}
             style={({ pressed }) => ({
-              minHeight: 48,
+              minHeight: hit,
               flexDirection: 'row',
               alignItems: 'center',
-              gap: 12,
-              opacity: pressed ? 0.6 : 1,
+              gap: space.ms,
+              opacity: pressed ? opacity.pressed : 1,
             })}
           >
             {host.avatarUrl ? (
               <Image
                 source={{ uri: host.avatarUrl }}
-                style={{ width: 38, height: 38, borderRadius: 19 }}
+                style={{ width: 38, height: 38, borderRadius: radius.pill }}
               />
             ) : (
               <View
                 style={{
                   width: 38,
                   height: 38,
-                  borderRadius: 19,
+                  borderRadius: radius.pill,
                   backgroundColor: C.card,
                   justifyContent: 'center',
                   alignItems: 'center',
@@ -67,14 +67,14 @@ export function EventHosts({
                 </Text>
               </View>
             )}
-            <Text style={{ flex: 1, minWidth: 0, color: C.text, fontSize: 16, fontWeight: '600' }}>
+            <Text variant="callout" style={{ flex: 1, minWidth: 0, color: C.text, fontWeight: '600' }}>
               {host.name}
             </Text>
-            {host.profileUrl && <Text style={{ color: C.muted, fontSize: 18 }}>↗</Text>}
+            {host.profileUrl && <Text variant="body" style={{ color: C.muted }}>↗</Text>}
           </Pressable>
         ))
       ) : (
-        <Text style={{ color: C.muted, fontSize: 15 }}>
+        <Text variant="subhead" style={{ color: C.muted }}>
           Host details are on the organiser’s event page.
         </Text>
       )}
