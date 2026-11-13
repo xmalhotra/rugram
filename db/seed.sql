@@ -17,10 +17,35 @@ INSERT INTO routine_components (id, category, title, description, duration_label
   ('bolt-strength', 'Movement', 'Hamstring and leg work', 'Bolt told GQ his gym work included hamstring curls and leg extensions.', 'Workout', '16:00', 'reported', 'GQ profile', 'https://www.gq.com/story/runner-usain-bolt-training-secrets-and-diet', 'Elite-athlete context, not a personal training programme.', 'published', now())
 ON CONFLICT (id) DO UPDATE SET category = EXCLUDED.category, title = EXCLUDED.title, description = EXCLUDED.description, duration_label = EXCLUDED.duration_label, suggested_time = EXCLUDED.suggested_time, evidence_level = EXCLUDED.evidence_level, source_label = EXCLUDED.source_label, source_url = EXCLUDED.source_url, safety_note = EXCLUDED.safety_note, status = EXCLUDED.status, last_verified_at = EXCLUDED.last_verified_at, updated_at = now();
 
+UPDATE routine_components
+SET placement = CASE WHEN id IN ('cr7-water', 'messi-food', 'bolt-fuel', 'messi-prep', 'cr7-breathing') THEN 'preference' ELSE 'timeline' END,
+    profile_group = CASE id
+      WHEN 'cr7-water' THEN 'Drink · Morning'
+      WHEN 'messi-food' THEN 'Food · Breakfast'
+      WHEN 'bolt-fuel' THEN 'Food · Pre-run'
+      WHEN 'messi-prep' THEN 'Planning · Evening'
+      WHEN 'cr7-breathing' THEN 'Mindset · Reset'
+      ELSE NULL END,
+    status = CASE WHEN id IN ('messi-mate', 'bolt-hydration', 'bolt-strength') THEN 'archived' ELSE status END,
+    updated_at = now();
+
+INSERT INTO routine_components (id, category, title, description, duration_label, suggested_time, placement, profile_group, evidence_level, source_label, source_url, safety_note, status, last_verified_at) VALUES
+  ('daily-walk', 'Movement', '10-minute daylight walk', 'A short walk is a realistic way to build regular activity into a normal day.', '10 min', '08:00', 'timeline', NULL, 'reviewed', 'WHO physical activity', 'https://www.who.int/europe/news-room/fact-sheets/item/physical-activity', 'Adapt intensity and duration for your health, mobility, and local conditions.', 'published', now()),
+  ('easy-run', 'Running', 'Easy conversational run', 'Keep the effort easy enough to speak in short sentences. Build a repeatable base, not a test day.', '20–30 min', '07:00', 'timeline', NULL, 'reviewed', 'WHO physical activity', 'https://www.who.int/europe/news-room/fact-sheets/item/physical-activity', 'Build gradually; seek qualified advice for pain, injury, or health concerns.', 'published', now()),
+  ('strength-basics', 'Movement', 'Full-body strength session', 'Two focused strength sessions a week are a useful, achievable starting point for many adults.', '20 min', '18:00', 'timeline', NULL, 'reviewed', 'WHO physical activity', 'https://www.who.int/europe/news-room/fact-sheets/item/physical-activity', 'Choose movements and loads appropriate for your experience and health.', 'published', now()),
+  ('sleep-window', 'Sleep', 'Protect a 7+ hour sleep window', 'Choose a bedtime that gives you enough room for sleep, then keep the wake time reasonably consistent.', 'Nightly', '22:30', 'timeline', NULL, 'reviewed', 'CDC sleep guidance', 'https://www.cdc.gov/sleep/about/index.html', 'Sleep needs vary. Speak with a clinician about persistent sleep problems.', 'published', now()),
+  ('quinoa-breakfast', 'Food', 'Quinoa breakfast base', 'Keep a cooked-grain breakfast option ready and pair it with foods you enjoy.', 'Breakfast choice', 'Breakfast', 'preference', 'Food · Breakfast', 'reported', 'Qram preference', 'https://www.nhs.uk/live-well/eat-well/food-guidelines-and-food-labels/the-eatwell-guide/', 'A flexible food preference, not a personalised nutrition plan.', 'published', now())
+ON CONFLICT (id) DO UPDATE SET category = EXCLUDED.category, title = EXCLUDED.title, description = EXCLUDED.description, duration_label = EXCLUDED.duration_label, suggested_time = EXCLUDED.suggested_time, placement = EXCLUDED.placement, profile_group = EXCLUDED.profile_group, evidence_level = EXCLUDED.evidence_level, source_label = EXCLUDED.source_label, source_url = EXCLUDED.source_url, safety_note = EXCLUDED.safety_note, status = EXCLUDED.status, last_verified_at = EXCLUDED.last_verified_at, updated_at = now();
+
 INSERT INTO creator_component_publications (creator_id, component_id, weekday, start_time, status, sort_order) VALUES
   ('cristiano', 'cr7-water', 'Daily', '07:00', 'published', 1), ('cristiano', 'cr7-light', 'Daily', '07:15', 'published', 2), ('cristiano', 'cr7-breathing', 'Match day', '17:00', 'published', 3),
   ('messi', 'messi-prep', 'Daily', '21:30', 'published', 1), ('messi', 'messi-mate', 'Daily', '08:00', 'published', 2), ('messi', 'messi-food', 'Training day', '12:30', 'published', 3),
   ('bolt', 'bolt-hydration', 'Training day', '09:00', 'published', 1), ('bolt', 'bolt-fuel', 'Training day', '12:00', 'published', 2), ('bolt', 'bolt-strength', 'Training day', '16:00', 'published', 3)
+ON CONFLICT (creator_id, component_id) DO UPDATE SET weekday = EXCLUDED.weekday, start_time = EXCLUDED.start_time, status = EXCLUDED.status, sort_order = EXCLUDED.sort_order, updated_at = now();
+
+UPDATE creator_component_publications SET status = 'archived' WHERE component_id IN ('messi-mate', 'bolt-hydration', 'bolt-strength');
+INSERT INTO creator_component_publications (creator_id, component_id, weekday, start_time, status, sort_order) VALUES
+  ('bolt', 'easy-run', 'Training day', '07:00', 'published', 2)
 ON CONFLICT (creator_id, component_id) DO UPDATE SET weekday = EXCLUDED.weekday, start_time = EXCLUDED.start_time, status = EXCLUDED.status, sort_order = EXCLUDED.sort_order, updated_at = now();
 
 INSERT INTO component_evidence (id, component_id, claim, source_label, source_url, publisher, status)

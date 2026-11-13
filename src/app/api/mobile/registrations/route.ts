@@ -1,0 +1,11 @@
+import {z} from 'zod';
+import {apiError,apiJson,unauthorized} from '@/lib/http';
+import {observed,readMobileJson} from '@/lib/mobile-http';
+import {getSessionUser} from '@/lib/store';
+import {tokenId} from '@/lib/session';
+import {allowSharedRequest} from '@/lib/rate-limit';
+import {changeRegistration,registrationView,manageHostedEvent,eventInviteInbox,RegistrationError} from '@/lib/event-registration-store';
+const input=z.object({action:z.enum(['request','cancel','approve','decline','close-event','reopen-event','cancel-event']),eventId:z.string().min(1).max(128),guestId:z.string().min(1).max(128).optional(),answers:z.record(z.string().max(40),z.string().max(400)).optional()}).strict();
+async function userFor(request:Request){const token=request.headers.get('authorization')?.match(/^Bearer ([a-f0-9-]{36})$/i)?.[1];return token?getSessionUser(tokenId(token)):null;}
+export const GET=observed(async(request:Request)=>{const user=await userFor(request);if(!user)return unauthorized();if(!await allowSharedRequest(`registration-read:${user.id}`,120,60000))return apiError('Please slow down.',429);if(new URL(request.url).searchParams.get('inbox')==='true'){try{return apiJson(await eventInviteInbox(user));}catch(error){if(error instanceof RegistrationError)return apiError(error.message,error.status);throw error;}}const id=new URL(request.url).searchParams.get('eventId');if(!id||id.length>128)return apiError('Choose an event.');try{return apiJson(await registrationView(user,id));}catch(error){if(error instanceof RegistrationError)return apiError(error.message,error.status);throw error;}});
+export const POST=observed(async(request:Request)=>{const user=await userFor(request);if(!user)return unauthorized();if(!await allowSharedRequest(`registration-write:${user.id}`,60,60000))return apiError('Please slow down.',429);const parsed=input.safeParse(await readMobileJson(request));if(!parsed.success)return apiError('Choose a valid registration action.');try{const {action,eventId,guestId,answers}=parsed.data;return apiJson(await (action==='close-event'||action==='reopen-event'||action==='cancel-event'?manageHostedEvent(user,eventId,action):changeRegistration(user,eventId,action,guestId,answers)));}catch(error){if(error instanceof RegistrationError)return apiError(error.message,error.status);throw error;}});

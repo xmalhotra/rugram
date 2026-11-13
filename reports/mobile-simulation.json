@@ -1,0 +1,27 @@
+{
+  "kind": "isolated in-memory business-function simulation; not HTTP or production capacity proof",
+  "users": 10000,
+  "concurrency": 100,
+  "operations": 70000,
+  "paginationPages": 4,
+  "elapsedMs": 7639,
+  "actorJourneyP95Ms": 80,
+  "checks": [
+    "Seller snapshots, variant and conditional offer terms survive submission, moderation and bootstrap",
+    "Role restrictions and pending-publication isolation",
+    "Cannot complete steps before joining a flow",
+    "10,000 distinct profiles stay isolated; repeated set requests do not duplicate or undo state",
+    "Repeated requests do not inflate completion/save analytics",
+    "Focus choices persist per user, can change, are idempotent, and never auto-join flows",
+    "Flow connections use central catalog entries across India and survive feed pagination",
+    "100 concurrent RSVP attempts for 10 places accept exactly 10",
+    "Repeated RSVP is idempotent and archived event cancellation releases the seat",
+    "Creator event quota serializes 20 concurrent submissions to two pending events; retries do not consume slots, rejection does not refund, admin overrides and verified approval work",
+    "Only admins publish events; saved interest is isolated and idempotent, link opens never register users, and unverified listings cannot publish",
+    "Pagination reaches more than 200 listings without gaps or duplicates",
+    "Exercise references, measurement and dose validation; admin-only idempotent authoring; joined-flow set tracking, undo and user isolation",
+    "Equipment availability is idempotent and user-isolated, validates types, and never completes workouts or records purchases",
+    "Card ownership, fee overrides and manual benefit usage persist, reject stale/over-limit records, remain user-isolated and are idempotent"
+  ],
+  "memoryMb": 347
+}

@@ -1,0 +1,12 @@
+import type {Product} from './mobile';
+const checkedAt='2026-10-16T17:39:14.000Z';
+const entries=[
+  {id:'pick-sony-ch520',title:'Sony WH-CH520',subcategory:'Headphones',variantLabel:'Black · WH-CH520',packLabel:'One pair of on-ear headphones',price:2990,url:'https://shopatsc.com/products/wh-ch520-bz-in?variant=41385455419531',imageUrl:'https://cdn.shopify.com/s/files/1/0301/2263/9499/products/CH520_1000x1000_Black_G.jpg?v=1681194265',summary:'Wireless on-ear headphones for everyday listening.',specs:[['Fit','On-ear'],['Colour','Black'],['Connection','Bluetooth']],tradeoff:'On-ear fit differs from over-ear headphones. Try the fit if possible; real comfort and microphone performance have not been independently tested here.'},
+  {id:'pick-sony-ult-field-1',title:'Sony ULT FIELD 1',subcategory:'Speakers',variantLabel:'Orange · SRS-ULT10',packLabel:'One portable speaker',price:9990,url:'https://shopatsc.com/products/srs-ult10?variant=42364747251851',imageUrl:'https://cdn.shopify.com/s/files/1/0301/2263/9499/files/Image1_a8a49a07-2ff2-43ba-94dd-2df1469073da.jpg?v=1716553980',summary:'A portable speaker for a room or a small gathering.',specs:[['Type','Portable Bluetooth speaker'],['Colour','Orange'],['Model','SRS-ULT10']],tradeoff:'A compact speaker is not a home theatre. Compare room size and connections; marketing battery and sound claims are not independently tested here.'},
+];
+export const storeReadyProducts:Product[]=entries.map(({specs,tradeoff,...item})=>({...item,category:'Tech',tier:item.price<5000?'Essential':'Upgrade',comparisonGroup:`electronics-${item.subcategory.toLowerCase()}`,createdBy:'admin',status:'published',demo:false,endorsements:[],checkedAt,
+  specifications:specs.map(([label,value])=>({label,value,sourceUrl:item.url,checkedAt})),
+  purchaseOptions:[{url:item.url,sellerName:'ShopAtSC · Sony authorised store',price:item.price,shippingFee:null,availability:'in-stock',deliveryNote:'Exact variant price checked on the store product feed. Delivery depends on PIN code; confirm stock, final price and returns at checkout.',checkedAt}],
+  safetyNote:'Check compatibility, delivery, warranty and returns with the seller. Prices and stock are snapshots, not live guarantees.',
+  assessment:{bestFor:item.summary,whyChosen:item.summary,notFor:'A different fit, feature set or room size than this product provides.',tradeoffs:[tradeoff],criteria:['Named model and variant','Public store listing','Recorded price and photo'],sourceUrls:[item.url],checkedAt},
+}));

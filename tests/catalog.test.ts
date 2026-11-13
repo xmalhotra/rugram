@@ -8,7 +8,8 @@ test("central routine components have unique IDs and attributable sources", () =
   for (const component of routineComponents) {
     assert.match(component.sourceUrl, /^https:\/\//);
     assert.ok(component.sourceLabel.length > 0);
-    assert.equal(component.evidenceLevel, "reported");
+    assert.ok(["reported", "reviewed"].includes(component.evidenceLevel));
+    assert.ok(["timeline", "preference"].includes(component.placement));
   }
 });
 

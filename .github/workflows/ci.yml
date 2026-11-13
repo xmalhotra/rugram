@@ -9,19 +9,77 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     env:
-      RUGRAM_DEMO_MODE: "true"
+      QRAM_DEMO_MODE: "true"
       AUTH_SECRET: ci-only-secret-not-for-production
       APP_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
       - run: npm ci
+      # Some unit tests read the mobile app's installed packages.
+      - run: npm ci --prefix mobile
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - run: npm run test:simulation
+      # Production compilation runs in database-simulation, never with demo mode.
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run mobile:typecheck
+      - run: npm run lint:mobile
+      - run: npm run test:mobile-accessibility
+      - run: npx expo export --platform android --output-dir /tmp/betterhabits-native-bundle
+        working-directory: mobile
+      - run: |
+          npm run dev > /tmp/betterhabits-api.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail http://localhost:3000/api/health; then break; fi
+            sleep 2
+          done
+          npm run test:mobile-api
+
+  database-simulation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: betterhabits_test
+          POSTGRES_PASSWORD: ci-fixture-only
+          POSTGRES_DB: postgres
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://betterhabits_test:ci-fixture-only@127.0.0.1:55432/postgres
+      AUTH_SECRET: ci-isolated-load-secret
+      QRAM_DEMO_MODE: "false"
+      APP_URL: http://127.0.0.1:3100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: node scripts/prepare-load-database.mjs
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
-      - run: npm run test:e2e
+      - run: |
+          npm run start -- --port 3100 > /tmp/betterhabits-load-api.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail http://127.0.0.1:3100/api/health; then break; fi
+            sleep 2
+          done
+          npm run test:load
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mobile-database-simulation
+          path: reports/

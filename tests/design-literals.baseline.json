@@ -1,0 +1,836 @@
+{
+  "totals": {
+    "literals": 83,
+    "colours": 36,
+    "pressable": 250,
+    "symbols": 22,
+    "modal": 1,
+    "loading": 3
+  },
+  "files": {
+    "mobile/App.tsx": {
+      "literals": 3,
+      "colours": 1,
+      "pressable": 3,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 1
+    },
+    "mobile/app/management.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 0,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/app/profile.tsx": {
+      "literals": 0,
+      "colours": 1,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/AboutYou.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/AccountPrivacy.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 3,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/AddToFlowHeader.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/AdminWorkspace.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 0,
+      "symbols": 3,
+      "modal": 0,
+      "loading": 1
+    },
+    "mobile/src/AnimalMovementDeck.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/AnimalMovementStory.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/AppearanceSettings.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/BodyFlow.tsx": {
+      "literals": 3,
+      "colours": 0,
+      "pressable": 8,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/BodyMap.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/CardCatalog.tsx": {
+      "literals": 4,
+      "colours": 0,
+      "pressable": 4,
+      "symbols": 1,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/CardComparison.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 2,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/CardComparisonTable.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 4,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/CardResearchBrowser.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 3,
+      "symbols": 1,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/CategoryGrid.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/CategoryRail.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 2,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/ColdStart.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 5,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/CommunityFeed.tsx": {
+      "literals": 6,
+      "colours": 11,
+      "pressable": 13,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/CreditCardDiscovery.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 0,
+      "symbols": 3,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/CreditCardPicks.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 2,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/DailyItemFacts.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 2,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/Disclosure.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/EquipmentCheck.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 3,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/EquipmentThumbnail.tsx": {
+      "literals": 4,
+      "colours": 0,
+      "pressable": 0,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/EventCategoryPage.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/EventComposer.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 7,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/EventDiscovery.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/EventEditorControls.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 2,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/EventHosts.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/EventInviteNotifications.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/EventLinkFields.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/EventLocationPicker.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/EventPage.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 5,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/EventPreview.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 1,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/EventRegistrationPanel.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 0,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/EventRows.tsx": {
+      "literals": 3,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/EventsDiscover.tsx": {
+      "literals": 0,
+      "colours": 14,
+      "pressable": 2,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/ExerciseCatalog.tsx": {
+      "literals": 5,
+      "colours": 0,
+      "pressable": 5,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/ExerciseLibrary.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/ExerciseRunMedia.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/ExerciseSequence.tsx": {
+      "literals": 2,
+      "colours": 0,
+      "pressable": 2,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/ExerciseThumbnail.tsx": {
+      "literals": 2,
+      "colours": 0,
+      "pressable": 0,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/ExerciseVisual.tsx": {
+      "literals": 0,
+      "colours": 1,
+      "pressable": 0,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/FlowCardRail.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/FlowCatalogHome.tsx": {
+      "literals": 2,
+      "colours": 0,
+      "pressable": 6,
+      "symbols": 1,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/FlowCatalogTile.tsx": {
+      "literals": 2,
+      "colours": 0,
+      "pressable": 8,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/FlowDetails.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 1,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/FlowHeartAction.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 1,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/FlowHistory.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 1,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/FlowHomeAction.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/FlowPreview.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 3,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/FlowRadialMap.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 3,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/FlowRun.tsx": {
+      "literals": 3,
+      "colours": 0,
+      "pressable": 8,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/FlowSections.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 0,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/FocusReview.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 2,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/GymSupportGuide.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 1,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/HomeFeed.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 3,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/HomeHeader.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 3,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/HyderabadEvents.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 2,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/MapFlowShelf.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 4,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/MovementControls.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 2,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/MovementGlass.tsx": {
+      "literals": 0,
+      "colours": 2,
+      "pressable": 0,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/MovementPositionBar.tsx": {
+      "literals": 2,
+      "colours": 0,
+      "pressable": 0,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/NotificationCentre.tsx": {
+      "literals": 3,
+      "colours": 0,
+      "pressable": 3,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/OtpCodeInput.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/PersonalFlowDetails.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/PersonalFlowSheets.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 2,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/PersonaliseFlows.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 13,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/PhoneSignIn.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 0,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/PickDecisionComparison.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 2,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/PickDetails.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 3,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/PickInsight.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 1,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/ProductPreview.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 2,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/ProfileWorkouts.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 1,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/ReportsWorklist.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 0,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 1
+    },
+    "mobile/src/RequestedFlows.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/RoutineCalendar.tsx": {
+      "literals": 2,
+      "colours": 0,
+      "pressable": 5,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/RoutineCatalog.tsx": {
+      "literals": 3,
+      "colours": 0,
+      "pressable": 5,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/RunCountdown.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/RunPip.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/SavedPicks.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 3,
+      "symbols": 1,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/SearchScreen.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 3,
+      "symbols": 1,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/SellerLinks.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/SeriesSheet.tsx": {
+      "literals": 2,
+      "colours": 1,
+      "pressable": 9,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/ShareFlow.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 2,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/SoundToggle.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/StoryViewer.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 2,
+      "symbols": 0,
+      "modal": 1,
+      "loading": 0
+    },
+    "mobile/src/StrengthProfile.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 2,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/SupplementDiscovery.tsx": {
+      "literals": 2,
+      "colours": 0,
+      "pressable": 4,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/SupplementJourney.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/SupplementProductDeck.tsx": {
+      "literals": 0,
+      "colours": 3,
+      "pressable": 2,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/SwipeDeck.tsx": {
+      "literals": 2,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/TechResourceCard.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/TrainingAdmin.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 2,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/TrainingCalendar.tsx": {
+      "literals": 2,
+      "colours": 0,
+      "pressable": 0,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/TrainingPlans.tsx": {
+      "literals": 4,
+      "colours": 0,
+      "pressable": 5,
+      "symbols": 1,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/TrainingSession.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 6,
+      "symbols": 1,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/TrainingWeek.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 9,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/WorkoutJourney.tsx": {
+      "literals": 0,
+      "colours": 0,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/YouProfile.tsx": {
+      "literals": 1,
+      "colours": 0,
+      "pressable": 7,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    },
+    "mobile/src/motion.tsx": {
+      "literals": 0,
+      "colours": 2,
+      "pressable": 1,
+      "symbols": 0,
+      "modal": 0,
+      "loading": 0
+    }
+  }
+}

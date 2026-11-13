@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "mobile/**",
+    // Local, uncommitted working folder for generated exercise loops.
+    ".loop-work/**",
   ]),
 ]);
 

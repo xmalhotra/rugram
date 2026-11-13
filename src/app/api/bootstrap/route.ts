@@ -1,11 +1,3 @@
-import { apiJson, unauthorized } from "@/lib/http";
-import { currentUser } from "@/lib/session";
-import { getBootstrap } from "@/lib/store";
+import { legacyRetired } from "@/lib/http";
 
-export const runtime = "nodejs";
-
-export async function GET() {
-  const user = await currentUser();
-  if (!user) return unauthorized();
-  return apiJson(await getBootstrap(user));
-}
+export const GET = legacyRetired;
